@@ -1,0 +1,5 @@
+name: Spectrum
+type: module
+description: "Spectrum"
+package: Spectrum
+core: 8.x

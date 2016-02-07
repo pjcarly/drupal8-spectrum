@@ -1,0 +1,6 @@
+debug:
+    path: /spectrum/debug
+    defaults:
+        _controller: Drupal\spectrum\Controller\RouteController::debug
+    requirements:
+        _permission: 'access content'
