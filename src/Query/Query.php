@@ -9,6 +9,7 @@ class Query
 
     public $conditions = array();
     public $orders = array();
+    public $limit;
 
     public function __construct($entityType, $bundle)
     {
@@ -26,18 +27,28 @@ class Query
         $this->orders[] = $order;
     }
 
+    public function setLimit($limit)
+    {
+      $this->limit = $limit;
+    }
+
     public function getQuery()
     {
         $query = \Drupal::entityQuery($this->entityType);
 
         if(!empty($this->bundle))
         {
-            $this->addCondition(new Condition('type', '=', $this->bundle));
+          $this->addCondition(new Condition('type', '=', $this->bundle));
         }
 
         foreach($this->conditions as $condition)
         {
-            $condition->addQueryCondition($query);
+          $condition->addQueryCondition($query);
+        }
+
+        if(!empty($this->limit))
+        {
+          $query->range(0, $this->limit);
         }
 
         // foreach($this->orders as $order)
