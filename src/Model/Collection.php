@@ -340,4 +340,15 @@ class Collection
 
 		return $this;
 	}
+
+  public function toJsonApi()
+  {
+    $data = array();
+    foreach($this->models as $model)
+    {
+      $data[] = $model->toJsonApi();
+    }
+
+    return $data;
+  }
 }
