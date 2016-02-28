@@ -4,85 +4,86 @@ namespace Drupal\spectrum\Query;
 
 class Query
 {
-    private $bundle;
-    private $entityType;
+  private $bundle;
+  private $entityType;
 
-    public $conditions = array();
-    public $orders = array();
-    public $limit;
+  public $conditions = array();
+  public $orders = array();
+  public $limit;
+  public $filterLogic;
 
-    public function __construct($entityType, $bundle)
+  public function __construct($entityType, $bundle)
+  {
+    $this->bundle = $bundle;
+    $this->entityType = $entityType;
+  }
+
+  public function addCondition(Condition $condition)
+  {
+    $this->conditions[] = $condition;
+  }
+
+  public function addOrder(Order $order)
+  {
+    $this->orders[] = $order;
+  }
+
+  public function setLimit($limit)
+  {
+    $this->limit = $limit;
+  }
+
+  public function getQuery()
+  {
+    $query = \Drupal::entityQuery($this->entityType);
+
+    if(!empty($this->bundle))
     {
-        $this->bundle = $bundle;
-        $this->entityType = $entityType;
+      $this->addCondition(new Condition('type', '=', $this->bundle));
     }
 
-    public function addCondition(Condition $condition)
+    foreach($this->conditions as $condition)
     {
-        $this->conditions[] = $condition;
+      $condition->addQueryCondition($query);
     }
 
-    public function addOrder(Order $order)
+    if(!empty($this->limit))
     {
-        $this->orders[] = $order;
+      $query->range(0, $this->limit);
     }
 
-    public function setLimit($limit)
+    // foreach($this->orders as $order)
+    // {
+    //     $order->addQueryOrder($query);
+    // }
+
+    return $query;
+  }
+
+  public function fetch()
+  {
+    $query = $this->getQuery();
+    $result = $query->execute();
+
+    $store = \Drupal::entityManager()->getStorage($this->entityType);
+
+    return empty($result) ? array() : $store->loadMultiple($result);
+  }
+
+  public function fetchSingle()
+  {
+    $query = $this->getQuery();
+    $result = $query->execute();
+
+    if(empty($result))
     {
-      $this->limit = $limit;
+      return null;
     }
-
-    public function getQuery()
+    else
     {
-        $query = \Drupal::entityQuery($this->entityType);
-
-        if(!empty($this->bundle))
-        {
-          $this->addCondition(new Condition('type', '=', $this->bundle));
-        }
-
-        foreach($this->conditions as $condition)
-        {
-          $condition->addQueryCondition($query);
-        }
-
-        if(!empty($this->limit))
-        {
-          $query->range(0, $this->limit);
-        }
-
-        // foreach($this->orders as $order)
-        // {
-        //     $order->addQueryOrder($query);
-        // }
-
-        return $query;
+      $store = \Drupal::entityManager()->getStorage($this->entityType);
+      $id = array_shift($result);
+      return empty($id) ? array() : $store->load($id);
     }
-
-    public function fetch()
-    {
-        $query = $this->getQuery();
-        $result = $query->execute();
-
-        $store = \Drupal::entityManager()->getStorage($this->entityType);
-
-        return empty($result) ? array() : $store->loadMultiple($result);
-    }
-
-    public function fetchSingle()
-    {
-        $query = $this->getQuery();
-        $result = $query->execute();
-
-        if(empty($result))
-        {
-            return null;
-        }
-        else
-        {
-            $store = \Drupal::entityManager()->getStorage($this->entityType);
-            $id = array_shift($result);
-            return empty($id) ? array() : $store->load($id);
-        }
-    }
+  }
 }

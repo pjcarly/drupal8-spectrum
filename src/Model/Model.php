@@ -6,6 +6,7 @@ use Drupal\spectrum\Query\ModelQuery;
 use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Exceptions\InvalidRelationshipTypeException;
 use Drupal\spectrum\Exceptions\RelationshipNotDefinedException;
+Use Drupal\spectrum\Utils\String;
 
 abstract class Model
 {
@@ -404,6 +405,7 @@ abstract class Model
       if(!in_array($fieldname, $ignore_fields) && !in_array($fieldname, $manual_fields))
       {
         $fieldnamepretty = str_replace('field_', '', $fieldname);
+        $fieldnamepretty = String::dasherize($fieldnamepretty);
 
         switch ($definition->getType()) {
           case 'geolocation':
@@ -411,8 +413,8 @@ abstract class Model
             $attributes->$fieldnamepretty->lng = $this->entity->get($fieldname)->lng;
             break;
           case 'entity_reference':
-            $relationships->$fieldnamepretty->id = $this->entity->get($fieldname)->target_id;
-            $relationships->$fieldnamepretty->type = $this->entity->get($fieldname)->entity->getEntityType()->get('id');
+            $relationships->$fieldnamepretty->data->id = $this->entity->get($fieldname)->target_id;
+            $relationships->$fieldnamepretty->data->type = $this->entity->get($fieldname)->entity->bundle();
             break;
           default:
             $attributes->$fieldnamepretty = $this->entity->get($fieldname)->value;
