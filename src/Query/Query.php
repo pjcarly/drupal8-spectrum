@@ -2,6 +2,8 @@
 
 namespace Drupal\spectrum\Query;
 
+use Drupal\spectrum\Utils\ParenthesisParser;
+
 class Query
 {
   private $bundle;
@@ -10,7 +12,7 @@ class Query
   public $conditions = array();
   public $orders = array();
   public $limit;
-  public $filterLogic;
+  public $conditionLogic;
 
   public function __construct($entityType, $bundle)
   {
@@ -28,6 +30,14 @@ class Query
     $this->orders[] = $order;
   }
 
+  public function addConditionLogic()
+  {
+    $parser = new ParenthesisParser();
+    $result = $parser->parse($this->conditionLogic);
+
+    
+  }
+
   public function setLimit($limit)
   {
     $this->limit = $limit;
@@ -42,9 +52,12 @@ class Query
       $this->addCondition(new Condition('type', '=', $this->bundle));
     }
 
-    foreach($this->conditions as $condition)
+    if(empty($this->conditionLogic))
     {
-      $condition->addQueryCondition($query);
+      foreach($this->conditions as $condition)
+      {
+        $condition->addQueryCondition($query);
+      }
     }
 
     if(!empty($this->limit))
