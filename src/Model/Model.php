@@ -8,6 +8,8 @@ use Drupal\spectrum\Exceptions\InvalidRelationshipTypeException;
 use Drupal\spectrum\Exceptions\RelationshipNotDefinedException;
 Use Drupal\spectrum\Utils\String;
 
+use Drupal\spectrum\Serializer\ModelSerializer;
+
 abstract class Model
 {
   public static $entityType;
@@ -226,10 +228,15 @@ abstract class Model
   public function debugEntity()
   {
     $values = array();
-    foreach ($this->entity->getPropertyInfo() as $key => $val)
+    foreach ($this->entity->getFields() as $field)
     {
-      $values[$key] = $this->entity->$key->value();
+      $definition = $field->getFieldDefinition();
+      $fieldname = $field->getName();
+
+      $values[$fieldname] = $this->getFieldValue($field);
     }
+
+    return $values;
   }
 
   public static function hasRelationship($relationshipName)
@@ -354,6 +361,11 @@ abstract class Model
       static::$relationships[$relationship->relationshipName] = $relationship;
   }
 
+  public static function getFieldList()
+  {
+    return \Drupal::service('entity_field.manager')->getFieldDefinitions(static::$entityType, static::$bundle);
+  }
+
   public function __get($property)
   {
 		if (property_exists($this, $property))
@@ -376,56 +388,46 @@ abstract class Model
   public function afterUpdate(){}
   public function beforeDelete(){}
 
+  public function getFieldValue($field)
+  {
+    $value;
+
+    $definition = $field->getFieldDefinition();
+    $fieldname = $field->getName();
+
+    // First let's check the manual fields
+    if($fieldname === 'type')
+    {
+      $value = $this->entity->get($fieldname)->target_id;
+    }
+    else if($fieldname === static::$idField)
+    {
+      $value = $this->entity->get($fieldname)->value;
+    }
+
+    // Now we'll check the other fields
+
+    switch ($definition->getType()) {
+      case 'geolocation':
+        $value = array();
+        $value['lat'] = $this->entity->get($fieldname)->lat;
+        $value['lng'] = $this->entity->get($fieldname)->lng;
+        break;
+      case 'entity_reference':
+        $value = array();
+        $value['id'] = $this->entity->get($fieldname)->target_id;
+        break;
+      default:
+        $value = $this->entity->get($fieldname)->value;
+        break;
+    }
+
+    return $value;
+  }
 
   public function toJsonApi()
   {
-    $ignore_fields = array('revision_log', 'vid', 'revision_timestamp', 'revision_uid', 'revision_log', 'revision_translation_affected', 'revision_translation_affected', 'default_langcode', 'path', 'content_translation_source', 'content_translation_outdated');
-    $manual_fields = array(static::$idField, 'type');
-
-    $jsonApiRecord = new \stdClass;
-    $attributes = new \stdClass;
-    $relationships = new \stdClass;
-
-    foreach($this->entity->getFields() as $field)
-    {
-      $definition = $field->getFieldDefinition();
-      $fieldname = $field->getName();
-
-      // First let's check the manual fields
-      if($fieldname === 'type')
-      {
-        $jsonApiRecord->type = $this->entity->get($fieldname)->target_id;
-      }
-      else if($fieldname === static::$idField)
-      {
-        $jsonApiRecord->id = $this->entity->get($fieldname)->value;
-      }
-
-      // Now we'll check the other fields
-      if(!in_array($fieldname, $ignore_fields) && !in_array($fieldname, $manual_fields))
-      {
-        $fieldnamepretty = str_replace('field_', '', $fieldname);
-        $fieldnamepretty = String::dasherize($fieldnamepretty);
-
-        switch ($definition->getType()) {
-          case 'geolocation':
-            $attributes->$fieldnamepretty->lat = $this->entity->get($fieldname)->lat;
-            $attributes->$fieldnamepretty->lng = $this->entity->get($fieldname)->lng;
-            break;
-          case 'entity_reference':
-            $relationships->$fieldnamepretty->data->id = $this->entity->get($fieldname)->target_id;
-            $relationships->$fieldnamepretty->data->type = $this->entity->get($fieldname)->entity->bundle();
-            break;
-          default:
-            $attributes->$fieldnamepretty = $this->entity->get($fieldname)->value;
-            break;
-        }
-      }
-    }
-
-    $jsonApiRecord->attributes = $attributes;
-    $jsonApiRecord->relationships = $relationships;
-
-    return $jsonApiRecord;
+    $serializer = new ModelSerializer($this);
+    return $serializer->serialize('json-api');
   }
 }
