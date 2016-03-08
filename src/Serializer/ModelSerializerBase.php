@@ -6,7 +6,7 @@ Use Drupal\spectrum\Utils\String;
 
 abstract class ModelSerializerBase
 {
-  private $modelName;
+  protected $modelName;
 
   function __construct($modelName)
   {

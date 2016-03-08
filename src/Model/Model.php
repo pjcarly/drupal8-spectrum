@@ -26,6 +26,9 @@ abstract class Model
   public $parents = array();
   public $children = array();
 
+  // json-api options
+  public static $inlineRelationships = array();
+
   public function __construct($entity)
   {
       $this->entity = $entity;
