@@ -49,7 +49,7 @@ class ModelTrigger
     $entityType = $entity->getEntityTypeId();
     $bundle = $entity->bundle();
 
-    $foundModelClass;
+    $foundModelClass = null;
 
     foreach($this->modelClasses as $modelClass)
     {

@@ -434,6 +434,12 @@ abstract class Model
 		}
 	}
 
+  public function __isset($property)
+  {
+    // Needed for twig to be able to access relationship via magic getter
+    return property_exists($this, $property) || array_key_exists($property, $this->parents) || array_key_exists($property, $this->children);
+  }
+
   public function beforeInsert(){}
   public function afterInsert(){}
   public function beforeUpdate(){}
