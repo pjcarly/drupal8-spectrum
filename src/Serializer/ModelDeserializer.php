@@ -11,7 +11,6 @@ class ModelDeserializer extends ModelSerializerBase
   function __construct($modelName)
   {
     parent::__construct($modelName);
-    dump($this->modelName);
   }
 
   function deserialize($type, $serialized)
@@ -30,7 +29,8 @@ class ModelDeserializer extends ModelSerializerBase
   {
     // get helper variables
     $modelName = $this->modelName;
-    $prettyFieldMapping = $this->getPrettyFieldsToFieldsMapping();
+    $fieldNameMapping = $this->getPrettyFieldsToFieldsMapping();
+    //$fieldDefinitions = $model->getFieldDefinitions();
 
     // we'll keep track of some flags
     $modelFound = false;
@@ -38,7 +38,6 @@ class ModelDeserializer extends ModelSerializerBase
 
     // create a new $model
     $model = $modelName::createNew();
-
 
     // and now we'll loop over the different content of the deserialized object
     foreach($deserialized->data as $key => $value)
@@ -55,25 +54,90 @@ class ModelDeserializer extends ModelSerializerBase
         // here we'll loop all the attributes in the json, and match them to existing attributes on the entity class
         foreach($value as $attributeKey => $attributeValue)
         {
-          if(array_key_exists($attributeKey, $prettyFieldMapping))
+          if(array_key_exists($attributeKey, $fieldNameMapping))
           {
-            $prettyField = $prettyFieldMapping[$attributeKey];
+            $fieldName = $fieldNameMapping[$attributeKey];
+            $fieldDefinition = $modelName::getFieldDefinition($fieldName);
 
-            $model->entity->$prettyField->value = $attributeValue;
+            switch($fieldDefinition->getType())
+            {
+              case 'geolocation':
+                $model->entity->$fieldName->lat = $attributeValue->lat;
+                $model->entity->$fieldName->lng = $attributeValue->lng;
+                break;
+              case 'datetime':
+                $dateValue = null;
+
+                if(!empty($attributeValue))
+                {
+                  // We must figure out if this is a Date field or a datetime field
+                  // lets get the meta information of the field
+                  $fieldSettingsDatetimeType = $fieldDefinition->getItemDefinition()->getSettings()['datetime_type'];
+                  if($fieldSettingsDatetimeType === 'date')
+                  {
+                    $dateValue = new \DateTime();
+                    $dateValue->setTimestamp($attributeValue);
+                    $dateValue = $dateValue->format('Y-m-d');
+                  }
+                  else if($fieldSettingsDatetimeType === 'datetime')
+                  {
+                    $dateValue = new \DateTime();
+                    $dateValue->setTimestamp($attributeValue);
+                    $dateValue = $dateValue->format('Y-m-d').'T'.$dateValue->format('H:i:s');
+                  }
+                }
+
+                $model->entity->$fieldName->value = $dateValue;
+                break;
+              default:
+                $model->entity->$fieldName->value = $attributeValue;
+                break;
+            }
+
             $modelFound = true;
           }
         }
       }
       else if($key === 'relationships')
       {
-        // TODO implement
+        foreach($value as $relationshipFieldName => $relationshipValue)
+        {
+          // first we'll check if the relationship exists
+          try
+          {
+            if(array_key_exists($relationshipFieldName, $fieldNameMapping))
+            {
+              $fieldName = $fieldNameMapping[$relationshipFieldName];
+              $relationship = $model::getRelationshipByFieldName($fieldName);
+
+              // now the relationship exists, we'll do something different depending on the type of relationship
+              if($relationship instanceof ParentRelationship)
+              {
+                $relationshipField = $relationship->getField();
+                $relationshipColumn = $relationship->getColumn();
+
+                if(!empty($relationshipValue->data))
+                {
+                  $model->entity->$relationshipField->$relationshipColumn = $relationshipValue->data->id;
+                }
+              }
+              else if ($relationship instanceof ChildRelationship)
+              {
+                // TODO: make this work with entity reference multi-field
+              }
+            }
+
+          } catch (\Drupal\spectrum\Exceptions\RelationshipNotDefinedException $e) {
+            // ignore, the relationship passed doesn't exist
+          }
+        }
       }
       else if(in_array($key, $modelName::$inlineRelationships))
       {
-        dump($key);
         // first we'll check if the relationship exists
         try
         {
+
           $relationship = $model::getRelationship($key);
 
           // now the relationship exists, we'll do something different depending on the type of relationship
@@ -102,14 +166,11 @@ class ModelDeserializer extends ModelSerializerBase
             //TODO: implement
           }
 
-        } catch (RelationshipNotDefinedException $e) {
+        } catch (\Drupal\spectrum\Exceptions\RelationshipNotDefinedException $e) {
           // ignore, the relationship passed doesn't exist
         }
       }
     }
-
-    dump($model);
-    dump($model->debugEntity());
 
     if($modelFound)
     {

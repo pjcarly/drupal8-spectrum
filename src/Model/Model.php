@@ -46,14 +46,35 @@ abstract class Model
 
   public function save($relationshipName = NULL)
   {
-      if(empty($relationshipName))
+    if(empty($relationshipName))
+    {
+      $isNew = empty($this->getId());
+      $this->entity->save();
+
+      if($isNew)
       {
-          $this->entity->save();
+        $this->setParentIdForChildren();
       }
-      else
+    }
+    else
+    {
+      $this->get($relationshipName)->save();
+    }
+  }
+
+  private function setParentIdForChildren()
+  {
+    $relationships = static::getRelationships();
+    foreach($relationships as $relationship)
+    {
+      if($relationship instanceof ChildRelationship)
       {
-          $this->get($relationshipName)->save();
+        foreach($this->get($relationship->relationshipName)->models as $childModel)
+        {
+          $childModel->put($relationship->parentRelationshipName, $this);
+        }
       }
+    }
   }
 
   public function fetch($relationshipName)
@@ -231,12 +252,11 @@ abstract class Model
   public function debugEntity()
   {
     $values = array();
-    foreach ($this->entity->getFields() as $field)
-    {
-      $definition = $field->getFieldDefinition();
-      $fieldname = $field->getName();
+    $fieldDefinitions = static::getFieldDefinitions();
 
-      $values[$fieldname] = $this->getFieldValue($field);
+    foreach ($fieldDefinitions as $fieldName => $fieldDefinition)
+    {
+      $values[$fieldName] = $this->getFieldValue($fieldName, $fieldDefinition);
     }
 
     return $values;
@@ -348,6 +368,24 @@ abstract class Model
       }
   }
 
+  public static function getRelationshipByFieldName($fieldName)
+  {
+    $relationships = static::getRelationships();
+    $foundRelationship;
+
+    foreach($relationships as $relationship)
+    {
+      if($relationship instanceof ParentRelationship && $relationship->getField() === $fieldName)
+      {
+        $foundRelationship = $relationship;
+        break;
+      }
+      // TODO: make this work with entity reference multi-field
+    }
+
+    return $foundRelationship;
+  }
+
   public static function getRelationships()
   {
       if(!static::$relationshipsSet)
@@ -364,9 +402,20 @@ abstract class Model
       static::$relationships[$relationship->relationshipName] = $relationship;
   }
 
-  public static function getFieldList()
+  public static function getFieldDefinitions()
   {
     return \Drupal::service('entity_field.manager')->getFieldDefinitions(static::$entityType, static::$bundle);
+  }
+
+  public static function getFieldDefinition($fieldName)
+  {
+    $fieldDefinition;
+    $fieldDefinitions = static::getFieldDefinitions();
+    if(array_key_exists($fieldName, $fieldDefinitions))
+    {
+      $fieldDefinition = $fieldDefinitions[$fieldName];
+    }
+    return $fieldDefinition;
   }
 
   public function __get($property)
@@ -391,41 +440,47 @@ abstract class Model
   public function afterUpdate(){}
   public function beforeDelete(){}
 
-  public function getFieldValue($field)
+  public function getFieldValue($fieldName, $fieldDefinition = null)
   {
-    $value;
-
-    $definition = $field->getFieldDefinition();
-    $fieldname = $field->getName();
-
-    // First let's check the manual fields
-    if($fieldname === 'type')
+    // lets check if the fieldDefinition was passed, else let's get it
+    if($fieldDefinition === null)
     {
-      $value = $this->entity->get($fieldname)->target_id;
+      $fieldDefinition = static::getFieldDefinition($fieldName);
     }
-    else if($fieldname === static::$idField)
+
+    if($fieldDefinition !== null)
     {
-      $value = $this->entity->get($fieldname)->value;
+      $value;
+
+      // First let's check the manual fields
+      if($fieldName === 'type')
+      {
+        $value = $this->entity->get($fieldName)->target_id;
+      }
+      else if($fieldName === static::$idField)
+      {
+        $value = $this->entity->get($fieldName)->value;
+      }
+
+      // Now we'll check the other fields
+
+      switch ($fieldDefinition->getType()) {
+        case 'geolocation':
+          $value = array();
+          $value['lat'] = $this->entity->get($fieldName)->lat;
+          $value['lng'] = $this->entity->get($fieldName)->lng;
+          break;
+        case 'entity_reference':
+          $value = array();
+          $value['id'] = $this->entity->get($fieldName)->target_id;
+          break;
+        default:
+          $value = $this->entity->get($fieldName)->value;
+          break;
+      }
+
+      return $value;
     }
-
-    // Now we'll check the other fields
-
-    switch ($definition->getType()) {
-      case 'geolocation':
-        $value = array();
-        $value['lat'] = $this->entity->get($fieldname)->lat;
-        $value['lng'] = $this->entity->get($fieldname)->lng;
-        break;
-      case 'entity_reference':
-        $value = array();
-        $value['id'] = $this->entity->get($fieldname)->target_id;
-        break;
-      default:
-        $value = $this->entity->get($fieldname)->value;
-        break;
-    }
-
-    return $value;
   }
 
   public function toJsonApi()

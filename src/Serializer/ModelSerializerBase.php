@@ -18,7 +18,7 @@ abstract class ModelSerializerBase
     $modelName = $this->modelName;
 
     $mapping = array();
-    $fieldList = $modelName::getFieldList();
+    $fieldList = $modelName::getFieldDefinitions();
 
     foreach($fieldList as $key => $value)
     {

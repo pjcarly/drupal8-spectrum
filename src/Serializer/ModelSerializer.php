@@ -37,38 +37,39 @@ class ModelSerializer extends ModelSerializerBase
     $relationships = new \stdClass;
 
     $fieldToPrettyMapping = $this->getFieldsToPrettyFieldsMapping();
+    $fieldDefinitions = $model::getFieldDefinitions();
 
-    foreach($model->entity->getFields() as $field)
+    foreach($fieldDefinitions as $fieldName => $fieldDefinition)
     {
-      $definition = $field->getFieldDefinition();
-      $fieldname = $field->getName();
-
       // First let's check the manual fields
-      if($fieldname === 'type')
+      if($fieldName === 'type')
       {
-        $jsonApiRecord->type = $model->entity->get($fieldname)->target_id;
+        $jsonApiRecord->type = $model->entity->get($fieldName)->target_id;
       }
-      else if($fieldname === $model::$idField)
+      else if($fieldName === $model::$idField)
       {
-        $jsonApiRecord->id = $model->entity->get($fieldname)->value;
+        $jsonApiRecord->id = $model->entity->get($fieldName)->value;
       }
 
       // Now we'll check the other fields
-      if(!in_array($fieldname, $ignore_fields) && !in_array($fieldname, $manual_fields))
+      if(!in_array($fieldName, $ignore_fields) && !in_array($fieldName, $manual_fields))
       {
-        $fieldnamepretty = $fieldToPrettyMapping[$fieldname];
+        $fieldNamePretty = $fieldToPrettyMapping[$fieldName];
 
-        switch ($definition->getType()) {
+        switch ($fieldDefinition->getType()) {
           case 'geolocation':
-            $attributes->$fieldnamepretty->lat = $model->entity->get($fieldname)->lat;
-            $attributes->$fieldnamepretty->lng = $model->entity->get($fieldname)->lng;
+            $attributes->$fieldNamePretty->lat = $model->entity->get($fieldName)->lat;
+            $attributes->$fieldNamePretty->lng = $model->entity->get($fieldName)->lng;
             break;
           case 'entity_reference':
-            $relationships->$fieldnamepretty->data->id = $model->entity->get($fieldname)->target_id;
-            $relationships->$fieldnamepretty->data->type = $model->entity->get($fieldname)->entity->bundle();
+            $relationships->$fieldNamePretty->data->id = $model->entity->get($fieldName)->target_id;
+            $relationships->$fieldNamePretty->data->type = $model->entity->get($fieldName)->entity->bundle();
+            break;
+          case 'datetime':
+            throw new \Drupal\spectrum\Exceptions\NotImplementedException();
             break;
           default:
-            $attributes->$fieldnamepretty = $model->entity->get($fieldname)->value;
+            $attributes->$fieldNamePretty = $model->entity->get($fieldName)->value;
             break;
         }
       }

@@ -2,6 +2,7 @@
 namespace Drupal\spectrum\Model;
 
 use Drupal\spectrum\Query\Condition;
+use Drupal\spectrum\Exceptions\InvalidTypeException;
 
 class Collection
 {
@@ -50,34 +51,34 @@ class Collection
 			if($relationship instanceof ParentRelationship)
 			{
 				$parentIds = $this->getParentIds($relationship);
-			    if(!empty($parentIds))
-			    {
-			    	// we set the parent ids in the condition, and fetch the collection of parents
-			        $relationshipCondition->value = $parentIds;
-			        $relationshipModelQuery->addCondition($relationshipCondition);
-			        $parentCollection = $relationshipModelQuery->fetchCollection();
+		    if(!empty($parentIds))
+		    {
+		    	// we set the parent ids in the condition, and fetch the collection of parents
+	        $relationshipCondition->value = $parentIds;
+	        $relationshipModelQuery->addCondition($relationshipCondition);
+	        $parentCollection = $relationshipModelQuery->fetchCollection();
 
-			        // next loop all the current models, and put the fetched parents on each model, if eligible
-			        if(!$parentCollection->isEmpty)
-			        {
-			        	foreach($this->models as $model)
-			        	{
-			        		$parentId = $model->getParentId($relationship);
-			        		if($parentCollection->containsKey($parentId)) // we found a parentId lets put it
-			        		{
-			        			$parentModel = $parentCollection->getModel($parentId);
-			    				$model->put($relationship, $parentModel);
+	        // next loop all the current models, and put the fetched parents on each model, if eligible
+	        if(!$parentCollection->isEmpty)
+	        {
+	        	foreach($this->models as $model)
+	        	{
+	        		$parentId = $model->getParentId($relationship);
+	        		if($parentCollection->containsKey($parentId)) // we found a parentId lets put it
+	        		{
+	        			$parentModel = $parentCollection->getModel($parentId);
+	              $model->put($relationship, $parentModel);
 
-			    				// now we musnt forget to put the model as child on the parent for circular references
-			    				$childRelationship = $relationshipModelType::getChildRelationshipForParentRelationship($relationship);
-					            if(!empty($childRelationship))
-					            {
-					                $parentModel->put($childRelationship, $model);
-					            }
-			        		}
-			        	}
-			        }
-		    	}
+  	    				// now we musnt forget to put the model as child on the parent for circular references
+  	    				$childRelationship = $relationshipModelType::getChildRelationshipForParentRelationship($relationship);
+		            if(!empty($childRelationship))
+		            {
+	                $parentModel->put($childRelationship, $model);
+		            }
+	        		}
+	        	}
+	        }
+	    	}
 			}
 			else if($relationship instanceof ChildRelationship)
 			{
@@ -212,7 +213,7 @@ class Collection
 	{
 		if(!($model instanceof $this->modelType))
 		{
-			throw new InvalidTypeException('Wrong model type: '.$model);
+			throw new InvalidTypeException('Model is not of type: '.$this->modelType);
 		}
 
 		if(!array_key_exists($model->key, $this->models))
