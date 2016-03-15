@@ -4,7 +4,7 @@ namespace Drupal\spectrum\Model;
 use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Exceptions\InvalidTypeException;
 
-class Collection
+class Collection implements \IteratorAggregate
 {
 	private static $newKeyIndex = 0;
 
@@ -19,6 +19,12 @@ class Collection
 		$this->models = array();
 		$this->originalModels = array();
 	}
+
+  public function getIterator()
+  {
+    // This function makes it possible to loop over a collection, we are just passing the $models as the loopable array
+    return new \ArrayIterator($this->models);
+  }
 
 	public function save($relationshipName = NULL)
 	{
@@ -341,6 +347,12 @@ class Collection
 
 		return $this;
 	}
+
+  public function __isset($property)
+  {
+    // Needed for twig to be able to access relationship via magic getter
+    return property_exists($this, $property) || in_array($property, array('size', 'isEmpty', 'entities'));
+  }
 
   public function toJsonApi()
   {
