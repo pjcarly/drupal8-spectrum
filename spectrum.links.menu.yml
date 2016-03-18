@@ -1,0 +1,4 @@
+spectrum.admin:
+  route_name: spectrum.admin
+  title: 'Spectrum'
+  parent: system.admin_config_development

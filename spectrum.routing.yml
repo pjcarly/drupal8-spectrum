@@ -1,6 +1,7 @@
-debug:
-    path: /spectrum/debug
-    defaults:
-        _controller: Drupal\spectrum\Controller\RouteController::debug
-    requirements:
-        _permission: 'access content'
+spectrum.admin:
+  path: 'admin/config/development/spectrum'
+  defaults:
+    _form: '\Drupal\spectrum\Config\AdminSettingsForm'
+    _title: 'Spectrum'
+  requirements:
+    _permission: 'administer spectrum'

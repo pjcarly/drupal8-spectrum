@@ -2,4 +2,7 @@ name: Spectrum
 type: module
 description: "Spectrum"
 package: Spectrum
+configure: spectrum.admin
+dependencies:
+  - composer_manager
 core: 8.x

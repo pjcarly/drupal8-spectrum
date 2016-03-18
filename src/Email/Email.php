@@ -46,12 +46,19 @@ class Email
 
   public function send()
   {
+    $config = \Drupal::config('spectrum.settings');
+
+    $api_key = $config->get('sendgrid_api_key');
+    if (!strlen($api_key)) {
+      \Drupal::logger('spectrum')->error('Spectrum Error: API Key cannot be blank.');
+      return NULL;
+    }
+
     $this->email->setSubject($this->template->renderBlock('subject', $this->templateParameters));
     $this->email->setText($this->template->renderBlock('body_text', $this->templateParameters));
     $this->email->setHtml($this->template->renderBlock('body_html', $this->templateParameters));
 
-    // TODO get API Key from config
-    $sendgrid = new \SendGrid('API_KEY');
+    $sendgrid = new \SendGrid($api_key);
     $sendgrid->send($this->email);
   }
 }
