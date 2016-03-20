@@ -6,10 +6,8 @@ use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 
-
 class AdminSettingsForm extends ConfigFormBase
 {
-
   public function getFormID()
   {
     return 'spectrum_admin_settings';
@@ -47,5 +45,4 @@ class AdminSettingsForm extends ConfigFormBase
 
     parent::submitForm($form, $form_state);
   }
-
 }
