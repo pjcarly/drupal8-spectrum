@@ -110,23 +110,25 @@ class ModelDeserializer extends ModelSerializerBase
               $fieldName = $fieldNameMapping[$relationshipFieldName];
               $relationship = $model::getRelationshipByFieldName($fieldName);
 
-              // now the relationship exists, we'll do something different depending on the type of relationship
-              if($relationship instanceof ParentRelationship)
+              if(!empty($relationship))
               {
-                $relationshipField = $relationship->getField();
-                $relationshipColumn = $relationship->getColumn();
-
-                if(!empty($relationshipValue->data))
+                // now the relationship exists, we'll do something different depending on the type of relationship
+                if($relationship instanceof ParentRelationship)
                 {
-                  $model->entity->$relationshipField->$relationshipColumn = $relationshipValue->data->id;
+                  $relationshipField = $relationship->getField();
+                  $relationshipColumn = $relationship->getColumn();
+
+                  if(!empty($relationshipValue->data))
+                  {
+                    $model->entity->$relationshipField->$relationshipColumn = $relationshipValue->data->id;
+                  }
+                }
+                else if ($relationship instanceof ChildRelationship)
+                {
+                  // TODO: make this work with entity reference multi-field
                 }
               }
-              else if ($relationship instanceof ChildRelationship)
-              {
-                // TODO: make this work with entity reference multi-field
-              }
             }
-
           } catch (\Drupal\spectrum\Exceptions\RelationshipNotDefinedException $e) {
             // ignore, the relationship passed doesn't exist
           }

@@ -55,19 +55,25 @@ class ModelSerializer extends ModelSerializerBase
       if(!in_array($fieldName, $ignore_fields) && !in_array($fieldName, $manual_fields))
       {
         $fieldNamePretty = $fieldToPrettyMapping[$fieldName];
-
-        switch ($fieldDefinition->getType()) {
+        switch ($fieldDefinition->getType())
+        {
           case 'geolocation':
+            $attributes->$fieldNamePretty = new \stdClass();
             $attributes->$fieldNamePretty->lat = $model->entity->get($fieldName)->lat;
             $attributes->$fieldNamePretty->lng = $model->entity->get($fieldName)->lng;
             break;
           case 'entity_reference':
-            $relationships->$fieldNamePretty->data->id = $model->entity->get($fieldName)->target_id;
-            $relationships->$fieldNamePretty->data->type = $model->entity->get($fieldName)->entity->bundle();
+            if(!empty($model->entity->get($fieldName)->entity))
+            {
+              $relationships->$fieldNamePretty = new \stdClass();
+              $relationships->$fieldNamePretty->data = new \stdClass();
+              $relationships->$fieldNamePretty->data->id = $model->entity->get($fieldName)->target_id;
+              $relationships->$fieldNamePretty->data->type = $model->entity->get($fieldName)->entity->bundle();
+            }
             break;
-          case 'datetime':
-            throw new \Drupal\spectrum\Exceptions\NotImplementedException();
-            break;
+          //case 'datetime':
+            //throw new \Drupal\spectrum\Exceptions\NotImplementedException();
+            //break;
           default:
             $attributes->$fieldNamePretty = $model->entity->get($fieldName)->value;
             break;

@@ -69,9 +69,13 @@ abstract class Model
     {
       if($relationship instanceof ChildRelationship)
       {
-        foreach($this->get($relationship->relationshipName)->models as $childModel)
+        $childRelationship = $this->get($relationship->relationshipName);
+        if(!empty($childRelationship))
         {
-          $childModel->put($relationship->parentRelationshipName, $this);
+          foreach($childRelationship->models as $childModel)
+          {
+            $childModel->put($relationship->parentRelationshipName, $this);
+          }
         }
       }
     }
@@ -371,7 +375,7 @@ abstract class Model
   public static function getRelationshipByFieldName($fieldName)
   {
     $relationships = static::getRelationships();
-    $foundRelationship;
+    $foundRelationship = null;
 
     foreach($relationships as $relationship)
     {
