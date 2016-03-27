@@ -62,6 +62,11 @@ abstract class Model
     }
   }
 
+  public function validate()
+  {
+    return new Validation($this);
+  }
+
   private function setParentIdForChildren()
   {
     $relationships = static::getRelationships();
@@ -144,6 +149,11 @@ abstract class Model
           $lastRelationshipName = substr($relationshipName, $lastRelationshipNameIndex+1);
           $resultCollection->fetch($lastRelationshipName);
       }
+  }
+
+  public function getModelName()
+  {
+    return get_class($this);
   }
 
   public function get($relationshipName)
