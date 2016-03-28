@@ -62,9 +62,16 @@ abstract class Model
     }
   }
 
-  public function validate()
+  public function validate($relationshipName = NULL)
   {
-    return new Validation($this);
+    if(empty($relationshipName))
+    {
+      return new Validation($this);
+    }
+    else
+    {
+      return $this->get($relationshipName)->validate();
+    }
   }
 
   private function setParentIdForChildren()

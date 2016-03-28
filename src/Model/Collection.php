@@ -41,6 +41,30 @@ class Collection implements \IteratorAggregate
 		}
 	}
 
+  public function validate($relationshipName = NULL)
+  {
+    if(empty($relationshipName))
+		{
+      $validation = null;
+			foreach($this->models as $model)
+			{
+				if(empty($validation))
+        {
+          $validation = $model->validate();
+        }
+        else
+        {
+          $validation->merge($model->validate());
+        }
+			}
+      return $validation;
+		}
+		else
+		{
+			return $this->get($relationshipName)->validate();
+		}
+  }
+
 	public function fetch($relationshipName)
 	{
 		$lastRelationshipNameIndex = strrpos($relationshipName, '.');

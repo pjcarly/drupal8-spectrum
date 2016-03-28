@@ -16,6 +16,11 @@ class Validation extends ModelSerializerBase
     $this->violations = $model->entity->validate();
 	}
 
+  public function getViolations()
+  {
+    return $this->violations;
+  }
+
   public function getFailedFields()
   {
     return $this->violations->getFieldNames();
@@ -43,6 +48,11 @@ class Validation extends ModelSerializerBase
     {
       dump($violation);
     }
+  }
+
+  public function merge(Validation $validation)
+  {
+    $this->violations->addAll($validation->getViolations());
   }
 
   public function toJsonApi()
