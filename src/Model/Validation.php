@@ -21,6 +21,11 @@ class Validation extends ModelSerializerBase
     return $this->violations;
   }
 
+  public function addViolation($violation)
+  {
+    $this->violations->add($violation);
+  }
+
   public function getFailedFields()
   {
     return $this->violations->getFieldNames();
@@ -60,27 +65,37 @@ class Validation extends ModelSerializerBase
     $errors = new \stdClass();
     $errors->errors = array();
 
-    // First we handle all the entity level violations (violations not on property/field level)
-    foreach($this->violations->getEntityViolations() as $violation)
-    {
-      $error = new \stdClass();
-      $error->detail = strip_tags($violation->getMessage()->render());
-      $error->source = new \stdClass();
-      $error->source->pointer = 'data';
-      $errors->errors[] = $error;
-    }
-
-    // And next we handle all the property violations
     $fieldToPrettyMapping = $this->getFieldsToPrettyFieldsMapping();
-    foreach($this->getFailedFields() as $fieldName)
+    foreach($this->violations as $violation)
     {
-      $prettyField = $fieldToPrettyMapping[$fieldName];
-      foreach($this->violations->getByField($fieldName) as $violation)
+      if ($path = $violation->getPropertyPath())
+      {
+        list($fieldName) = explode('.', $path, 2);
+
+        if (array_key_exists($fieldName, $fieldToPrettyMapping))
+        {
+          $prettyField = $fieldToPrettyMapping[$fieldName];
+          $error = new \stdClass();
+          $error->detail = strip_tags($violation->getMessage()->render());
+          $error->source = new \stdClass();
+          $error->source->pointer = 'data/attributes/'.$prettyField;
+          $errors->errors[] = $error;
+        }
+        else
+        {
+          $error = new \stdClass();
+          $error->detail = strip_tags($violation->getMessage()->render() . ' ('.$fieldName.')');
+          $error->source = new \stdClass();
+          $error->source->pointer = 'data';
+          $errors->errors[] = $error;
+        }
+      }
+      else
       {
         $error = new \stdClass();
         $error->detail = strip_tags($violation->getMessage()->render());
         $error->source = new \stdClass();
-        $error->source->pointer = 'data/attributes/'.$prettyField;
+        $error->source->pointer = 'data';
         $errors->errors[] = $error;
       }
     }
