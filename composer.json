@@ -1,0 +1,8 @@
+{
+  "name": "drupal/spectrum",
+  "description": "Spectrum Dependencies",
+  "type": "drupal-module",
+  "require": {
+      "sendgrid/sendgrid": "^4.0"
+  }
+}
