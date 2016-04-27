@@ -9,6 +9,8 @@ use Drupal\spectrum\Exceptions\RelationshipNotDefinedException;
 Use Drupal\spectrum\Utils\String;
 
 use Drupal\spectrum\Serializer\ModelSerializer;
+use Drupal\spectrum\Serializer\JsonApiNode;
+use Drupal\spectrum\Serializer\JsonApiDataNode;
 
 abstract class Model
 {
@@ -490,8 +492,8 @@ abstract class Model
       }
 
       // Now we'll check the other fields
-
-      switch ($fieldDefinition->getType()) {
+      switch ($fieldDefinition->getType())
+      {
         case 'geolocation':
           $value = array();
           $value['lat'] = $this->entity->get($fieldName)->lat;
@@ -510,9 +512,113 @@ abstract class Model
     }
   }
 
+  // @Deprecated, clean this up!
   public function toJsonApi()
   {
     $serializer = new ModelSerializer($this);
     return $serializer->serialize('json-api');
+  }
+
+  // This function returns a mapping of the different fields, with "field_" stripped, and a dasherized representation of the field name
+  public static function getPrettyFieldsToFieldsMapping()
+  {
+    $mapping = array();
+    $fieldList = static::getFieldDefinitions();
+
+    foreach($fieldList as $key => $value)
+    {
+      $fieldnamepretty = String::dasherize(str_replace('field_', '', $key));
+      $mapping[$fieldnamepretty] = $key;
+    }
+
+    return $mapping;
+  }
+
+
+  // This function returns the inverse of getPrettyFieldsToFieldsMapping(), for mapping pretty fields back to the original
+  public static function getFieldsToPrettyFieldsMapping()
+  {
+    $prettyMapping = static::getPrettyFieldsToFieldsMapping();
+
+    $mapping = array();
+    foreach($prettyMapping as $pretty => $field)
+    {
+      $mapping[$field] = $pretty;
+    }
+
+    return $mapping;
+  }
+
+  // This method returns the current Model as a JsonApiNode (jsonapi.org)
+  public function getJsonApiNode()
+  {
+    $node = new JsonApiNode();
+
+    $ignore_fields = array('revision_log', 'vid', 'revision_timestamp', 'revision_uid', 'revision_log', 'revision_translation_affected', 'revision_translation_affected', 'default_langcode', 'path', 'content_translation_source', 'content_translation_outdated', 'pass');
+    $manual_fields = array($this::$idField, 'type');
+
+    $fieldToPrettyMapping = static::getFieldsToPrettyFieldsMapping();
+    $fieldDefinitions = static::getFieldDefinitions();
+
+    foreach($fieldDefinitions as $fieldName => $fieldDefinition)
+    {
+      // First let's check the manual fields
+      if($fieldName === 'type')
+      {
+        $node->setType($this->entity->get($fieldName)->target_id);
+      }
+      else if($fieldName === static::$idField)
+      {
+        $node->setId($this->entity->get($fieldName)->value);
+      }
+
+      // Now we'll check the other fields
+      if(!in_array($fieldName, $ignore_fields) && !in_array($fieldName, $manual_fields))
+      {
+        $fieldNamePretty = $fieldToPrettyMapping[$fieldName];
+        switch ($fieldDefinition->getType())
+        {
+          case 'geolocation':
+            $attribute = new \stdClass();
+            $attribute->lat = $this->entity->get($fieldName)->lat;
+            $attribute->lng = $this->entity->get($fieldName)->lng;
+
+            $node->addAttribute($fieldNamePretty, $attribute);
+            break;
+          case 'entity_reference':
+            if(!empty($this->entity->get($fieldName)->entity))
+            {
+              $relationshipNode = new JsonApiDataNode();
+              $relationshipNode->setId($this->entity->get($fieldName)->target_id);
+              $relationshipNode->setType($this->entity->get($fieldName)->entity->bundle());
+
+              $node->addRelationship($fieldNamePretty, $relationshipNode);
+            }
+            break;
+          //case 'datetime':
+            //throw new \Drupal\spectrum\Exceptions\NotImplementedException();
+            //break;
+          default:
+            $node->addAttribute($fieldNamePretty, $this->entity->get($fieldName)->value);
+            break;
+        }
+      }
+    }
+
+    // some entity types don't have a type field, we must rely on static definitions
+    if(!$node->hasType())
+    {
+      // some entity types don't have a bundle (user for example) so we must rely on the entity type itself
+      if(empty(static::$bundle))
+      {
+        $node->setType(static::$entityType);
+      }
+      else
+      {
+        $node->setType(static::$bundle);
+      }
+    }
+
+    return $node;
   }
 }

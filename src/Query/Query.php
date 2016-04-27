@@ -34,8 +34,6 @@ class Query
   {
     $parser = new ParenthesisParser();
     $result = $parser->parse($this->conditionLogic);
-
-    
   }
 
   public function setLimit($limit)
