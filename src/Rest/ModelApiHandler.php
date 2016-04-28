@@ -5,9 +5,8 @@ namespace Drupal\spectrum\Rest;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-use Drupal\spectrum\Rest\BaseApiHandler;
-use Drupal\spectrum\Serializer\ModelSerializer;
 use Drupal\spectrum\Query\Condition;
+use Drupal\spectrum\Serializer\JsonApiEmptyDataNode;
 
 class ModelApiHandler extends BaseApiHandler
 {
@@ -23,11 +22,22 @@ class ModelApiHandler extends BaseApiHandler
   {
     $modelClassName = $this->modelClassName;
     $query = $modelClassName::getModelQuery();
-    $result;
+    $jsonapi;
 
     if(empty($this->slug))
     {
+      $result = $query->fetchCollection();
 
+      if(!$result->isEmpty)
+      {
+        $jsonapi = $result->serialize();
+      }
+      else
+      {
+        $node = new JsonApiEmptyDataNode();
+        $node->asArray(true);
+        $jsonapi = $node->serialize();
+      }
     }
     else
     {
@@ -37,10 +47,14 @@ class ModelApiHandler extends BaseApiHandler
       if(!empty($result))
       {
         $jsonapi = $result->serialize();
-        return new Response(json_encode($jsonapi), 200, array());
+      }
+      else
+      {
+        $node = new JsonApiEmptyDataNode();
+        $jsonapi = $node->serialize();
       }
     }
 
-    return new Response('OK', 200, array());
+    return new Response(json_encode($jsonapi), 200, array());
   }
 }

@@ -3,6 +3,7 @@ namespace Drupal\spectrum\Model;
 
 use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Exceptions\InvalidTypeException;
+use Drupal\spectrum\Serializer\JsonApiRootNode;
 
 class Collection implements \IteratorAggregate
 {
@@ -378,14 +379,16 @@ class Collection implements \IteratorAggregate
     return property_exists($this, $property) || in_array($property, array('size', 'isEmpty', 'entities'));
   }
 
-  public function toJsonApi()
+  public function serialize()
   {
-    $data = array();
+    $root = new JsonApiRootNode();
+
     foreach($this->models as $model)
     {
-      $data[] = $model->toJsonApi();
+      $node = $model->getJsonApiNode();
+      $root->addNode($node);
     }
 
-    return $data;
+    return $root->serialize();
   }
 }

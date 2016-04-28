@@ -8,7 +8,6 @@ use Drupal\spectrum\Exceptions\InvalidRelationshipTypeException;
 use Drupal\spectrum\Exceptions\RelationshipNotDefinedException;
 Use Drupal\spectrum\Utils\String;
 
-use Drupal\spectrum\Serializer\ModelSerializer;
 use Drupal\spectrum\Serializer\JsonApiRootNode;
 use Drupal\spectrum\Serializer\JsonApiNode;
 use Drupal\spectrum\Serializer\JsonApiDataNode;
@@ -513,7 +512,6 @@ abstract class Model
     }
   }
 
-  // @Deprecated, clean this up!
   public function serialize()
   {
     $root = new JsonApiRootNode();
@@ -592,10 +590,10 @@ abstract class Model
           case 'entity_reference':
             if(!empty($this->entity->get($fieldName)->entity))
             {
-              $relationshipDataNode = new JsonApiDataNode();
               $relationshipNode = new JsonApiNode();
               $relationshipNode->setId($this->entity->get($fieldName)->target_id);
               $relationshipNode->setType($this->entity->get($fieldName)->entity->bundle());
+              $relationshipDataNode = new JsonApiDataNode();
               $relationshipDataNode->addNode($relationshipNode);
 
               $node->addRelationship($fieldNamePretty, $relationshipDataNode);
