@@ -19,8 +19,6 @@ class JsonApiRootNode extends JsonApiDataNode
   public function serialize()
   {
     $serialized = parent::serialize();
-    unset($serialized->id);
-    unset($serialized->type);
 
     if(!empty($this->included))
     {

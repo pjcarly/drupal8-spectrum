@@ -27,8 +27,6 @@ class JsonApiDataNode extends JsonApiBaseNode
   public function serialize()
   {
     $serialized = new \stdClass();
-    $serialized->id = $this->id;
-    $serialized->type = $this->type;
 
     if(is_array($this->data))
     {

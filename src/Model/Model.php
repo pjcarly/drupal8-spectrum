@@ -9,6 +9,7 @@ use Drupal\spectrum\Exceptions\RelationshipNotDefinedException;
 Use Drupal\spectrum\Utils\String;
 
 use Drupal\spectrum\Serializer\ModelSerializer;
+use Drupal\spectrum\Serializer\JsonApiRootNode;
 use Drupal\spectrum\Serializer\JsonApiNode;
 use Drupal\spectrum\Serializer\JsonApiDataNode;
 
@@ -513,10 +514,13 @@ abstract class Model
   }
 
   // @Deprecated, clean this up!
-  public function toJsonApi()
+  public function serialize()
   {
-    $serializer = new ModelSerializer($this);
-    return $serializer->serialize('json-api');
+    $root = new JsonApiRootNode();
+    $node = $this->getJsonApiNode();
+    $root->addNode($node);
+
+    return $root->serialize();
   }
 
   // This function returns a mapping of the different fields, with "field_" stripped, and a dasherized representation of the field name
@@ -588,11 +592,13 @@ abstract class Model
           case 'entity_reference':
             if(!empty($this->entity->get($fieldName)->entity))
             {
-              $relationshipNode = new JsonApiDataNode();
+              $relationshipDataNode = new JsonApiDataNode();
+              $relationshipNode = new JsonApiNode();
               $relationshipNode->setId($this->entity->get($fieldName)->target_id);
               $relationshipNode->setType($this->entity->get($fieldName)->entity->bundle());
+              $relationshipDataNode->addNode($relationshipNode);
 
-              $node->addRelationship($fieldNamePretty, $relationshipNode);
+              $node->addRelationship($fieldNamePretty, $relationshipDataNode);
             }
             break;
           //case 'datetime':

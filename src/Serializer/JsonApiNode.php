@@ -4,8 +4,25 @@ namespace Drupal\spectrum\Serializer;
 
 class JsonApiNode extends JsonApiBaseNode
 {
+  protected $id;
+  protected $type;
   protected $attributes;
   protected $relationships;
+
+  public function setId($id)
+  {
+    $this->id = $id;
+  }
+
+  public function setType($type)
+  {
+    $this->type = $type;
+  }
+
+  public function hasType()
+  {
+    return !empty($this->type);
+  }
 
   public function addRelationship($name, JsonApiDataNode $node)
   {

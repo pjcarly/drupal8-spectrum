@@ -36,8 +36,7 @@ class ModelApiHandler extends BaseApiHandler
 
       if(!empty($result))
       {
-        $serializer = new ModelSerializer($result);
-        $jsonapi = $serializer->toJsonApi()->serialize();
+        $jsonapi = $result->serialize();
         return new Response(json_encode($jsonapi), 200, array());
       }
     }
