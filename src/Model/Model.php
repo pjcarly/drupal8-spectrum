@@ -512,7 +512,7 @@ abstract class Model
     }
   }
 
-  public function serialize()
+  public function serialize() // TODO: INCLUDE!!
   {
     $root = new JsonApiRootNode();
     $node = $this->getJsonApiNode();
