@@ -2,18 +2,41 @@
 
 namespace Drupal\spectrum\Serializer;
 
+use Drupal\spectrum\Exceptions\InvalidTypeException;
+
 class JsonApiRootNode extends JsonApiDataNode
 {
   protected $included;
 
-  public function addInclude(JsonApiNode $node)
+  public function addInclude($jsonapi)
   {
     if(empty($this->included))
     {
       $this->included = array();
     }
 
-    $this->included[] = $node;
+    if($jsonapi instanceof JsonApiNode)
+    {
+      $this->included[] = $node;
+    }
+    else if($jsonapi instanceof JsonApiDataNode)
+    {
+      if(is_array($jsonapi->data))
+      {
+        foreach($jsonapi->data as $jsonapiNode)
+        {
+          $this->included[] = $jsonapiNode;
+        }
+      }
+      else
+      {
+        $this->included[] = $jsonapi->data;
+      }
+    }
+    else
+    {
+      throw new InvalidTypeException();
+    }
   }
 
   public function serialize()
@@ -23,7 +46,7 @@ class JsonApiRootNode extends JsonApiDataNode
     if(!empty($this->included))
     {
       $serializedIncluded = array();
-      foreach($his->included as $includedMember)
+      foreach($this->included as $includedMember)
       {
         $serializedIncluded[] = $includedMember->serialize();
       }
@@ -31,5 +54,10 @@ class JsonApiRootNode extends JsonApiDataNode
     }
 
     return $serialized;
+  }
+
+  public function setData(JsonApiDataNode $node)
+  {
+    $this->data = $node->data;
   }
 }
