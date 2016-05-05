@@ -45,7 +45,7 @@ class Query
   {
     $query = \Drupal::entityQuery($this->entityType);
 
-    if(!empty($this->bundle))
+    if(!empty($this->bundle) && $this->bundle !== 'user')
     {
       $this->addCondition(new Condition('type', '=', $this->bundle));
     }

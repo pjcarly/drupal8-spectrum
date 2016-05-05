@@ -12,14 +12,23 @@ use Drupal\spectrum\Serializer\JsonApiEmptyDataNode;
 class ModelApiHandler extends BaseApiHandler
 {
   private $modelClassName;
+  protected $getIncludes;
+  protected $postIncludes;
+  protected $putIncludes;
 
   public function __construct($modelClassName, $slug = null)
   {
     parent::__construct($slug);
     $this->modelClassName = $modelClassName;
+    $this->getIncludes = array();
+    $this->postIncludes = array();
+    $this->putIncludes = array();
+
+    $this->defaultHeaders['Content-Type'] = 'application/vnd.api+json';
+    $this->defaultHeaders['Access-Control-Allow-Origin'] = 'http://localhost:4200';
   }
 
-  public function get(Request $request, $includes = array())
+  public function get(Request $request)
   {
     $modelClassName = $this->modelClassName;
     $query = $modelClassName::getModelQuery();
@@ -33,7 +42,7 @@ class ModelApiHandler extends BaseApiHandler
       {
         $jsonapi = new JsonApiRootNode();
         $jsonapi->setData($result->getJsonApiNode());
-        $this->checkForIncludes($result, $jsonapi, $includes);
+        $this->checkForIncludes($result, $jsonapi, $this->getIncludes);
 
         $jsonapi = $jsonapi->serialize();
       }
@@ -60,10 +69,7 @@ class ModelApiHandler extends BaseApiHandler
       }
     }
 
-    $headers = array();
-    $headers['Content-Type'] = 'application/vnd.api+json';
-
-    return new Response(json_encode($jsonapi), 200, $headers);
+    return new Response(json_encode($jsonapi), 200, array());
   }
 
   protected function checkForIncludes($source, JsonApiRootNode $jsonApiRootNode, $relationshipNamesToInclude)

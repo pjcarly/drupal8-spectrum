@@ -602,6 +602,19 @@ abstract class Model
           //case 'datetime':
             //throw new \Drupal\spectrum\Exceptions\NotImplementedException();
             //break;
+          case 'image':
+            $attribute = new \stdClass();
+            $attribute->width = $this->entity->get($fieldName)->width;
+            $attribute->height = $this->entity->get($fieldName)->height;
+            $attribute->alt = $this->entity->get($fieldName)->alt;
+            $attribute->title = $this->entity->get($fieldName)->title;
+            $attribute->url = $this->entity->get($fieldName)->entity->url();
+            $attribute->filename = $this->entity->get($fieldName)->entity->get('filename')->value;
+            $attribute->uri = $this->entity->get($fieldName)->entity->get('uri')->value;
+            $attribute->filemime = $this->entity->get($fieldName)->entity->get('filemime')->value;
+            $attribute->filesize = $this->entity->get($fieldName)->entity->get('filesize')->value;
+            $node->addAttribute($fieldNamePretty, $attribute);
+            break;
           default:
             $node->addAttribute($fieldNamePretty, $this->entity->get($fieldName)->value);
             break;
