@@ -536,7 +536,6 @@ abstract class Model
     return $mapping;
   }
 
-
   // This function returns the inverse of getPrettyFieldsToFieldsMapping(), for mapping pretty fields back to the original
   public static function getFieldsToPrettyFieldsMapping()
   {
@@ -549,6 +548,19 @@ abstract class Model
     }
 
     return $mapping;
+  }
+
+  public static function getFieldForPrettyField($prettyField)
+  {
+    $field = null;
+    $prettyToFieldsMap = static::getPrettyFieldsToFieldsMapping();
+
+    if(array_key_exists($prettyField, $prettyToFieldsMap))
+    {
+      $field = $prettyToFieldsMap[$prettyField];
+    }
+
+    return $field;
   }
 
   // This method returns the current Model as a JsonApiNode (jsonapi.org)

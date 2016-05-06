@@ -2,17 +2,15 @@
 
 namespace Drupal\spectrum\Query;
 
-use Drupal\spectrum\Utils\ParenthesisParser;
-
 class Query
 {
   private $bundle;
   private $entityType;
 
   public $conditions = array();
-  public $orders = array();
-  public $limit;
-  public $conditionLogic;
+  public $sortOrders = array();
+  public $rangeStart;
+  public $rangeLength;
 
   public function __construct($entityType, $bundle)
   {
@@ -27,29 +25,42 @@ class Query
 
   public function addOrder(Order $order)
   {
-    $this->orders[] = $order;
-  }
-
-  public function addConditionLogic()
-  {
-    $parser = new ParenthesisParser();
-    $result = $parser->parse($this->conditionLogic);
+    $this->sortOrders[] = $order;
   }
 
   public function setLimit($limit)
   {
-    $this->limit = $limit;
+    $this->rangeStart = 0;
+    $this->rangeLength = $limit;
+  }
+
+  public function setRange($start, $length)
+  {
+    $this->rangeStart = $start;
+    $this->rangeLength = $length;
+  }
+
+  public function addSortOrder($field, $direction = 'ASC', $langcode = null)
+  {
+    $this->sortOrders[] = new Order($field, $direction, $langcode);
+  }
+
+  public function clearOrders()
+  {
+    $this->sortOrders = array();
   }
 
   public function getQuery()
   {
     $query = \Drupal::entityQuery($this->entityType);
 
+    // first of all, lets filter by bundle, keep in mind that user is an exception, no type field for user even though there is a bundle defined
     if(!empty($this->bundle) && $this->bundle !== 'user')
     {
       $this->addCondition(new Condition('type', '=', $this->bundle));
     }
 
+    // next we check for conditions and add them if needed
     if(empty($this->conditionLogic))
     {
       foreach($this->conditions as $condition)
@@ -58,15 +69,17 @@ class Query
       }
     }
 
-    if(!empty($this->limit))
+    // check for range or limit
+    if(!empty($this->rangeLength))
     {
-      $query->range(0, $this->limit);
+      $query->range($this->rangeStart, $this->rangeLength);
     }
 
-    // foreach($this->orders as $order)
-    // {
-    //     $order->addQueryOrder($query);
-    // }
+    // and finally apply an order if needed
+    foreach($this->sortOrders as $sortOrder)
+    {
+      $query->sort($sortOrder->field, $sortOrder->direction, $sortOrder->langcode);
+    }
 
     return $query;
   }

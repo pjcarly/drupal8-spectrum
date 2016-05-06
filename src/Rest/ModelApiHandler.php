@@ -36,6 +36,50 @@ class ModelApiHandler extends BaseApiHandler
 
     if(empty($this->slug))
     {
+      // when the slug is empty, we must check for extra variables
+      if($request->query->has('limit') && is_numeric($request->query->get('limit')))
+      {
+        $length = $request->query->get('limit');
+
+        // Also check for the page variable, we potentially need to adjust the query start
+        if($request->query->has('page') && is_numeric($request->query->get('page')))
+        {
+          $page = $request->query->get('page');
+          $start = ($page-1) * $length;
+          $query->setRange($start, $length);
+        }
+        else
+        {
+          // no page, we can just set a limit
+          $query->setLimit($length);
+        }
+      }
+
+      // Lets also check for an order
+      if($request->query->has('sort'))
+      {
+        // sort params are split by ',' so lets evaluate them individually
+        $sortQueryFields = explode(',', $request->query->get('sort'));
+
+        // Lets get the pretty to regular field mapping
+        $prettyToFieldsMap = $modelClassName::getPrettyFieldsToFieldsMapping();
+
+        foreach($sortQueryFields as $sortQueryField)
+        {
+          // the json-api spec tells us, that all fields are sorted ascending, unless the field is prepended by a '-'
+          // http://jsonapi.org/format/#fetching-sorting
+          $direction = $sortQueryField[0] === '-' ? 'DESC' : 'ASC';
+          $prettyField = ltrim($sortQueryField, '-'); // lets remove the '-' from the start of the field if it exists
+
+          // if the pretty field exists, lets add it to the sort order
+          if(array_key_exists($prettyField, $prettyToFieldsMap))
+          {
+            $field = $prettyToFieldsMap[$prettyField];
+            $query->addSortOrder($field, $direction);
+          }
+        }
+      }
+
       $result = $query->fetchCollection();
 
       if(!$result->isEmpty)
