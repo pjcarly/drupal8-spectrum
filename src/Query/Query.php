@@ -34,6 +34,11 @@ class Query
     $this->rangeLength = $limit;
   }
 
+  public function hasLimit()
+  {
+    return !empty($this->rangeLength);
+  }
+
   public function setRange($start, $length)
   {
     $this->rangeStart = $start;
@@ -52,6 +57,27 @@ class Query
 
   public function getQuery()
   {
+    $query = $this->getBaseQuery();
+
+    // add ranges and limits if needed
+    if(!empty($this->rangeLength))
+    {
+      $query->range($this->rangeStart, $this->rangeLength);
+    }
+
+    return $query;
+  }
+
+  public function getTotalCountQuery()
+  {
+    $query = $this->getBaseQuery();
+    $query->count();
+    return $query;
+  }
+
+  private function getBaseQuery()
+  {
+    // We abstracted the getQuery and getTotalCountQuery functions in this function, to avoid duplicate code
     $query = \Drupal::entityQuery($this->entityType);
 
     // first of all, lets filter by bundle, keep in mind that user is an exception, no type field for user even though there is a bundle defined
@@ -67,12 +93,6 @@ class Query
       {
         $condition->addQueryCondition($query);
       }
-    }
-
-    // check for range or limit
-    if(!empty($this->rangeLength))
-    {
-      $query->range($this->rangeStart, $this->rangeLength);
     }
 
     // and finally apply an order if needed
@@ -109,5 +129,13 @@ class Query
       $id = array_shift($result);
       return empty($id) ? array() : $store->load($id);
     }
+  }
+
+  public function fetchTotalCount()
+  {
+    $query = $this->getTotalCountQuery();
+    $result = $query->execute();
+
+    return $result;
   }
 }

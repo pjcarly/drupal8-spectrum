@@ -7,7 +7,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Serializer\JsonApiRootNode;
-use Drupal\spectrum\Serializer\JsonApiEmptyDataNode;
+use Drupal\spectrum\Serializer\JsonApiLink;
 
 class ModelApiHandler extends BaseApiHandler
 {
@@ -15,6 +15,7 @@ class ModelApiHandler extends BaseApiHandler
   protected $getIncludes;
   protected $postIncludes;
   protected $putIncludes;
+  protected $maxLimit = 2000;
 
   public function __construct($modelClassName, $slug = null)
   {
@@ -32,26 +33,48 @@ class ModelApiHandler extends BaseApiHandler
   {
     $modelClassName = $this->modelClassName;
     $query = $modelClassName::getModelQuery();
-    $jsonapi;
+    $limit; $page; $sort; // variables to build our links later on
+    $jsonapi = new JsonApiRootNode();
 
+    // We start by adding the link to this request
+    $baseUrl = $request->getSchemeAndHttpHost() . $request->getPathInfo(); // this might not work with a different port than 80, check later
+
+    // Get requests can either be a list of models, or an individual model, so we must check the slug
     if(empty($this->slug))
     {
       // when the slug is empty, we must check for extra variables
       if($request->query->has('limit') && is_numeric($request->query->get('limit')))
       {
-        $length = $request->query->get('limit');
+        $limit = $request->query->get('limit');
+      }
 
-        // Also check for the page variable, we potentially need to adjust the query start
-        if($request->query->has('page') && is_numeric($request->query->get('page')))
+      // Additional check for the page variable, we potentially need to adjust the query start
+      if($request->query->has('page') && is_numeric($request->query->get('page')))
+      {
+        $page = $request->query->get('page');
+
+        if(!empty($limit))
         {
-          $page = $request->query->get('page');
-          $start = ($page-1) * $length;
-          $query->setRange($start, $length);
+          $start = ($page-1) * $limit;
+          $query->setRange($start, $limit);
         }
         else
         {
-          // no page, we can just set a limit
-          $query->setLimit($length);
+          $start = ($page-1) * $this->maxLimit;
+          $query->setRange($start, $this->maxLimit);
+        }
+      }
+      else
+      {
+        // no page, we can just set a limit
+        if(empty($limit))
+        {
+          // no limit, lets set the default one
+          $query->setLimit($this->maxLimit);
+        }
+        else
+        {
+          $query->setLimit($limit);
         }
       }
 
@@ -59,7 +82,8 @@ class ModelApiHandler extends BaseApiHandler
       if($request->query->has('sort'))
       {
         // sort params are split by ',' so lets evaluate them individually
-        $sortQueryFields = explode(',', $request->query->get('sort'));
+        $sort = $request->query->get('sort');
+        $sortQueryFields = explode(',', $sort);
 
         // Lets get the pretty to regular field mapping
         $prettyToFieldsMap = $modelClassName::getPrettyFieldsToFieldsMapping();
@@ -80,21 +104,47 @@ class ModelApiHandler extends BaseApiHandler
         }
       }
 
+      $this->addSingleLink($jsonapi, 'self', $baseUrl, $limit, $page, $sort); // here we add the self link
       $result = $query->fetchCollection();
 
       if(!$result->isEmpty)
       {
-        $jsonapi = new JsonApiRootNode();
+        // we must include pagination links when there are more than the maximum amount of results
+        if($result->size === $this->maxLimit)
+        {
+          $previousPage = empty($page) ? 0 : $page-1;
+
+          // the first link is easy, it is the first page
+          $this->addSingleLink($jsonapi, 'first', $baseUrl, 0, 1, $sort);
+
+          // the previous link, checks if !empty, so pages with value 0 will not be displayed
+          if(!empty($previousPage))
+          {
+            $this->addSingleLink($jsonapi, 'previous', $baseUrl, 0, $previousPage, $sort);
+          }
+
+          // next we check the total count, to see if we can display the last & next link
+          $totalCount = $query->fetchTotalCount();
+          if(!empty($totalCount))
+          {
+            $lastPage = ceil($totalCount / $this->maxLimit);
+            $this->addSingleLink($jsonapi, 'last', $baseUrl, 0, $lastPage, $sort);
+
+            // and finally, we also check if the next page isn't larger than the last page
+            $nextPage = empty($page) ? 2 : $page+1;
+            if($nextPage <= $lastPage)
+            {
+              $this->addSingleLink($jsonapi, 'next', $baseUrl, 0, $nextPage, $sort);
+            }
+          }
+        }
+
         $jsonapi->setData($result->getJsonApiNode());
         $this->checkForIncludes($result, $jsonapi, $this->getIncludes);
-
-        $jsonapi = $jsonapi->serialize();
       }
       else
       {
-        $node = new JsonApiEmptyDataNode();
-        $node->asArray(true);
-        $jsonapi = $node->serialize();
+        $jsonapi->asArray(true);
       }
     }
     else
@@ -102,18 +152,36 @@ class ModelApiHandler extends BaseApiHandler
       $query->addCondition(new Condition($modelClassName::$idField, '=', $this->slug));
       $result = $query->fetchSingleModel();
 
+      $this->addSingleLink($jsonapi, 'self', $baseUrl);
       if(!empty($result))
       {
-        $jsonapi = $result->serialize();
+        $jsonapi->addNode($result->getJsonApiNode());
       }
       else
       {
-        $node = new JsonApiEmptyDataNode();
-        $jsonapi = $node->serialize();
+        // we musn't do anything, json api provides an empty node out of the box
       }
     }
 
-    return new Response(json_encode($jsonapi), 200, array());
+    return new Response(json_encode($jsonapi->serialize()), 200, array());
+  }
+
+  protected function addSingleLink(JsonApiRootNode $jsonapi, $name, $baseUrl, $limit = 0, $page = 0, $sort = null)
+  {
+    $link = new JsonApiLink($name, $baseUrl);
+    if(!empty($limit))
+    {
+      $link->addParam('limit', $limit);
+    }
+    if(!empty($sort))
+    {
+      $link->addParam('sort', $sort);
+    }
+    if(!empty($page))
+    {
+      $link->addParam('page', $page);
+    }
+    $jsonapi->addLink($name, $link);
   }
 
   protected function checkForIncludes($source, JsonApiRootNode $jsonApiRootNode, $relationshipNamesToInclude)
@@ -139,6 +207,7 @@ class ModelApiHandler extends BaseApiHandler
           if(array_key_exists($relationshipType, $fetchedCollections))
           {
             // we already fetched data of the same type before, lets merge it with the data we have, so we don't create duplicates in the response
+            // luckally for us, collection->put() handles duplicates by checking for id
             $previouslyFetchedCollection = $fetchedCollections[$relationshipType];
             foreach($fetchedCollection as $model)
             {

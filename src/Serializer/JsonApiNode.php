@@ -47,6 +47,12 @@ class JsonApiNode extends JsonApiBaseNode
   public function serialize()
   {
     $serialized = new \stdClass();
+
+    if(!empty($this->links))
+    {
+      $serialized->links = $this->getSerializedLinks();
+    }
+
     $serialized->id = $this->id;
     $serialized->type = $this->type;
 
@@ -63,11 +69,6 @@ class JsonApiNode extends JsonApiBaseNode
         $serializedRelationships[$relationshipName] = $this->relationships[$relationshipName]->serialize();
       }
       $serialized->relationships = $serializedRelationships;
-    }
-
-    if(!empty($this->links))
-    {
-      $serialized->links = $this->links;
     }
 
     return $serialized;

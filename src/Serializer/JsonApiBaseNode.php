@@ -6,7 +6,7 @@ abstract class JsonApiBaseNode
 {
   protected $links;
 
-  public function addLink($name, $link)
+  public function addLink($name, JsonApiLink $link)
   {
     if($this->links === null)
     {
@@ -14,6 +14,22 @@ abstract class JsonApiBaseNode
     }
 
     $this->links[$name] = $link;
+  }
+
+  public function getLink($name)
+  {
+    return $this->links[$name];
+  }
+
+  public function getSerializedLinks()
+  {
+    $serializedLinks = array();
+    foreach(array_keys($this->links) as $linkName)
+    {
+      $serializedLinks[$linkName] = $this->links[$linkName]->getUrl();
+    }
+
+    return $serializedLinks;
   }
 
   public abstract function serialize();

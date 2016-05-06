@@ -5,6 +5,7 @@ namespace Drupal\spectrum\Serializer;
 class JsonApiDataNode extends JsonApiBaseNode
 {
   protected $data;
+  private $asArray = false;
 
   public function addNode(JsonApiNode $node)
   {
@@ -24,11 +25,21 @@ class JsonApiDataNode extends JsonApiBaseNode
     }
   }
 
+  public function asArray($asArray)
+  {
+    $this->asArray = $asArray;
+  }
+
   public function serialize()
   {
     $serialized = new \stdClass();
 
-    if(is_array($this->data))
+    if(!empty($this->links))
+    {
+      $serialized->links = $this->getSerializedLinks();
+    }
+
+    if(is_array($this->data) || $this->asArray)
     {
       $serializedData = array();
       foreach($this->data as $dataMember)
@@ -47,11 +58,6 @@ class JsonApiDataNode extends JsonApiBaseNode
       {
         $serialized->data = $this->data->serialize();
       }
-    }
-
-    if(!empty($this->links))
-    {
-      $serialized->links = $this->links;
     }
 
     return $serialized;
