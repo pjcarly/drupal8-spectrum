@@ -104,6 +104,8 @@ class ModelApiHandler extends BaseApiHandler
         }
       }
 
+
+      // Here we build the links of the request
       $this->addSingleLink($jsonapi, 'self', $baseUrl, $limit, $page, $sort); // here we add the self link
       $result = $query->fetchCollection();
 
@@ -135,6 +137,35 @@ class ModelApiHandler extends BaseApiHandler
             if($nextPage <= $lastPage)
             {
               $this->addSingleLink($jsonapi, 'next', $baseUrl, 0, $nextPage, $sort);
+            }
+          }
+        }
+        else if(!empty($limit))
+        {
+          // we must also include pagination links when we have a limit defined
+          $previousPage = empty($page) ? 0 : $page-1;
+
+          // the first link is easy, it is the first page
+          $this->addSingleLink($jsonapi, 'first', $baseUrl, $limit, 1, $sort);
+
+          // the previous link, checks if !empty, so pages with value 0 will not be displayed
+          if(!empty($previousPage))
+          {
+            $this->addSingleLink($jsonapi, 'previous', $baseUrl, $limit, $previousPage, $sort);
+          }
+
+          // next we check the total count, to see if we can display the last & next link
+          $totalCount = $query->fetchTotalCount();
+          if(!empty($totalCount))
+          {
+            $lastPage = ceil($totalCount / $limit);
+            $this->addSingleLink($jsonapi, 'last', $baseUrl, $limit, $lastPage, $sort);
+
+            // and finally, we also check if the next page isn't larger than the last page
+            $nextPage = empty($page) ? 2 : $page+1;
+            if($nextPage <= $lastPage)
+            {
+              $this->addSingleLink($jsonapi, 'next', $baseUrl, $limit, $nextPage, $sort);
             }
           }
         }
