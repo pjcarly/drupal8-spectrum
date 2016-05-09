@@ -151,7 +151,7 @@ class ModelApiHandler extends BaseApiHandler
           // the previous link, checks if !empty, so pages with value 0 will not be displayed
           if(!empty($previousPage))
           {
-            $this->addSingleLink($jsonapi, 'previous', $baseUrl, $limit, $previousPage, $sort);
+            $this->addSingleLink($jsonapi, 'prev', $baseUrl, $limit, $previousPage, $sort);
           }
 
           // next we check the total count, to see if we can display the last & next link
