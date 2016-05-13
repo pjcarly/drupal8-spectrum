@@ -27,7 +27,7 @@ class ModelApiHandler extends BaseApiHandler
   {
     $modelClassName = $this->modelClassName;
     $query = $modelClassName::getModelQuery();
-    $limit; $page; $sort; // variables to build our links later on
+    $limit = null; $page = null; $sort = null; // variables to build our links later on
     $jsonapi = new JsonApiRootNode();
 
     // We start by adding the link to this request
@@ -72,15 +72,15 @@ class ModelApiHandler extends BaseApiHandler
         }
       }
 
+      // Lets get the pretty to regular field mapping for use in either sort or filter
+      $prettyToFieldsMap = $modelClassName::getPrettyFieldsToFieldsMapping();
+
       // Lets also check for an order
       if($request->query->has('sort'))
       {
         // sort params are split by ',' so lets evaluate them individually
         $sort = $request->query->get('sort');
         $sortQueryFields = explode(',', $sort);
-
-        // Lets get the pretty to regular field mapping
-        $prettyToFieldsMap = $modelClassName::getPrettyFieldsToFieldsMapping();
 
         foreach($sortQueryFields as $sortQueryField)
         {
@@ -98,6 +98,45 @@ class ModelApiHandler extends BaseApiHandler
         }
       }
 
+      // Before we fetch the collection, lets check for filters
+      if($request->query->has('filter'))
+      {
+        $filter = $request->query->get('filter');
+        if(array_key_exists('fields', $filter) && is_array($filter['fields']))
+        {
+          foreach(array_keys($filter['fields']) as $prettyField)
+          {
+            // lets start by making sure the field exists
+            if(array_key_exists($prettyField, $prettyToFieldsMap))
+            {
+              $field = $prettyToFieldsMap[$prettyField];
+              $operator = null;
+              $value = null;
+
+              $filterValue = $filter['fields'][$prettyField];
+
+              // the filter value can either be the specific value, or an array with extra attributes
+              if(is_array($filterValue))
+              {
+                // we found an array, meaning we must check for 'operator' as well
+                $operator = (array_key_exists('operator', $filterValue) && Condition::isValidSingleModelOperator($filterValue['operator'])) ? $filterValue['operator'] : null;
+                $value = array_key_exists('value', $filterValue) ? $filterValue['value'] : null;
+              }
+              else
+              {
+                // no array, so it will just be the value
+                $operator = '=';
+                $value = $filterValue;
+              }
+
+              if(!empty($operator) && !empty($value) && !empty($field))
+              {
+                $query->addCondition(new Condition($field, $operator, $value));
+              }
+            }
+          }
+        }
+      }
 
       // Here we build the links of the request
       $this->addSingleLink($jsonapi, 'self', $baseUrl, $limit, $page, $sort); // here we add the self link

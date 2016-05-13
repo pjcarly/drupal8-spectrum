@@ -10,7 +10,7 @@ class Condition
 	public $operator;
 	public $value;
 
-	public static $singleValueOperators = array('=', '<>', '>', '>=', '<', '<=', 'LIKE');
+	public static $singleValueOperators = array('=', '<>', '>', '>=', '<', '<=', 'LIKE', 'CONTAINS', 'STARTS_WITH', 'ENDS_WITH');
 	public static $multipleValueOperators = array('IN', 'NOT IN');
 
 	public function __construct($fieldName, $operator, $value)
@@ -22,11 +22,11 @@ class Condition
 
 	public function validateValues()
 	{
-		if(is_array($this->value) && !in_array($this->operator, Condition::$multipleValueOperators))
+		if(is_array($this->value) && !Condition::isValidMultipleModelsOperator($this->operator))
 		{
 			throw new InvalidOperatorException();
 		}
-		else if(!is_array($this->value) && !in_array($this->operator, Condition::$singleValueOperators))
+		else if(!is_array($this->value) && !Condition::isValidSingleModelOperator($this->operator))
 		{
 			throw new InvalidOperatorException();
 		}
@@ -51,4 +51,14 @@ class Condition
       $query->condition($this->fieldName, $this->value, $this->operator);
     }
 	}
+
+  public static function isValidSingleModelOperator($operator)
+  {
+    return in_array($operator, Condition::$singleValueOperators);
+  }
+
+  public static function isValidMultipleModelsOperator($operator)
+  {
+    return in_array($operator, Condition::$multipleValueOperators);
+  }
 }

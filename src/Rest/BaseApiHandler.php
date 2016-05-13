@@ -47,8 +47,6 @@ abstract class BaseApiHandler
     {
       $response->headers->set($key, $this->defaultHeaders[$key]);
     }
-
-    return $headers;
   }
 
   public final function handle(Request $request)
