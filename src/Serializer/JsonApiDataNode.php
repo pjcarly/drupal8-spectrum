@@ -5,20 +5,24 @@ namespace Drupal\spectrum\Serializer;
 class JsonApiDataNode extends JsonApiBaseNode
 {
   protected $data;
-  private $asArray = false;
+  protected $asArray = false;
 
   public function addNode(JsonApiNode $node)
   {
-    if(empty($this->data))
+    if(empty($this->data) && !$this->asArray)
     {
       $this->data = $node;
     }
     else
     {
-      if(!is_array($this->data))
+      if(!empty($this->data) && !is_array($this->data))
       {
         $firstNode = $this->data;
         $this->data = array($firstNode);
+      }
+      else if(empty($this->data))
+      {
+        $this->data = array();
       }
 
       $this->data[] = $node;

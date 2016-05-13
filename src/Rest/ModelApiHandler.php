@@ -36,6 +36,10 @@ class ModelApiHandler extends BaseApiHandler
     // Get requests can either be a list of models, or an individual model, so we must check the slug
     if(empty($this->slug))
     {
+      // when we don't have a slug, we are expected to always return an array response,
+      // even when the result is a single object
+      $jsonapi->asArray(true);
+
       // when the slug is empty, we must check for extra variables
       if($request->query->has('limit') && is_numeric($request->query->get('limit')))
       {
@@ -203,7 +207,8 @@ class ModelApiHandler extends BaseApiHandler
           }
         }
 
-        $jsonapi->setData($result->getJsonApiNode());
+        $node = $result->getJsonApiNode();
+        $jsonapi->setData($node);
 
         if($request->query->has('include'))
         {
@@ -214,10 +219,6 @@ class ModelApiHandler extends BaseApiHandler
             $this->checkForIncludes($result, $jsonapi, $includes);
           }
         }
-      }
-      else
-      {
-        $jsonapi->asArray(true);
       }
     }
     else
