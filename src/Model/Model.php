@@ -287,7 +287,13 @@ abstract class Model
 
   public static function hasRelationship($relationshipName)
   {
-      return array_key_exists($relationshipName, static::$relationships);
+    if(!static::$relationshipsSet)
+    {
+      static::setRelationships();
+      static::$relationshipsSet = true;
+    }
+
+    return array_key_exists($relationshipName, static::$relationships);
   }
 
   public static function getNextKey()
@@ -611,9 +617,6 @@ abstract class Model
               $node->addRelationship($fieldNamePretty, $relationshipDataNode);
             }
             break;
-          //case 'datetime':
-            //throw new \Drupal\spectrum\Exceptions\NotImplementedException();
-            //break;
           case 'image':
             $attribute = new \stdClass();
             if(!empty($this->entity->get($fieldName)->entity))
@@ -638,6 +641,13 @@ abstract class Model
             {
               $node->addAttribute($fieldNamePretty, null);
             }
+            break;
+          case 'created':
+          case 'changed':
+            // for some reason, created and changed aren't regular datetimes, they are unix timestamps in the database
+            $timestamp = $this->entity->get($fieldName)->value;
+            $datetime = \DateTime::createFromFormat( 'U', $timestamp );
+            $node->addAttribute($fieldNamePretty, $datetime->format( 'c' ));
             break;
           default:
             $node->addAttribute($fieldNamePretty, $this->entity->get($fieldName)->value);

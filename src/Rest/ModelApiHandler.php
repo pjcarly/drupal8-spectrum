@@ -12,18 +12,12 @@ use Drupal\spectrum\Serializer\JsonApiLink;
 class ModelApiHandler extends BaseApiHandler
 {
   private $modelClassName;
-  protected $getIncludes;
-  protected $postIncludes;
-  protected $putIncludes;
   protected $maxLimit = 2000;
 
   public function __construct($modelClassName, $slug = null)
   {
     parent::__construct($slug);
     $this->modelClassName = $modelClassName;
-    $this->getIncludes = array();
-    $this->postIncludes = array();
-    $this->putIncludes = array();
 
     $this->defaultHeaders['Content-Type'] = 'application/vnd.api+json';
     $this->defaultHeaders['Access-Control-Allow-Origin'] = 'http://localhost:4200';
@@ -171,7 +165,16 @@ class ModelApiHandler extends BaseApiHandler
         }
 
         $jsonapi->setData($result->getJsonApiNode());
-        $this->checkForIncludes($result, $jsonapi, $this->getIncludes);
+
+        if($request->query->has('include'))
+        {
+          // includes are comma seperated
+          $includes = explode(',', $request->query->get('include'));
+          if(!empty($includes))
+          {
+            $this->checkForIncludes($result, $jsonapi, $includes);
+          }
+        }
       }
       else
       {
@@ -224,31 +227,34 @@ class ModelApiHandler extends BaseApiHandler
 
       foreach($relationshipNamesToInclude as $relationshipNameToInclude)
       {
-        // first of all, we fetch the data
-        $source->fetch($relationshipNameToInclude);
-        $fetchedCollection = $source->get($relationshipNameToInclude);
-
-        if(!$fetchedCollection->isEmpty)
+        if($modelClassName::hasRelationship($relationshipNameToInclude))
         {
-          // next we get the type of the data we fetched
-          $relationship = $modelClassName::getRelationship($relationshipNameToInclude);
-          $relationshipType = $relationship->modelType;
+          // first of all, we fetch the data
+          $source->fetch($relationshipNameToInclude);
+          $fetchedCollection = $source->get($relationshipNameToInclude);
 
-          // Here we check if we already fetched data of the same type
-          if(array_key_exists($relationshipType, $fetchedCollections))
+          if(!$fetchedCollection->isEmpty)
           {
-            // we already fetched data of the same type before, lets merge it with the data we have, so we don't create duplicates in the response
-            // luckally for us, collection->put() handles duplicates by checking for id
-            $previouslyFetchedCollection = $fetchedCollections[$relationshipType];
-            foreach($fetchedCollection as $model)
+            // next we get the type of the data we fetched
+            $relationship = $modelClassName::getRelationship($relationshipNameToInclude);
+            $relationshipType = $relationship->modelType;
+
+            // Here we check if we already fetched data of the same type
+            if(array_key_exists($relationshipType, $fetchedCollections))
             {
-              $previouslyFetchedCollection->put($model);
+              // we already fetched data of the same type before, lets merge it with the data we have, so we don't create duplicates in the response
+              // luckally for us, collection->put() handles duplicates by checking for id
+              $previouslyFetchedCollection = $fetchedCollections[$relationshipType];
+              foreach($fetchedCollection as $model)
+              {
+                $previouslyFetchedCollection->put($model);
+              }
             }
-          }
-          else
-          {
-            // we haven't fetched this type yet, lets cache it in case we do later
-            $fetchedCollections[$relationshipType] = $fetchedCollection;
+            else
+            {
+              // we haven't fetched this type yet, lets cache it in case we do later
+              $fetchedCollections[$relationshipType] = $fetchedCollection;
+            }
           }
         }
       }
