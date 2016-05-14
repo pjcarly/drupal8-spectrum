@@ -2,8 +2,13 @@
 
 namespace Drupal\spectrum\Model;
 
+use Drupal\spectrum\Query\EntityQuery;
+use Drupal\spectrum\Query\BundleQuery;
 use Drupal\spectrum\Query\ModelQuery;
 use Drupal\spectrum\Query\Condition;
+use Drupal\spectrum\Exceptions\InvalidTypeException;
+use Drupal\spectrum\Exceptions\NotImplementedException;
+use Drupal\spectrum\Exceptions\ModelClassNotDefinedException;
 use Drupal\spectrum\Exceptions\InvalidRelationshipTypeException;
 use Drupal\spectrum\Exceptions\RelationshipNotDefinedException;
 Use Drupal\spectrum\Utils\String;
@@ -18,8 +23,8 @@ abstract class Model
   public static $bundle;
   public static $idField;
 
-  public static $relationships = array();
-  public static $relationshipsSet = false;
+  public static $modelClassMapping = null;
+  public static $relationships = null;
   public static $keyIndex = 1;
 
   public $entity;
@@ -124,7 +129,7 @@ abstract class Model
                   {
                       $this->put($relationship, $parentModel);
 
-                      // now we musnt forget to put the model as child on the parent for circular references
+                      // now we musn't forget to put the model as child on the parent for circular references
                       $childRelationship = $relationshipModelType::getChildRelationshipForParentRelationship($relationship);
                       if(!empty($childRelationship))
                       {
@@ -287,13 +292,10 @@ abstract class Model
 
   public static function hasRelationship($relationshipName)
   {
-    if(!static::$relationshipsSet)
-    {
-      static::setRelationships();
-      static::$relationshipsSet = true;
-    }
+    static::setRelationships();
 
-    return array_key_exists($relationshipName, static::$relationships);
+    $relationshipNamespace = get_called_class();
+    return array_key_exists($relationshipNamespace . '.' . $relationshipName, static::$relationships);
   }
 
   public static function getNextKey()
@@ -353,9 +355,14 @@ abstract class Model
       return new ModelQuery(get_called_class());
   }
 
-  public static function getQuery()
+  public static function getEntityQuery()
   {
-      return new Query(static::$entityType, static::$bundle);
+      return new EntityQuery(static::$entityType);
+  }
+
+  public static function getBundleQuery()
+  {
+      return new BundleQuery(static::$entityType, static::$bundle);
   }
 
   public static function getChildRelationshipForParentRelationship($parentRelationship)
@@ -377,24 +384,29 @@ abstract class Model
       return $childRelationship;
   }
 
-  public static function setRelationships(){}
+  public static function relationships(){}
+  public static function setRelationships()
+  {
+    if(static::$relationships === null)
+    {
+      static::$relationships = array();
+      static::relationships();
+    }
+  }
 
   public static function getRelationship($relationshipName)
   {
-      if(!static::$relationshipsSet)
-      {
-          static::setRelationships();
-          static::$relationshipsSet = true;
-      }
+    static::setRelationships();
 
-      if(static::hasRelationship($relationshipName))
-      {
-          return static::$relationships[$relationshipName];
-      }
-      else
-      {
-          throw new RelationshipNotDefinedException('Relationship '.$relationshipName.' does not exist');
-      }
+    if(static::hasRelationship($relationshipName))
+    {
+      $relationshipNamespace = get_called_class();
+      return static::$relationships[$relationshipNamespace . '.' . $relationshipName];
+    }
+    else
+    {
+      throw new RelationshipNotDefinedException('Relationship '.$relationshipName.' does not exist');
+    }
   }
 
   public static function getRelationshipByFieldName($fieldName)
@@ -417,18 +429,18 @@ abstract class Model
 
   public static function getRelationships()
   {
-      if(!static::$relationshipsSet)
-      {
-          static::setRelationships();
-          static::$relationshipsSet = true;
-      }
+      static::setRelationships();
 
       return static::$relationships;
   }
 
   public static function addRelationship(Relationship $relationship)
   {
-      static::$relationships[$relationship->relationshipName] = $relationship;
+    // first we need to namespace the relationships, as the relationship array is staticly defined;
+    // meaning if we would add 2 relationships with the same name on different models, the first one would be overridden
+    // we use the relationshipKey, which is a namespaced version with the relationship source added
+    $relationship->setRelationshipSource(get_called_class());
+    static::$relationships[$relationship->getRelationshipKey()] = $relationship;
   }
 
   public static function getFieldDefinitions()
@@ -438,7 +450,7 @@ abstract class Model
 
   public static function getFieldDefinition($fieldName)
   {
-    $fieldDefinition;
+    $fieldDefinition = null;
     $fieldDefinitions = static::getFieldDefinitions();
     if(array_key_exists($fieldName, $fieldDefinitions))
     {
@@ -567,6 +579,45 @@ abstract class Model
     }
 
     return $field;
+  }
+
+  public static function getModelClassForEntityAndBundle($entity, $bundle)
+  {
+    static::setModelClassMappings();
+    if(array_key_exists($entity.'.'.$bundle, static::$modelClassMapping))
+    {
+      return static::$modelClassMapping[$entity.'.'.$bundle];
+    }
+    else
+    {
+      throw new ModelClassNotDefinedException('no model class for entity '.$entity.' and bundle '.$bundle.' has been defined');
+    }
+  }
+
+  private static function setModelClassMappings()
+  {
+    if(static::$modelClassMapping === null)
+    {
+      static::$modelClassMapping = array();
+
+      if(!function_exists('get_registered_model_classes'))
+      {
+        throw new NotImplementedException('function get_registered_model_classes() hasn\'t been implemented yet');
+      }
+
+      foreach(get_registered_model_classes() as $modelClassName)
+      {
+        $entity = $modelClassName::$entityType;
+        $bundle = $modelClassName::$bundle;
+
+        if(empty($entity) || empty($bundle))
+        {
+          throw new InvalidTypeException('Entity Type or Bundle not defined for '.$modelClassName);
+        }
+
+        static::$modelClassMapping[$entity.'.'.$bundle] = $modelClassName;
+      }
+    }
   }
 
   // This method returns the current Model as a JsonApiNode (jsonapi.org)

@@ -4,7 +4,7 @@ namespace Drupal\spectrum\Query;
 
 use Drupal\spectrum\Model\Collection;
 
-class ModelQuery extends Query
+class ModelQuery extends BundleQuery
 {
 	public $modelType;
 

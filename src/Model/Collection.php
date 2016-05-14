@@ -76,8 +76,7 @@ class Collection implements \IteratorAggregate
 			$modelType = $this->modelType;
 			$relationship = $modelType::getRelationship($relationshipName);
 
-			$relationshipModelType = $relationship->modelType;
-			$relationshipModelQuery = $relationshipModelType::getModelQuery();
+			$relationshipQuery = $relationship->getRelationshipQuery();
 			$relationshipCondition = $relationship->getCondition();
 
 			if($relationship instanceof ParentRelationship)
@@ -87,8 +86,8 @@ class Collection implements \IteratorAggregate
 		    {
 		    	// we set the parent ids in the condition, and fetch the collection of parents
 	        $relationshipCondition->value = $parentIds;
-	        $relationshipModelQuery->addCondition($relationshipCondition);
-	        $parentCollection = $relationshipModelQuery->fetchCollection();
+	        $relationshipQuery->addCondition($relationshipCondition);
+	        $parentCollection = $relationshipQuery->fetchCollection();
 
 	        // next loop all the current models, and put the fetched parents on each model, if eligible
 	        if(!$parentCollection->isEmpty)
@@ -101,7 +100,8 @@ class Collection implements \IteratorAggregate
 	        			$parentModel = $parentCollection->getModel($parentId);
 	              $model->put($relationship, $parentModel);
 
-  	    				// now we musnt forget to put the model as child on the parent for circular references
+  	    				// now we musn't forget to put the model as child on the parent for circular references
+                $relationshipModelType = $relationship->modelType;
   	    				$childRelationship = $relationshipModelType::getChildRelationshipForParentRelationship($relationship);
 		            if(!empty($childRelationship))
 		            {
@@ -119,9 +119,9 @@ class Collection implements \IteratorAggregate
 				if(!empty($childIds))
 				{
 					$relationshipCondition->value = $childIds;
-					$relationshipModelQuery->addCondition($relationshipCondition);
+					$relationshipQuery->addCondition($relationshipCondition);
 
-					$childCollection = $relationshipModelQuery->fetchCollection();
+					$childCollection = $relationshipQuery->fetchCollection();
 
 					foreach($this->models as $model)
 					{
@@ -159,10 +159,10 @@ class Collection implements \IteratorAggregate
 		}
 
 		return $ids;
-		}
+	}
 
-		public function getParentIds($relationship)
-		{
+	public function getParentIds($relationship)
+	{
 		$parentIds = array();
 
 		foreach($this->models as $model)

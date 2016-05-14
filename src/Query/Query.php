@@ -2,21 +2,12 @@
 
 namespace Drupal\spectrum\Query;
 
-class Query
+abstract class Query
 {
-  private $bundle;
-  private $entityType;
-
   public $conditions = array();
   public $sortOrders = array();
   public $rangeStart;
   public $rangeLength;
-
-  public function __construct($entityType, $bundle)
-  {
-    $this->bundle = $bundle;
-    $this->entityType = $entityType;
-  }
 
   public function addCondition(Condition $condition)
   {
@@ -80,19 +71,10 @@ class Query
     // We abstracted the getQuery and getTotalCountQuery functions in this function, to avoid duplicate code
     $query = \Drupal::entityQuery($this->entityType);
 
-    // first of all, lets filter by bundle, keep in mind that user is an exception, no type field for user even though there is a bundle defined
-    if(!empty($this->bundle) && $this->bundle !== 'user')
-    {
-      $this->addCondition(new Condition('type', '=', $this->bundle));
-    }
-
     // next we check for conditions and add them if needed
-    if(empty($this->conditionLogic))
+    foreach($this->conditions as $condition)
     {
-      foreach($this->conditions as $condition)
-      {
-        $condition->addQueryCondition($query);
-      }
+      $condition->addQueryCondition($query);
     }
 
     // and finally apply an order if needed

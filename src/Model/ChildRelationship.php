@@ -22,4 +22,9 @@ class ChildRelationship extends Relationship
 
 		return new Condition($parentRelationship->relationshipField, 'IN', null);
 	}
+
+  public function getRelationshipQuery()
+  {
+
+  }
 }
