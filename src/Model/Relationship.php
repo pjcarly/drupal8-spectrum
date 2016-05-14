@@ -8,8 +8,8 @@ abstract class Relationship
 
 	public function __construct($relationshipName, $modelType)
 	{
-		$this->modelType = $modelType;
 		$this->relationshipName = $relationshipName;
+    $this->modelType = $modelType;
 	}
 
 	public abstract function getCondition();

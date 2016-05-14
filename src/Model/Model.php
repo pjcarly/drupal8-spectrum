@@ -608,12 +608,14 @@ abstract class Model
           case 'entity_reference':
             if(!empty($this->entity->get($fieldName)->entity))
             {
-              $relationshipNode = new JsonApiNode();
-              $relationshipNode->setId($this->entity->get($fieldName)->target_id);
-              $relationshipNode->setType($this->entity->get($fieldName)->entity->bundle());
               $relationshipDataNode = new JsonApiDataNode();
-              $relationshipDataNode->addNode($relationshipNode);
-
+              foreach($this->entity->get($fieldName) as $referencedEntity)
+              {
+                $relationshipNode = new JsonApiNode();
+                $relationshipNode->setId($referencedEntity->target_id);
+                $relationshipNode->setType($referencedEntity->entity->bundle());
+                $relationshipDataNode->addNode($relationshipNode);
+              }
               $node->addRelationship($fieldNamePretty, $relationshipDataNode);
             }
             break;
@@ -631,9 +633,6 @@ abstract class Model
               $attribute->uri = $this->entity->get($fieldName)->entity->get('uri')->value;
               $attribute->filemime = $this->entity->get($fieldName)->entity->get('filemime')->value;
               $attribute->filesize = $this->entity->get($fieldName)->entity->get('filesize')->value;
-
-              // $url = \Drupal\image\Entity\ImageStyle::load('268x134')->buildUrl($attribute->uri);
-              // $attribute->url = $url;
 
               $node->addAttribute($fieldNamePretty, $attribute);
             }
