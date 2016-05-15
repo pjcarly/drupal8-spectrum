@@ -7,6 +7,9 @@ class ParentRelationship extends Relationship
 {
 	public $relationshipField;
   public $modelType;
+  public $isPolymorphic = false;
+
+  private $firstModelType;
 
 	public function __construct($relationshipName, $relationshipField)
 	{
@@ -22,8 +25,15 @@ class ParentRelationship extends Relationship
 
   public function getRelationshipQuery()
   {
-    $modelType = $this->modelType;
-    return $modelType::getModelQuery();
+    $modelType = $this->firstModelType;
+    if($this->isPolymorphic)
+    {
+      return $modelType::getEntityQuery();
+    }
+    else
+    {
+      return $modelType::getModelQuery();
+    }
   }
 
   public function setModelType()
@@ -33,9 +43,18 @@ class ParentRelationship extends Relationship
     $fieldSettings = $fieldDefinition->getItemDefinition()->getSettings();
 
     $relationshipEntityType = $fieldSettings['target_type'];
-    $relationshipBundle = array_shift($fieldSettings['handler_settings']['target_bundles']); // TODO: polymorphic relationships
+    $relationshipBundle = array_shift($fieldSettings['handler_settings']['target_bundles']);
+    $this->firstModelType = Model::getModelClassForEntityAndBundle($relationshipEntityType, $relationshipBundle);
 
-    $this->modelType = Model::getModelClassForEntityAndBundle($relationshipEntityType, $relationshipBundle);
+    if(sizeof($fieldSettings['handler_settings']['target_bundles']) > 1)
+    {
+      $this->isPolymorphic = true;
+      $this->modelType = null;
+    }
+    else
+    {
+      $this->modelType = $this->firstModelType;
+    }
   }
 
 	public function getField()
