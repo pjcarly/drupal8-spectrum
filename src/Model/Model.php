@@ -108,8 +108,7 @@ abstract class Model
       {
           $relationship = static::getRelationship($relationshipName);
 
-          $relationshipModelType = $relationship->modelType;
-          $relationshipModelQuery = $relationshipModelType::getModelQuery();
+          $relationshipQuery = $relationship->getRelationshipQuery();
           $relationshipCondition = $relationship->getCondition();
 
           if($relationship instanceof ParentRelationship)
@@ -121,15 +120,16 @@ abstract class Model
                   // we set the parent ids in the condition, and fetch the collection of parents
                   $relationshipCondition->value = $parentId;
                   $relationshipCondition->operator = '=';
-                  $relationshipModelQuery->addCondition($relationshipCondition);
+                  $relationshipQuery->addCondition($relationshipCondition);
 
-                  $parentModel = $relationshipModelQuery->fetchSingleModel();
+                  $parentModel = $relationshipQuery->fetchSingleModel();
 
                   if(!empty($parentModel))
                   {
                       $this->put($relationship, $parentModel);
 
                       // now we musn't forget to put the model as child on the parent for circular references
+                      $relationshipModelType = $relationship->modelType;
                       $childRelationship = $relationshipModelType::getChildRelationshipForParentRelationship($relationship);
                       if(!empty($childRelationship))
                       {
@@ -144,9 +144,9 @@ abstract class Model
               if(!empty($id))
               {
                   $relationshipCondition->value = array($id);
-                  $relationshipModelQuery->addCondition($relationshipCondition);
+                  $relationshipQuery->addCondition($relationshipCondition);
 
-                  $childCollection = $relationshipModelQuery->fetchCollection();
+                  $childCollection = $relationshipQuery->fetchCollection();
 
                   foreach($childCollection->models as $childModel)
                   {

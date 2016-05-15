@@ -14,8 +14,6 @@ class Collection implements \IteratorAggregate
 	public $models;
 	public $originalModels;
 
-	public $parentModel;
-
 	public function __construct()
 	{
 		$this->models = array();
@@ -148,7 +146,6 @@ class Collection implements \IteratorAggregate
 
 	public function getChildIds()
 	{
-		$modelType = $this->modelType;
 		$models = $this->models;
 
 		$ids = array();
@@ -179,17 +176,17 @@ class Collection implements \IteratorAggregate
 
 	public static function forge($modelType, $models = array(), $entities = array(), $ids = array(), $modelQuery = null)
 	{
-		$collection = new Collection();
+		$collection = new static();
 		$collection->modelType = $modelType;
 
 		if(is_array($ids) && !empty($ids))
 		{
-			$entities = Collection::fetchEntities($modelType, $ids);
+			$entities = static::fetchEntities($modelType, $ids);
 		}
 
 		if(is_array($entities) && !empty($entities))
 		{
-			$models = Collection::getModels($modelType, $entities);
+			$models = static::getModels($modelType, $entities);
 		}
 
 		if(is_array($models) && !empty($models))
@@ -209,15 +206,15 @@ class Collection implements \IteratorAggregate
 		return $query->fetch();
 	}
 
-	public function getEntities()
+  public function getEntities()
 	{
 		$entities = array();
-		$modelType = $this->modelType;
-		$idField = $modelType::$idField;
 		foreach($this->models as $model)
 		{
+      $id = $model->getId();
+
 			$entity = $model->entity;
-			$entities[$entity->$idField] = $model->entity;
+			$entities[$id] = $model->entity;
 		}
 
 		return $entities;
@@ -295,7 +292,7 @@ class Collection implements \IteratorAggregate
 			$resultCollection = static::forge($relationship->modelType);
 
 			if($relationship instanceof ParentRelationship)
-    		{
+  		{
 				foreach($this->models as $model)
 				{
 					$parent = $model->getParent($relationship);
