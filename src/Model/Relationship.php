@@ -21,7 +21,7 @@ abstract class Relationship
     }
 
     $this->relationshipSource = $source;
-    $this->setModelType();
+    $this->setRelationshipMetaData();
   }
 
   public function getRelationshipKey()
@@ -29,7 +29,7 @@ abstract class Relationship
     return $this->relationshipSource . '.' . $this->relationshipName;
   }
 
-  protected abstract function setModelType();
+  protected abstract function setRelationshipMetaData();
   public abstract function getRelationshipQuery();
 	public abstract function getCondition();
 }

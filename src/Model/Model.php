@@ -30,8 +30,9 @@ abstract class Model
   public $entity;
   public $key;
 
-  public $parents = array();
-  public $children = array();
+  public $parents = array(); // TODO: remove & clean code, deprecated
+  public $children = array(); // TODO: remove & clean code, deprecated
+  public $relatedModels = array();
 
   // json-api options
   public static $inlineRelationships = array();
@@ -60,7 +61,7 @@ abstract class Model
 
       if($isNew)
       {
-        $this->setParentIdForChildren();
+        $this->setFieldForReferencedRelationships();
       }
     }
     else
@@ -81,8 +82,11 @@ abstract class Model
     }
   }
 
-  private function setParentIdForChildren()
+  private function setFieldForReferencedRelationships()
   {
+    // This method sets the field with newly created ID upon inserting a new record
+    // This is important for when you have multiple related models in memory who haven't been inserted
+    // and just have are just related in memory, by setting the ID we know how to relate them in the DB
     $relationships = static::getRelationships();
     foreach($relationships as $relationship)
     {
@@ -91,9 +95,16 @@ abstract class Model
         $referencedRelationship = $this->get($relationship->relationshipName);
         if(!empty($referencedRelationship))
         {
-          foreach($referencedRelationship->models as $childModel)
+          if($referencedRelationship instanceof Collection)
           {
-            $childModel->put($relationship->fieldRelationshipName, $this);
+            foreach($referencedRelationship->models as $childModel)
+            {
+              $childModel->put($relationship->fieldRelationshipName, $this);
+            }
+          }
+          else if($referencedRelationship instanceof Model)
+          {
+            $referencedRelationship->put($relationship->fieldRelationshipName, $this);
           }
         }
       }
@@ -113,30 +124,57 @@ abstract class Model
 
           if($relationship instanceof FieldRelationship)
           {
-              $parentId = $this->getParentId($relationship);
+            $fieldId = $this->getFieldId($relationship);
 
-              if(!empty($parentId))
+            if(!empty($fieldId))
+            {
+              // we start of by checking for multiple or single values allowed
+              // in case of a single, we'll just put a single Model
+              // else we'll put a collection of models
+
+              if(is_array($fieldId)) // multiple values
               {
-                  // we set the parent ids in the condition, and fetch the collection of parents
-                  $relationshipCondition->value = $parentId;
-                  $relationshipCondition->operator = '=';
-                  $relationshipQuery->addCondition($relationshipCondition);
+                $relationshipCondition->value = $fieldId;
+                $relationshipCondition->operator = 'IN';
 
-                  $parentModel = $relationshipQuery->fetchSingleModel();
+                $relationshipQuery->addCondition($relationshipCondition);
+                $parentModels = $relationshipQuery->fetchCollection();
 
-                  if(!empty($parentModel))
+                if(!empty($parentModels))
+                {
+                  $this->put($relationship, $parentModels);
+
+                  // now we musn't forget to put the model as child on the parent for circular references
+                  $relationshipModelType = $relationship->modelType;
+                  $referencedRelationship = $relationshipModelType::getReferencedRelationshipForFieldRelationship($relationship);
+                  if(!empty($referencedRelationship))
                   {
-                      $this->put($relationship, $parentModel);
-
-                      // now we musn't forget to put the model as child on the parent for circular references
-                      $relationshipModelType = $relationship->modelType;
-                      $referencedRelationship = $relationshipModelType::getReferencedRelationshipForFieldRelationship($relationship);
-                      if(!empty($referencedRelationship))
-                      {
-                         $parentModel->put($referencedRelationship, $this);
-                      }
+                    $parentModels->put($referencedRelationship, $this);
                   }
+                }
               }
+              else // single value
+              {
+                $relationshipCondition->value = $fieldId;
+                $relationshipCondition->operator = '=';
+
+                $relationshipQuery->addCondition($relationshipCondition);
+                $parentModel = $relationshipQuery->fetchSingleModel();
+
+                if(!empty($parentModel))
+                {
+                  $this->put($relationship, $parentModel);
+
+                  // now we musn't forget to put the model as child on the parent for circular references
+                  $relationshipModelType = $relationship->modelType;
+                  $referencedRelationship = $relationshipModelType::getReferencedRelationshipForFieldRelationship($relationship);
+                  if(!empty($referencedRelationship))
+                  {
+                    $parentModel->put($referencedRelationship, $this);
+                  }
+                }
+              }
+            }
           }
           else if($relationship instanceof ReferencedRelationship)
           {
@@ -212,15 +250,28 @@ abstract class Model
       }
   }
 
-  public function getParentId($relationship)
+  public function getFieldId($relationship)
   {
       if($relationship instanceof FieldRelationship)
       {
-          $entity = $this->entity;
-          $field = $relationship->getField();
-          $column = $relationship->getColumn();
+        $entity = $this->entity;
+        $field = $relationship->getField();
+        $column = $relationship->getColumn();
 
+        if($relationship->isSingle) // meaning the field can only contain 1 reference
+        {
           return empty($entity->$field->$column) ? null : $entity->$field->$column;
+        }
+        else
+        {
+          $returnValue = array();
+          foreach($entity->$field->getValue() as $fieldValue)
+          {
+            $returnValue[] = $fieldValue[$column];
+          }
+
+          return $returnValue;
+        }
       }
       else
       {
@@ -230,9 +281,12 @@ abstract class Model
 
   public function isParentOf($model, $relationship)
   {
-      $parentId = $model->getParentId($relationship);
+      $fieldId = $model->getFieldId($relationship);
       $id = $this->getId();
-      return !empty($parentId) && !empty($id) && $parentId == $id;
+
+      // we must consider the 2 cases where either a field Id can be an array (in case of multiple references per field)
+      // or a single id, in case only 1 reference per field allowed
+      return !empty($fieldId) && !empty($id) && (is_array($fieldId) && in_array($id, $fieldId) || !is_array($fieldId) && $fieldId === $id);
   }
 
   public function getParent($relationship)

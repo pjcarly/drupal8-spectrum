@@ -341,13 +341,13 @@ class Collection implements \IteratorAggregate
 			{
 				case "size":
 					return $this->size();
-				break;
+				  break;
 				case "isEmpty":
 					return $this->isEmpty();
-				break;
+				  break;
 				case "entities":
 					return $this->getEntities();
-				break;
+				  break;
 			}
 		}
 	}
@@ -365,7 +365,7 @@ class Collection implements \IteratorAggregate
 				{
 					$this->$property = $value;
 				}
-			break;
+			  break;
 		}
 
 		return $this;
