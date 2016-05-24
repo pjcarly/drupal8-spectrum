@@ -3,7 +3,7 @@
 namespace Drupal\spectrum\Serializer;
 
 Use Drupal\spectrum\Utils\String;
-use Drupal\spectrum\Model\ChildRelationship;
+use Drupal\spectrum\Model\ReferencedRelationship;
 use Drupal\spectrum\Model\FieldRelationship;
 
 class ModelDeserializer extends ModelSerializerBase
@@ -123,7 +123,7 @@ class ModelDeserializer extends ModelSerializerBase
                     $model->entity->$relationshipField->$relationshipColumn = $relationshipValue->data->id;
                   }
                 }
-                else if ($relationship instanceof ChildRelationship)
+                else if ($relationship instanceof ReferencedRelationship)
                 {
                   // TODO: make this work with entity reference multi-field
                 }
@@ -143,7 +143,7 @@ class ModelDeserializer extends ModelSerializerBase
           $relationship = $model::getRelationship($key);
 
           // now the relationship exists, we'll do something different depending on the type of relationship
-          if($relationship instanceof ChildRelationship)
+          if($relationship instanceof ReferencedRelationship)
           {
             // With children, we'll have to loop every value, and deserialize it as well
             foreach($value as $deserializedChild)

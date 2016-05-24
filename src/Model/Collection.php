@@ -100,17 +100,17 @@ class Collection implements \IteratorAggregate
 
   	    				// now we musn't forget to put the model as child on the parent for circular references
                 $relationshipModelType = $relationship->modelType;
-  	    				$childRelationship = $relationshipModelType::getChildRelationshipForFieldRelationship($relationship);
-		            if(!empty($childRelationship))
+  	    				$referencedRelationship = $relationshipModelType::getReferencedRelationshipForFieldRelationship($relationship);
+		            if(!empty($referencedRelationship))
 		            {
-	                $parentModel->put($childRelationship, $model);
+	                $parentModel->put($referencedRelationship, $model);
 		            }
 	        		}
 	        	}
 	        }
 	    	}
 			}
-			else if($relationship instanceof ChildRelationship)
+			else if($relationship instanceof ReferencedRelationship)
 			{
 				$childIds = $this->getChildIds();
 
@@ -302,7 +302,7 @@ class Collection implements \IteratorAggregate
 					}
 				}
 			}
-			else if($relationship instanceof ChildRelationship)
+			else if($relationship instanceof ReferencedRelationship)
 			{
 				foreach($this->models as $model)
 				{

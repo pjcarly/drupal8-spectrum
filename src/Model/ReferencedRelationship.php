@@ -4,7 +4,7 @@ namespace Drupal\spectrum\Model;
 
 use Drupal\spectrum\Query\Condition;
 
-class ChildRelationship extends Relationship
+class ReferencedRelationship extends Relationship
 {
 	public $fieldRelationship;
 	public $fieldRelationshipName;

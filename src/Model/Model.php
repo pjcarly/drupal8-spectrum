@@ -86,12 +86,12 @@ abstract class Model
     $relationships = static::getRelationships();
     foreach($relationships as $relationship)
     {
-      if($relationship instanceof ChildRelationship)
+      if($relationship instanceof ReferencedRelationship)
       {
-        $childRelationship = $this->get($relationship->relationshipName);
-        if(!empty($childRelationship))
+        $referencedRelationship = $this->get($relationship->relationshipName);
+        if(!empty($referencedRelationship))
         {
-          foreach($childRelationship->models as $childModel)
+          foreach($referencedRelationship->models as $childModel)
           {
             $childModel->put($relationship->fieldRelationshipName, $this);
           }
@@ -130,15 +130,15 @@ abstract class Model
 
                       // now we musn't forget to put the model as child on the parent for circular references
                       $relationshipModelType = $relationship->modelType;
-                      $childRelationship = $relationshipModelType::getChildRelationshipForFieldRelationship($relationship);
-                      if(!empty($childRelationship))
+                      $referencedRelationship = $relationshipModelType::getReferencedRelationshipForFieldRelationship($relationship);
+                      if(!empty($referencedRelationship))
                       {
-                         $parentModel->put($childRelationship, $this);
+                         $parentModel->put($referencedRelationship, $this);
                       }
                   }
               }
           }
-          else if($relationship instanceof ChildRelationship)
+          else if($relationship instanceof ReferencedRelationship)
           {
               $id = $this->getId();
               if(!empty($id))
@@ -182,7 +182,7 @@ abstract class Model
           {
               return $this->getParent($relationship);
           }
-          else if($relationship instanceof ChildRelationship)
+          else if($relationship instanceof ReferencedRelationship)
           {
               if(array_key_exists($relationship->relationshipName, $this->children))
               {
@@ -265,7 +265,7 @@ abstract class Model
 
         $this->entity->$relationshipField->$relationshipColumn = $model->getId();
       }
-      else if($relationship instanceof ChildRelationship)
+      else if($relationship instanceof ReferencedRelationship)
       {
         if(!array_key_exists($relationship->relationshipName, $this->children))
         {
@@ -365,23 +365,23 @@ abstract class Model
       return new BundleQuery(static::$entityType, static::$bundle);
   }
 
-  public static function getChildRelationshipForFieldRelationship($fieldRelationship)
+  public static function getReferencedRelationshipForFieldRelationship($fieldRelationship)
   {
       $relationships = static::getRelationships();
-      $childRelationship = null;
+      $referencedRelationship = null;
       foreach($relationships as $relationship)
       {
-          if($relationship instanceof ChildRelationship)
+          if($relationship instanceof ReferencedRelationship)
           {
               if($relationship->fieldRelationship === $fieldRelationship)
               {
-                  $childRelationship = $relationship;
+                  $referencedRelationship = $relationship;
                   break;
               }
           }
       }
 
-      return $childRelationship;
+      return $referencedRelationship;
   }
 
   public static function relationships(){}
