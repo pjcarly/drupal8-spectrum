@@ -4,7 +4,7 @@ namespace Drupal\spectrum\Serializer;
 
 Use Drupal\spectrum\Utils\String;
 use Drupal\spectrum\Model\ChildRelationship;
-use Drupal\spectrum\Model\ParentRelationship;
+use Drupal\spectrum\Model\FieldRelationship;
 
 class ModelDeserializer extends ModelSerializerBase
 {
@@ -113,7 +113,7 @@ class ModelDeserializer extends ModelSerializerBase
               if(!empty($relationship))
               {
                 // now the relationship exists, we'll do something different depending on the type of relationship
-                if($relationship instanceof ParentRelationship)
+                if($relationship instanceof FieldRelationship)
                 {
                   $relationshipField = $relationship->getField();
                   $relationshipColumn = $relationship->getColumn();
@@ -163,7 +163,7 @@ class ModelDeserializer extends ModelSerializerBase
               }
             }
           }
-          else if ($relationship instanceof ParentRelationship)
+          else if ($relationship instanceof FieldRelationship)
           {
             //TODO: implement
           }

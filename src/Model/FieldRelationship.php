@@ -3,7 +3,7 @@ namespace Drupal\spectrum\Model;
 
 use Drupal\spectrum\Query\Condition;
 
-class ParentRelationship extends Relationship
+class FieldRelationship extends Relationship
 {
 	public $relationshipField;
   public $modelType;

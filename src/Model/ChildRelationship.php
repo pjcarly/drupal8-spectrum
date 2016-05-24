@@ -6,21 +6,21 @@ use Drupal\spectrum\Query\Condition;
 
 class ChildRelationship extends Relationship
 {
-	public $parentRelationship;
-	public $parentRelationshipName;
+	public $fieldRelationship;
+	public $fieldRelationshipName;
 
-	public function __construct($relationshipName, $modelType, $parentRelationshipName)
+	public function __construct($relationshipName, $modelType, $fieldRelationshipName)
 	{
 		parent::__construct($relationshipName, $modelType);
-		$this->parentRelationshipName = $parentRelationshipName;
-		$this->parentRelationship = $modelType::getRelationship($parentRelationshipName);
+		$this->fieldRelationshipName = $fieldRelationshipName;
+		$this->fieldRelationship = $modelType::getRelationship($fieldRelationshipName);
 	}
 
 	public function getCondition()
 	{
-		$parentRelationship = $this->parentRelationship;
+		$fieldRelationship = $this->fieldRelationship;
 
-		return new Condition($parentRelationship->relationshipField, 'IN', null);
+		return new Condition($fieldRelationship->relationshipField, 'IN', null);
 	}
 
   public function getRelationshipQuery()

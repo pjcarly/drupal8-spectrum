@@ -77,7 +77,7 @@ class Collection implements \IteratorAggregate
 			$relationshipQuery = $relationship->getRelationshipQuery();
 			$relationshipCondition = $relationship->getCondition();
 
-			if($relationship instanceof ParentRelationship)
+			if($relationship instanceof FieldRelationship)
 			{
 				$parentIds = $this->getParentIds($relationship);
 		    if(!empty($parentIds))
@@ -100,7 +100,7 @@ class Collection implements \IteratorAggregate
 
   	    				// now we musn't forget to put the model as child on the parent for circular references
                 $relationshipModelType = $relationship->modelType;
-  	    				$childRelationship = $relationshipModelType::getChildRelationshipForParentRelationship($relationship);
+  	    				$childRelationship = $relationshipModelType::getChildRelationshipForFieldRelationship($relationship);
 		            if(!empty($childRelationship))
 		            {
 	                $parentModel->put($childRelationship, $model);
@@ -125,10 +125,10 @@ class Collection implements \IteratorAggregate
 					{
 						foreach($childCollection->models as $childModel)
 						{
-							if($model->isParentOf($childModel, $relationship->parentRelationship))
+							if($model->isParentOf($childModel, $relationship->fieldRelationship))
 							{
 								$model->put($relationship, $childModel);
-								$childModel->put($relationship->parentRelationship, $model);
+								$childModel->put($relationship->fieldRelationship, $model);
 							}
 						}
 					}
@@ -291,7 +291,7 @@ class Collection implements \IteratorAggregate
 			$relationship = $modelType::getRelationship($relationshipName);
 			$resultCollection = static::forge($relationship->modelType);
 
-			if($relationship instanceof ParentRelationship)
+			if($relationship instanceof FieldRelationship)
   		{
 				foreach($this->models as $model)
 				{
