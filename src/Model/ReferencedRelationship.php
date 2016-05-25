@@ -18,13 +18,11 @@ class ReferencedRelationship extends Relationship
 
 	public function getCondition()
 	{
-		$fieldRelationship = $this->fieldRelationship;
-
-		return new Condition($fieldRelationship->relationshipField, 'IN', null);
+		return new Condition($this->fieldRelationship->relationshipField, 'IN', null);
 	}
 
   public function getRelationshipQuery()
   {
-
+    return $this->fieldRelationship->getRelationshipQuery();
   }
 }

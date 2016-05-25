@@ -32,7 +32,8 @@ abstract class Model
 
   public $parents = array(); // TODO: remove & clean code, deprecated
   public $children = array(); // TODO: remove & clean code, deprecated
-  public $relatedModels = array();
+  public $relatedViaFieldOnEntity = array();
+  public $relatedViaFieldOnExternalEntity = array();
 
   // json-api options
   public static $inlineRelationships = array();
@@ -113,94 +114,137 @@ abstract class Model
 
   public function fetch($relationshipName)
   {
-      $lastRelationshipNameIndex = strrpos($relationshipName, '.');
+    $lastRelationshipNameIndex = strrpos($relationshipName, '.');
 
-      if(empty($lastRelationshipNameIndex)) // relationship name without extra relationships
+    if(empty($lastRelationshipNameIndex)) // relationship name without extra relationships
+    {
+      $relationship = static::getRelationship($relationshipName);
+
+      $relationshipQuery = $relationship->getRelationshipQuery();
+      $relationshipCondition = $relationship->getCondition();
+
+      if($relationship instanceof FieldRelationship)
       {
-          $relationship = static::getRelationship($relationshipName);
+        $fieldId = $this->getFieldId($relationship);
 
-          $relationshipQuery = $relationship->getRelationshipQuery();
-          $relationshipCondition = $relationship->getCondition();
+        if(!empty($fieldId))
+        {
+          // we start of by checking for multiple or single values allowed
+          // in case of a single, we'll just put a single Model
+          // else we'll put a collection of models
 
-          if($relationship instanceof FieldRelationship)
+          if(is_array($fieldId)) // multiple values
           {
-            $fieldId = $this->getFieldId($relationship);
+            $relationshipCondition->value = $fieldId;
+            $relationshipCondition->operator = 'IN';
 
-            if(!empty($fieldId))
+            $relationshipQuery->addCondition($relationshipCondition);
+            $relatedEntities = $relationshipQuery->fetch();
+
+            if(!empty($relatedEntities))
             {
-              // we start of by checking for multiple or single values allowed
-              // in case of a single, we'll just put a single Model
-              // else we'll put a collection of models
-
-              if(is_array($fieldId)) // multiple values
+              $relatedModelType = null;
+              $referencedRelationship = null; // the inverse relationship
+              foreach($relatedEntities as $relatedEntity)
               {
-                $relationshipCondition->value = $fieldId;
-                $relationshipCondition->operator = 'IN';
-
-                $relationshipQuery->addCondition($relationshipCondition);
-                $parentModels = $relationshipQuery->fetchCollection();
-
-                if(!empty($parentModels))
+                $relatedModel = null;
+                if($relationship->isPolymorphic || empty($relatedModelType))
                 {
-                  $this->put($relationship, $parentModels);
+                  // if the relationship is polymorphic we can get multiple bundles, so we must define the modeltype based on the bundle and entity of the current looping entity
+                  // or if the related modeltype isn't set yet, we must set it once
+                  $relatedEntityType = $relatedEntity->getEntityTypeId();
+                  $relatedEntityBundle = $relatedEntity->type->target_id;
+                  $relatedModelType = Model::getModelClassForEntityAndBundle($relatedEntityType, $relatedEntityBundle);
 
-                  // now we musn't forget to put the model as child on the parent for circular references
-                  $relationshipModelType = $relationship->modelType;
-                  $referencedRelationship = $relationshipModelType::getReferencedRelationshipForFieldRelationship($relationship);
-                  if(!empty($referencedRelationship))
-                  {
-                    $parentModels->put($referencedRelationship, $this);
-                  }
+                  // we must also find the inverse relationship to put the current model on
+                  $referencedRelationship = $relatedModelType::getReferencedRelationshipForFieldRelationship($relationship);
                 }
-              }
-              else // single value
-              {
-                $relationshipCondition->value = $fieldId;
-                $relationshipCondition->operator = '=';
 
-                $relationshipQuery->addCondition($relationshipCondition);
-                $parentModel = $relationshipQuery->fetchSingleModel();
+                // now that we have a model, lets put them one by one
+                $relatedModel = $relatedModelType::forge($relatedEntity);
+                $this->put($relationship, $relatedModel);
 
-                if(!empty($parentModel))
+                // And finally if we found an inverse relationship, lets put (this) on the inverse (defining an inverse is optional, so we can just as easily find no inverses)
+                if(!empty($referencedRelationship))
                 {
-                  $this->put($relationship, $parentModel);
-
-                  // now we musn't forget to put the model as child on the parent for circular references
-                  $relationshipModelType = $relationship->modelType;
-                  $referencedRelationship = $relationshipModelType::getReferencedRelationshipForFieldRelationship($relationship);
-                  if(!empty($referencedRelationship))
-                  {
-                    $parentModel->put($referencedRelationship, $this);
-                  }
+                  $relatedModel->put($referencedRelationship, $this);
                 }
               }
             }
           }
-          else if($relationship instanceof ReferencedRelationship)
+          else // single value
           {
-              $id = $this->getId();
-              if(!empty($id))
+            $relationshipCondition->value = $fieldId;
+            $relationshipCondition->operator = '=';
+
+            $relationshipQuery->addCondition($relationshipCondition);
+            $relatedEntity = $relationshipQuery->fetchSingle();
+
+            if(!empty($relatedEntity))
+            {
+              // if the relationship is polymorphic we can get multiple bundles, so we must define the modeltype based on the bundle and entity of the fetched entity
+              $relatedEntityType = $relatedEntity->getEntityTypeId();
+              $relatedEntityBundle = $relatedEntity->type->target_id;
+              $relatedModelType = Model::getModelClassForEntityAndBundle($relatedEntityType, $relatedEntityBundle);
+
+              // now that we have a model, lets put them one by one
+              $relatedModel = $relatedModelType::forge($relatedEntity);
+
+              $this->put($relationship, $relatedModel);
+
+              // we must also find the inverse relationship to put the current model on
+              $referencedRelationship = $relatedModelType::getReferencedRelationshipForFieldRelationship($relationship);
+
+              // And finally if we found an inverse relationship, lets put (this) on the inverse (defining an inverse is optional, so we can just as easily find no inverses)
+              if(!empty($referencedRelationship))
               {
-                  $relationshipCondition->value = array($id);
-                  $relationshipQuery->addCondition($relationshipCondition);
-
-                  $childCollection = $relationshipQuery->fetchCollection();
-
-                  foreach($childCollection->models as $childModel)
-                  {
-                      $this->put($relationship, $childModel);
-                      $childModel->put($relationship->fieldRelationship, $this);
-                  }
+                $relatedModel->put($referencedRelationship, $this);
               }
+            }
           }
+        }
       }
-      else
+      else if($relationship instanceof ReferencedRelationship)
       {
-          $secondToLastRelationshipName = substr($relationshipName, 0, $lastRelationshipNameIndex);
-          $resultCollection = $this->get($secondToLastRelationshipName);
-          $lastRelationshipName = substr($relationshipName, $lastRelationshipNameIndex+1);
-          $resultCollection->fetch($lastRelationshipName);
+        $id = $this->getId();
+        if(!empty($id)) // fetching referenced relationships for new records are not possible
+        {
+          $relationshipCondition->value = array($id);
+          $relationshipQuery->addCondition($relationshipCondition);
+
+          $referencingEntities = $relationshipQuery->fetch();
+
+          if(!empty($referencingEntities))
+          {
+            $referencingModelType = null;
+            foreach($referencingEntities as $referencingEntity)
+            {
+              $referencingModel = null;
+              if($relationship->isPolymorphic || empty($referencingModelType))
+              {
+                // if the relationship is polymorphic we can get multiple bundles, so we must define the modeltype based on the bundle and entity of the current looping entity
+                // or if the referencing modeltype isn't set yet, we must set it once
+                $referencingEntityType = $referencingEntity->getEntityTypeId();
+                $referencingEntityBundle = $referencingEntity->type->target_id;
+                $referencingModelType = Model::getModelClassForEntityAndBundle($referencingEntityType, $referencingEntityBundle);
+              }
+
+              // now that we have a model, lets put them one by one
+              $referencingModel = $referencingModelType::forge($referencingEntity);
+              $this->put($relationship, $referencingModel);
+              $referencingModel->put($relationship->fieldRelationship, $this);
+            }
+          }
+        }
       }
+    }
+    else
+    {
+      $secondToLastRelationshipName = substr($relationshipName, 0, $lastRelationshipNameIndex);
+      $resultCollection = $this->get($secondToLastRelationshipName);
+      $lastRelationshipName = substr($relationshipName, $lastRelationshipNameIndex+1);
+      $resultCollection->fetch($lastRelationshipName);
+    }
   }
 
   public function getModelName()
@@ -210,34 +254,37 @@ abstract class Model
 
   public function get($relationshipName)
   {
-      $firstRelationshipNameIndex = strpos($relationshipName, '.');
+    $firstRelationshipNameIndex = strpos($relationshipName, '.');
 
-      if(empty($firstRelationshipNameIndex))
+    if(empty($firstRelationshipNameIndex))
+    {
+      $relationship = static::getRelationship($relationshipName);
+
+      if($relationship instanceof FieldRelationship)
       {
-          $relationship = static::getRelationship($relationshipName);
-
-          if($relationship instanceof FieldRelationship)
-          {
-              return $this->getParent($relationship);
-          }
-          else if($relationship instanceof ReferencedRelationship)
-          {
-              if(array_key_exists($relationship->relationshipName, $this->children))
-              {
-                  return $this->children[$relationship->relationshipName];
-              }
-          }
+        if(array_key_exists($relationship->relationshipName, $this->relatedViaFieldOnEntity))
+        {
+          return $relatedViaFieldOnEntity[$relationship->relationshipName];
+        }
       }
-      else
+      else if($relationship instanceof ReferencedRelationship)
       {
-          $firstRelationshipName = substr($relationshipName, 0,  $firstRelationshipNameIndex);
-          $firstRelationshipGet = $this->get($firstRelationshipName);
-          $newRelationshipName = substr($relationshipName, $firstRelationshipNameIndex+1);
-
-          return $firstRelationshipGet->get($newRelationshipName);
+        if(array_key_exists($relationship->relationshipName, $this->relatedViaFieldOnExternalEntity))
+        {
+          return $this->relatedViaFieldOnExternalEntity[$relationship->relationshipName];
+        }
       }
+    }
+    else
+    {
+      $firstRelationshipName = substr($relationshipName, 0,  $firstRelationshipNameIndex);
+      $firstRelationshipGet = $this->get($firstRelationshipName);
+      $newRelationshipName = substr($relationshipName, $firstRelationshipNameIndex+1);
 
-      return null;
+      return $firstRelationshipGet->get($newRelationshipName);
+    }
+
+    return null;
   }
 
   public function getId()
@@ -252,59 +299,46 @@ abstract class Model
 
   public function getFieldId($relationship)
   {
-      if($relationship instanceof FieldRelationship)
+    if($relationship instanceof FieldRelationship)
+    {
+      $entity = $this->entity;
+      $field = $relationship->getField();
+      $column = $relationship->getColumn();
+
+      if($relationship->isSingle) // meaning the field can only contain 1 reference
       {
-        $entity = $this->entity;
-        $field = $relationship->getField();
-        $column = $relationship->getColumn();
-
-        if($relationship->isSingle) // meaning the field can only contain 1 reference
-        {
-          return empty($entity->$field->$column) ? null : $entity->$field->$column;
-        }
-        else
-        {
-          $returnValue = array();
-          foreach($entity->$field->getValue() as $fieldValue)
-          {
-            $returnValue[] = $fieldValue[$column];
-          }
-
-          return $returnValue;
-        }
+        return empty($entity->$field->$column) ? null : $entity->$field->$column;
       }
       else
       {
-          throw new InvalidRelationshipTypeException('Only Parent relationships allowed');
+        $returnValue = array();
+        foreach($entity->$field->getValue() as $fieldValue)
+        {
+          $returnValue[] = $fieldValue[$column];
+        }
+
+        return $returnValue;
       }
+    }
+    else
+    {
+      throw new InvalidRelationshipTypeException('Only Field relationships allowed');
+    }
   }
 
   public function isParentOf($model, $relationship)
   {
-      $fieldId = $model->getFieldId($relationship);
-      $id = $this->getId();
+    $fieldId = $model->getFieldId($relationship);
+    $id = $this->getId();
 
-      // we must consider the 2 cases where either a field Id can be an array (in case of multiple references per field)
-      // or a single id, in case only 1 reference per field allowed
-      return !empty($fieldId) && !empty($id) && (is_array($fieldId) && in_array($id, $fieldId) || !is_array($fieldId) && $fieldId === $id);
+    // we must consider the 2 cases where either a field Id can be an array (in case of multiple references per field)
+    // or a single id, in case only 1 reference per field allowed
+    return !empty($fieldId) && !empty($id) && (is_array($fieldId) && in_array($id, $fieldId) || !is_array($fieldId) && $fieldId === $id);
   }
 
-  public function getParent($relationship)
+  public function put($relationship, $objectToPut)
   {
-      $parents = $this->parents;
-      if(array_key_exists($relationship->relationshipName, $parents))
-      {
-          return $parents[$relationship->relationshipName];
-      }
-      else
-      {
-          return null;
-      }
-  }
-
-  public function put($relationship, $model)
-  {
-    if($model != null && ($model instanceof Model))
+    if($objectToPut != null && ($objectToPut instanceof Model || $objectToPut instanceof Collection))
     {
       if(is_string($relationship)) // we only have the relationship name
       {
@@ -313,20 +347,59 @@ abstract class Model
 
       if($relationship instanceof FieldRelationship)
       {
-        $this->parents[$relationship->relationshipName] = $model;
         $relationshipField = $relationship->getField();
         $relationshipColumn = $relationship->getColumn();
 
-        $this->entity->$relationshipField->$relationshipColumn = $model->getId();
+        if($relationship->isMultiple)
+        {
+          // In case we have a collection we want to put, lets loop over de models, and add them model per model
+          if($objectToPut instanceof Collection)
+          {
+            foreach($objectToPut as $model)
+            {
+              $this->put($relationshp, $model);
+            }
+          }
+          else if($objectToPut instanceof Model)
+          {
+            // In case we have a model, it means we have to add it to the collection, that potentially doesn't exist yet
+            // lets watch out, that the relationship can be polymorphic to create the correct collection if needed
+            if(!array_key_exists($relationship->relationshipName, $this->relatedViaFieldOnEntity))
+            {
+              if($relationship->isPolymorphic)
+              {
+                $this->relatedViaFieldOnEntity[$relationship->relationshipName] = PolymorphicCollection::forge(null);
+              }
+              else
+              {
+                $this->relatedViaFieldOnEntity[$relationship->relationshipName] = Collection::forge($relationship->modelType);
+              }
+            }
+
+            // we put the model on the collection
+            $this->relatedViaFieldOnEntity[$relationship->relationshipName]->put($objectToPut);
+            // and also append the entity field with the value (append because their can be multiple items)
+            $this->entity->$relationshipField->appendItem($objectToPut->getId());
+          }
+        }
+        else if($relationship->isSingle)
+        {
+          // when the relationship is single (meaning only 1 reference allowed)
+          // things get much easier. Namely we just put the model in the related array
+          // even if the relationship is polymorphic it doesn't matter.
+          $this->relatedViaFieldOnEntity[$relationship->relationshipName] = $objectToPut;
+          // and finally we also set the new id on the current entity
+          $this->entity->$relationshipField->$relationshipColumn = $objectToPut->getId();
+        }
       }
       else if($relationship instanceof ReferencedRelationship)
       {
         if(!array_key_exists($relationship->relationshipName, $this->children))
         {
-          $this->children[$relationship->relationshipName] = Collection::forge($relationship->modelType);
+          $this->relatedViaFieldOnExternalEntity[$relationship->relationshipName] = Collection::forge($relationship->modelType);
         }
 
-        $this->children[$relationship->relationshipName]->put($model);
+        $this->relatedViaFieldOnExternalEntity[$relationship->relationshipName]->put($objectToPut);
       }
     }
   }
@@ -372,36 +445,35 @@ abstract class Model
 
   public static function forge($entity = null, $id = null)
   {
-      if(!empty($id))
+    if(!empty($id))
+    {
+      $query = static::getModelQuery();
+
+      // add a condition on the id
+      $query->addCondition(new Condition(static::$idField, '=', $id));
+      $model = $query->fetchSingleModel();
+
+      if(!empty($model))
       {
-          $query = static::getModelQuery();
+        return $model;
+      }
+    }
 
-          // add a condition on the id
-          $query->addCondition(new Condition(static::$idField, '=', $id));
-          $model = $query->fetchSingleModel();
-
-          if(!empty($model))
-          {
-              return $model;
-          }
+    if(empty($entity))
+    {
+      $values = array();
+      if(!empty(static::$bundle))
+      {
+        $values['type'] = static::$bundle;
       }
 
-      if(empty($entity))
-      {
-          $values = array();
-          if(!empty(static::$bundle))
-          {
-              $values['type'] = static::$bundle;
-          }
+      $entity = entity_create(static::$entityType, $values);
+    }
 
-          $entity = entity_create(static::$entityType, $values);
-
-      }
-
-      if(!empty($entity))
-      {
-          return new static($entity);
-      }
+    if(!empty($entity))
+    {
+        return new static($entity);
+    }
   }
 
   public static function getModelQuery()
@@ -421,21 +493,21 @@ abstract class Model
 
   public static function getReferencedRelationshipForFieldRelationship($fieldRelationship)
   {
-      $relationships = static::getRelationships();
-      $referencedRelationship = null;
-      foreach($relationships as $relationship)
+    $relationships = static::getRelationships();
+    $referencedRelationship = null;
+    foreach($relationships as $relationship)
+    {
+      if($relationship instanceof ReferencedRelationship)
       {
-          if($relationship instanceof ReferencedRelationship)
-          {
-              if($relationship->fieldRelationship === $fieldRelationship)
-              {
-                  $referencedRelationship = $relationship;
-                  break;
-              }
-          }
+        if($relationship->fieldRelationship === $fieldRelationship)
+        {
+          $referencedRelationship = $relationship;
+          break;
+        }
       }
+    }
 
-      return $referencedRelationship;
+    return $referencedRelationship;
   }
 
   public static function relationships(){}
@@ -519,20 +591,20 @@ abstract class Model
 		{
 			return $this->$property;
 		}
-		else if(array_key_exists($property, $this->parents)) // lets check for pseudo properties
+		else if(array_key_exists($property, $this->relatedViaFieldOnEntity)) // lets check for pseudo properties
 		{
-			return $this->parents[$property];
+			return $this->relatedViaFieldOnEntity[$property];
 		}
-		else if(array_key_exists($property, $this->children)) // lets check for pseudo properties
+		else if(array_key_exists($property, $this->relatedViaFieldOnExternalEntity)) // lets check for pseudo properties
 		{
-			return $this->children[$property];
+			return $this->relatedViaFieldOnExternalEntity[$property];
 		}
 	}
 
   public function __isset($property)
   {
     // Needed for twig to be able to access relationship via magic getter
-    return property_exists($this, $property) || array_key_exists($property, $this->parents) || array_key_exists($property, $this->children);
+    return property_exists($this, $property) || array_key_exists($property, $this->relatedViaFieldOnEntity) || array_key_exists($property, $this->relatedViaFieldOnExternalEntity);
   }
 
   public function beforeInsert(){}
@@ -750,7 +822,7 @@ abstract class Model
           case 'changed':
             // for some reason, created and changed aren't regular datetimes, they are unix timestamps in the database
             $timestamp = $this->entity->get($fieldName)->value;
-            $datetime = \DateTime::createFromFormat( 'U', $timestamp );
+            $datetime = \DateTime::createFromFormat('U', $timestamp);
             $node->addAttribute($fieldNamePretty, $datetime->format( 'c' ));
             break;
           default:

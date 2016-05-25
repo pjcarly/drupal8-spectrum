@@ -91,7 +91,7 @@ class FieldRelationship extends Relationship
 				  break;
 				case "field":
 					return $this->getField();
-				   break;
+				  break;
 				case "isSingle":
 					return $this->fieldCardinality === 1;
           break;
