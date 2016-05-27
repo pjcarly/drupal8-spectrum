@@ -32,25 +32,33 @@ class PolymorphicCollection extends Collection
     throw new PolymorphicException('Fetch has no meaning for polymorphic collections');
 	}
 
-	public function put($model)
+  public function put($objectToPut)
 	{
-    // it is only possible to have models with a shared entity in a collection
-    if(empty($this->entityType))
+    if($objectToPut instanceof Collection)
     {
-      $this->entityType = $model::$entityType;
+      foreach($objectToPut as $model)
+      {
+        $this->put($model);
+      }
     }
-    else if($this->entityType !== $model::$entityType)
+    else
     {
-      throw new PolymorphicException('Only models with a shared entity type are allowed in a polymorphic collection')
-    }
+      $model = $objectToPut;
+      // it is only possible to have models with a shared entity in a collection
+      if(empty($this->entityType))
+      {
+        $this->entityType = $model::$entityType;
+      }
+      else if($this->entityType !== $model::$entityType)
+      {
+        throw new PolymorphicException('Only models with a shared entity type are allowed in a polymorphic collection')
+      }
 
-    // due to the the shared entity constraint, the key of polymorphic collections is unique,
-    // because in drupal ids are unique over different bundles withing the same entity
-		if(!array_key_exists($model->key, $this->models))
-		{
-			$this->models[$model->key] = $model;
-			$this->originalModels[$model->key] = $model;
-		}
+      // due to the the shared entity constraint, the key of polymorphic collections is unique,
+      // because in drupal ids are unique over different bundles withing the same entity
+      // so we can just use the parent addModelToArrays function, we won't have any conflicts there
+      $this->addModelToArrays($model);
+    }
 	}
 
 	public function get($relationshipName)

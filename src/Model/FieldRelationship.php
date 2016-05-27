@@ -42,6 +42,11 @@ class FieldRelationship extends Relationship
     // First we will get the field Definition to read our meta data from
     $relationshipSource = $this->relationshipSource;
     $fieldDefinition = $relationshipSource::getFieldDefinition($this->getField());
+    if(empty($fieldDefinition))
+    {
+      throw new \Drupal\spectrum\Exceptions\InvalidFieldException('Field '.$this->getField().' not found on modeltype: '.$relationshipSource);
+    }
+
     $fieldSettings = $fieldDefinition->getItemDefinition()->getSettings();
 
     // Here we decide if our relationship is polymorphic or for a single entity/bundle type

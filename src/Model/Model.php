@@ -24,14 +24,12 @@ abstract class Model
   public static $idField;
 
   public static $modelClassMapping = null;
-  public static $relationships = null;
+  public static $relationships = array();
   public static $keyIndex = 1;
 
   public $entity;
   public $key;
 
-  public $parents = array(); // TODO: remove & clean code, deprecated
-  public $children = array(); // TODO: remove & clean code, deprecated
   public $relatedViaFieldOnEntity = array();
   public $relatedViaFieldOnExternalEntity = array();
 
@@ -40,17 +38,17 @@ abstract class Model
 
   public function __construct($entity)
   {
-      $this->entity = $entity;
-      $id = $this->getId();
+    $this->entity = $entity;
+    $id = $this->getId();
 
-      if(isset($id))
-      {
-          $this->key = $id;
-      }
-      else
-      {
-          $this->key = static::getNextKey();
-      }
+    if(isset($id))
+    {
+      $this->key = $id;
+    }
+    else
+    {
+      $this->key = static::getNextKey();
+    }
   }
 
   public function save($relationshipName = NULL)
@@ -98,14 +96,14 @@ abstract class Model
         {
           if($referencedRelationship instanceof Collection)
           {
-            foreach($referencedRelationship->models as $childModel)
+            foreach($referencedRelationship->models as $referencedModel)
             {
-              $childModel->put($relationship->fieldRelationshipName, $this);
+              $referencedModel->put($relationship->fieldRelationship, $this);
             }
           }
           else if($referencedRelationship instanceof Model)
           {
-            $referencedRelationship->put($relationship->fieldRelationshipName, $this);
+            $referencedRelationship->put($relationship->fieldRelationship, $this);
           }
         }
       }
@@ -207,11 +205,10 @@ abstract class Model
       else if($relationship instanceof ReferencedRelationship)
       {
         $id = $this->getId();
-        if(!empty($id)) // fetching referenced relationships for new records are not possible
+        if(!empty($id)) // fetching referenced relationships for new records is not possible
         {
           $relationshipCondition->value = array($id);
           $relationshipQuery->addCondition($relationshipCondition);
-
           $referencingEntities = $relationshipQuery->fetch();
 
           if(!empty($referencingEntities))
@@ -252,13 +249,20 @@ abstract class Model
     return get_class($this);
   }
 
-  public function get($relationshipName)
+  public function get($relationship)
   {
-    $firstRelationshipNameIndex = strpos($relationshipName, '.');
+    $firstRelationshipNameIndex = null;
+    if(is_string($relationship))
+    {
+      $firstRelationshipNameIndex = strpos($relationship, '.');
+    }
 
     if(empty($firstRelationshipNameIndex))
     {
-      $relationship = static::getRelationship($relationshipName);
+      if(!$relationship instanceof Relationship)
+      {
+        $relationship = static::getRelationship($relationship);
+      }
 
       if($relationship instanceof FieldRelationship)
       {
@@ -289,12 +293,8 @@ abstract class Model
 
   public function getId()
   {
-      $idField = static::$idField;
-
-      if(!empty($this->entity->$idField->value))
-      {
-          return $this->entity->$idField->value;
-      }
+    $idField = static::$idField;
+    return $this->entity->$idField->value;
   }
 
   public function getFieldId($relationship)
@@ -379,7 +379,11 @@ abstract class Model
             // we put the model on the collection
             $this->relatedViaFieldOnEntity[$relationship->relationshipName]->put($objectToPut);
             // and also append the entity field with the value (append because their can be multiple items)
-            $this->entity->$relationshipField->appendItem($objectToPut->getId());
+            $objectToPutId = $objectToPut->getId();
+            if(!empty($objectToPutId))
+            {
+              $this->entity->$relationshipField->appendItem($objectToPutId);
+            }
           }
         }
         else if($relationship->isSingle)
@@ -389,12 +393,16 @@ abstract class Model
           // even if the relationship is polymorphic it doesn't matter.
           $this->relatedViaFieldOnEntity[$relationship->relationshipName] = $objectToPut;
           // and finally we also set the new id on the current entity
-          $this->entity->$relationshipField->$relationshipColumn = $objectToPut->getId();
+          $objectToPutId = $objectToPut->getId();
+          if(!empty($objectToPutId))
+          {
+            $this->entity->$relationshipField->$relationshipColumn = $objectToPutId;
+          }
         }
       }
       else if($relationship instanceof ReferencedRelationship)
       {
-        if(!array_key_exists($relationship->relationshipName, $this->children))
+        if(!array_key_exists($relationship->relationshipName, $this->relatedViaFieldOnExternalEntity))
         {
           $this->relatedViaFieldOnExternalEntity[$relationship->relationshipName] = Collection::forge($relationship->modelType);
         }
@@ -419,10 +427,9 @@ abstract class Model
 
   public static function hasRelationship($relationshipName)
   {
-    static::setRelationships();
-
-    $relationshipNamespace = get_called_class();
-    return array_key_exists($relationshipNamespace . '.' . $relationshipName, static::$relationships);
+    $sourceModelType = get_called_class();
+    static::setRelationships($sourceModelType);
+    return array_key_exists($sourceModelType, static::$relationships) && array_key_exists($relationshipName, static::$relationships[$sourceModelType]);
   }
 
   public static function getNextKey()
@@ -511,23 +518,23 @@ abstract class Model
   }
 
   public static function relationships(){}
-  public static function setRelationships()
+  public static function setRelationships($modelType)
   {
-    if(static::$relationships === null)
+    if(!array_key_exists($modelType, static::$relationships))
     {
-      static::$relationships = array();
+      static::$relationships[$modelType] = array();
       static::relationships();
     }
   }
 
   public static function getRelationship($relationshipName)
   {
-    static::setRelationships();
+    $sourceModelType = get_called_class();
+    $sourceModelType::setRelationships();
 
-    if(static::hasRelationship($relationshipName))
+    if($sourceModelType::hasRelationship($relationshipName))
     {
-      $relationshipNamespace = get_called_class();
-      return static::$relationships[$relationshipNamespace . '.' . $relationshipName];
+      return static::$relationships[$sourceModelType][$relationshipName];
     }
     else
     {
@@ -565,8 +572,14 @@ abstract class Model
     // first we need to namespace the relationships, as the relationship array is staticly defined;
     // meaning if we would add 2 relationships with the same name on different models, the first one would be overridden
     // we use the relationshipKey, which is a namespaced version with the relationship source added
-    $relationship->setRelationshipSource(get_called_class());
-    static::$relationships[$relationship->getRelationshipKey()] = $relationship;
+    $sourceModelType = get_called_class();
+    if(!array_key_exists($sourceModelType, static::$relationships))
+    {
+      static::$relationships[$sourceModelType] = array();
+    }
+
+    $relationship->setRelationshipSource($sourceModelType);
+    static::$relationships[$sourceModelType][$relationship->getRelationshipKey()] = $relationship;
   }
 
   public static function getFieldDefinitions()

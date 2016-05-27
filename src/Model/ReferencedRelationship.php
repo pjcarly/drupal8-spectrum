@@ -8,10 +8,12 @@ class ReferencedRelationship extends Relationship
 {
 	public $fieldRelationship;
 	public $fieldRelationshipName;
+  public $modelType;
 
 	public function __construct($relationshipName, $modelType, $fieldRelationshipName)
 	{
-		parent::__construct($relationshipName, $modelType);
+		parent::__construct($relationshipName);
+    $this->modelType = $modelType;
 		$this->fieldRelationshipName = $fieldRelationshipName;
 		$this->fieldRelationship = $modelType::getRelationship($fieldRelationshipName);
 	}
@@ -23,6 +25,7 @@ class ReferencedRelationship extends Relationship
 
   public function getRelationshipQuery()
   {
-    return $this->fieldRelationship->getRelationshipQuery();
+    $modelType = $this->modelType;
+    return $modelType::getModelQuery();
   }
 }

@@ -26,10 +26,10 @@ abstract class Relationship
 
   public function getRelationshipKey()
   {
-    return $this->relationshipSource . '.' . $this->relationshipName;
+    return $this->relationshipName;
   }
 
-  protected abstract function setRelationshipMetaData();
+  protected function setRelationshipMetaData(){}
   public abstract function getRelationshipQuery();
 	public abstract function getCondition();
 }

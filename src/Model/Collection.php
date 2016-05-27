@@ -79,59 +79,106 @@ class Collection implements \IteratorAggregate
 
 			if($relationship instanceof FieldRelationship)
 			{
-				$parentIds = $this->getParentIds($relationship);
-		    if(!empty($parentIds))
+				$fieldIds = $this->getFieldIds($relationship);
+		    if(!empty($fieldIds))
 		    {
-		    	// we set the parent ids in the condition, and fetch the collection of parents
-	        $relationshipCondition->value = $parentIds;
+		    	// we set the field ids in the condition, and fetch a collection of models with that id in a field
+	        $relationshipCondition->value = $fieldIds;
 	        $relationshipQuery->addCondition($relationshipCondition);
-	        $parentCollection = $relationshipQuery->fetchCollection();
+          $referencedEntities = $relationshipQuery->fetch();
 
-	        // next loop all the current models, and put the fetched parents on each model, if eligible
-	        if(!$parentCollection->isEmpty)
-	        {
-	        	foreach($this->models as $model)
-	        	{
-	        		$parentId = $model->getParentId($relationship);
-	        		if($parentCollection->containsKey($parentId)) // we found a parentId lets put it
-	        		{
-	        			$parentModel = $parentCollection->getModel($parentId);
-	              $model->put($relationship, $parentModel);
+          if(!empty($referencedEntities))
+          {
+            // Here we will build a collection of the entities we fetched
+            $referencedModelType = null;
+            $referencedRelationship = null; // the inverse relationship
+            $referencedCollection = null;
+            foreach($referencedEntities as $referencedEntity)
+            {
+              $referencedModel = null;
+              if($relationship->isPolymorphic || empty($referencedModelType))
+              {
+                // if the relationship is polymorphic we can get multiple bundles, so we must define the modeltype based on the bundle and entity of the current looping entity
+                // or if the related modeltype isn't set yet, we must set it once
+                $referencedEntityType = $referencedEntity->getEntityTypeId();
+                $referencedEntityBundle = $referencedEntity->type->target_id;
+                $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
 
-  	    				// now we musn't forget to put the model as child on the parent for circular references
-                $relationshipModelType = $relationship->modelType;
-  	    				$referencedRelationship = $relationshipModelType::getReferencedRelationshipForFieldRelationship($relationship);
-		            if(!empty($referencedRelationship))
-		            {
-	                $parentModel->put($referencedRelationship, $model);
-		            }
-	        		}
-	        	}
-	        }
+                // we must also find the inverse relationship to put the current model on
+                $referencedRelationship = $referencedModelType::getReferencedRelationshipForFieldRelationship($relationship);
+
+                // lets also check if a collection has been made already, and if not, lets make one (keeping in mind polymorphic relationships)
+                if($referencedCollection == null)
+                {
+                  if($relationship->isPolymorphic)
+                  {
+                    $referencedCollection = PolymorphicCollection::forge(null);
+                  }
+                  else
+                  {
+                    $referencedCollection = Collection::forge($referencedModelType);
+                  }
+                }
+              }
+              // we can finally forge a new model
+              $referencedModel = $referencedModelType::forge($referencedEntity);
+              // and put it in the collection created above
+              $referencedCollection->put($referencedModel);
+            }
+
+            static::putReferencedCollectionOnReferencingCollection($relationship, $referencedRelationship, $this, $referencedCollection);
+          }
 	    	}
 			}
 			else if($relationship instanceof ReferencedRelationship)
 			{
-				$childIds = $this->getChildIds();
+				$modelIds = $this->getIds();
 
-				if(!empty($childIds))
+				if(!empty($modelIds))
 				{
-					$relationshipCondition->value = $childIds;
+					$relationshipCondition->value = $modelIds;
 					$relationshipQuery->addCondition($relationshipCondition);
 
-					$childCollection = $relationshipQuery->fetchCollection();
+					$referencingEntities = $relationshipQuery->fetch();
 
-					foreach($this->models as $model)
-					{
-						foreach($childCollection->models as $childModel)
-						{
-							if($model->isParentOf($childModel, $relationship->fieldRelationship))
-							{
-								$model->put($relationship, $childModel);
-								$childModel->put($relationship->fieldRelationship, $model);
-							}
-						}
-					}
+          if(!empty($referencingEntities))
+          {
+            $referencingCollection = null;
+            $referencingModelType = null;
+            foreach($referencingEntities as $referencingEntity)
+            {
+              $referencingModel = null;
+              if($relationship->isPolymorphic || empty($referencingModelType))
+              {
+                // if the relationship is polymorphic we can get multiple bundles, so we must define the modeltype based on the bundle and entity of the current looping entity
+                // or if the referencing modeltype isn't set yet, we must set it once
+                $referencingEntityType = $referencingEntity->getEntityTypeId();
+                $referencingEntityBundle = $referencingEntity->type->target_id;
+                $referencingModelType = Model::getModelClassForEntityAndBundle($referencingEntityType, $referencingEntityBundle);
+
+                if($referencingCollection === null)
+                {
+                  if($relationship->isPolymorphic)
+                  {
+                    $referencingCollection = PolymorphicCollection::forge(null);
+                  }
+                  else
+                  {
+                    $referencingCollection = Collection::forge($referencingModelType);
+                  }
+                }
+              }
+
+              // now that we have a model, lets put them one by one
+              $referencingModel = $referencingModelType::forge($referencingEntity);
+              $referencingCollection->put($referencingModel);
+            }
+          }
+
+          if(!empty($referencingCollection))
+          {
+            static::putReferencedCollectionOnReferencingCollection($relationship->fieldRelationship, $relationship, $referencingCollection, $this);
+          }
 				}
 			}
 		}
@@ -144,7 +191,7 @@ class Collection implements \IteratorAggregate
 		}
 	}
 
-	public function getChildIds()
+	public function getIds()
 	{
 		$models = $this->models;
 
@@ -152,26 +199,36 @@ class Collection implements \IteratorAggregate
 		foreach($models as $model)
 		{
 			$id = $model->getId();
-			$ids[$id] = $id;
+      if(!empty($id))
+      {
+        $ids[$id] = $id;
+      }
 		}
 
 		return $ids;
 	}
 
-	public function getParentIds($relationship)
+	public function getFieldIds($relationship)
 	{
-		$parentIds = array();
+		$fieldIds = array();
 
 		foreach($this->models as $model)
 		{
-			$parentId = $model->getParentId($relationship);
-			if(!empty($parentId))
+			$fieldId = $model->getFieldId($relationship);
+			if(!empty($fieldId))
 			{
-				$parentIds[$parentId] = $parentId;
+        if(is_array($fieldId))
+        {
+          $fieldIds = array_merge($fieldId, $fieldIds);
+        }
+        else
+        {
+          $fieldIds[$fieldId] = $fieldId;
+        }
 			}
 		}
 
-		return $parentIds;
+		return $fieldIds;
 	}
 
 	public static function forge($modelType, $models = array(), $entities = array(), $ids = array(), $modelQuery = null)
@@ -238,19 +295,35 @@ class Collection implements \IteratorAggregate
 		}
 	}
 
-	public function put($model)
+	public function put($objectToPut)
 	{
-		if(!($model instanceof $this->modelType))
-		{
-			throw new InvalidTypeException('Model is not of type: '.$this->modelType);
-		}
+    if($objectToPut instanceof Collection)
+    {
+      foreach($objectToPut as $model)
+      {
+        $this->put($model);
+      }
+    }
+    else
+    {
+      $model = $objectToPut;
+      if(!($model instanceof $this->modelType))
+  		{
+  			throw new InvalidTypeException('Model is not of type: '.$this->modelType);
+  		}
 
-		if(!array_key_exists($model->key, $this->models))
+      $this->addModelToArrays($model);
+    }
+	}
+
+  private function addModelToArrays(Model $model)
+  {
+    if(!array_key_exists($model->key, $this->models))
 		{
 			$this->models[$model->key] = $model;
 			$this->originalModels[$model->key] = $model;
 		}
-	}
+  }
 
 	public function size()
 	{
@@ -291,29 +364,13 @@ class Collection implements \IteratorAggregate
 			$relationship = $modelType::getRelationship($relationshipName);
 			$resultCollection = static::forge($relationship->modelType);
 
-			if($relationship instanceof FieldRelationship)
-  		{
-				foreach($this->models as $model)
-				{
-					$parent = $model->getParent($relationship);
-					if(!empty($parent))
-					{
-						$resultCollection->put($parent);
-					}
-				}
-			}
-			else if($relationship instanceof ReferencedRelationship)
+			foreach($this->models as $model)
 			{
-				foreach($this->models as $model)
+				$relationshipModels = $model->get($relationship);
+
+        if(!empty($relationshipModels))
 				{
-					if(array_key_exists($relationship->relationshipName, $model->children))
-					{
-						$childCollection = $model->children[$relationship->relationshipName];
-						foreach($childCollection->models as $childmodel)
-						{
-							$resultCollection->put($childModel);
-						}
-					}
+          $resultCollection->put($relationshipModels);
 				}
 			}
 		}
@@ -398,5 +455,58 @@ class Collection implements \IteratorAggregate
     }
 
     return $data;
+  }
+
+  private static function putReferencedCollectionOnReferencingCollection(FieldRelationship $referencingRelationship, $referencedRelationship, Collection $referencingCollection, Collection $referencedCollection)
+  {
+    foreach($referencingCollection as $referencingModel)
+    {
+      $fieldId = $referencingModel->getFieldId($referencingRelationship);
+
+      if(!empty($fieldId))
+      {
+        if(is_array($fieldId)) // remember, we can also have multiple references in the same field
+        {
+          foreach($fieldId as $referencedId)
+          {
+            $referencedModel = $referencedCollection->getModel($referencedId);
+            if(!empty($referencedModel))
+            {
+              if($referencingRelationship->isPolymorphic)
+              {
+                $referencedModelType = get_class($referencedModel);
+                // we must also find the inverse relationship to put the current model on
+                $referencedRelationship = $referencedModelType::getReferencedRelationshipForFieldRelationship($referencingRelationship);
+              }
+
+              $referencingModel->put($referencingRelationship, $referencedModel);
+              if(!empty($referencedRelationship))
+              {
+                $referencedModel->put($referencedRelationship, $referencingModel);
+              }
+            }
+          }
+        }
+        else
+        {
+          $referencedModel = $referencedCollection->getModel($fieldId);
+          if(!empty($referencedModel))
+          {
+            if($referencingRelationship->isPolymorphic)
+            {
+              $referencedModelType = get_class($referencedModel);
+              // we must also find the inverse relationship to put the current model on
+              $referencedRelationship = $referencedModelType::getReferencedRelationshipForFieldRelationship($referencingRelationship);
+            }
+
+            $referencingModel->put($referencingRelationship, $referencedModel);
+            if(!empty($referencedRelationship))
+            {
+              $referencedModel->put($referencedRelationship, $referencingModel);
+            }
+          }
+        }
+      }
+    }
   }
 }
