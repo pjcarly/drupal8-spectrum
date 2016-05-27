@@ -272,7 +272,6 @@ class ModelApiHandler extends BaseApiHandler
           // first of all, we fetch the data
           $source->fetch($relationshipNameToInclude);
           $fetchedCollection = $source->get($relationshipNameToInclude);
-
           if(!$fetchedCollection->isEmpty)
           {
             // next we get the type of the data we fetched

@@ -267,7 +267,7 @@ abstract class Model
       {
         if(array_key_exists($relationship->relationshipName, $this->relatedViaFieldOnEntity))
         {
-          return $relatedViaFieldOnEntity[$relationship->relationshipName];
+          return $this->relatedViaFieldOnEntity[$relationship->relationshipName];
         }
       }
       else if($relationship instanceof ReferencedRelationship)
@@ -801,15 +801,23 @@ abstract class Model
             $node->addAttribute($fieldNamePretty, $attribute);
             break;
           case 'entity_reference':
+            // this is really hacky, we must consider finding a more performant solution that the one with the target_ids now
             if(!empty($this->entity->get($fieldName)->entity))
             {
               $relationshipDataNode = new JsonApiDataNode();
+              $idsThatHaveBeenset = array();
               foreach($this->entity->get($fieldName) as $referencedEntity)
               {
-                $relationshipNode = new JsonApiNode();
-                $relationshipNode->setId($referencedEntity->target_id);
-                $relationshipNode->setType($referencedEntity->entity->bundle());
-                $relationshipDataNode->addNode($relationshipNode);
+                $target_id = $referencedEntity->target_id;
+
+                if(!array_key_exists($target_id, $idsThatHaveBeenset))
+                {
+                  $idsThatHaveBeenset[$target_id] = $target_id;
+                  $relationshipNode = new JsonApiNode();
+                  $relationshipNode->setId($referencedEntity->target_id);
+                  $relationshipNode->setType($referencedEntity->entity->bundle());
+                  $relationshipDataNode->addNode($relationshipNode);
+                }
               }
               $node->addRelationship($fieldNamePretty, $relationshipDataNode);
             }

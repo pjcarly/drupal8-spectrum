@@ -362,7 +362,15 @@ class Collection implements \IteratorAggregate
 		if(empty($firstRelationshipNameIndex))
 		{
 			$relationship = $modelType::getRelationship($relationshipName);
-			$resultCollection = static::forge($relationship->modelType);
+      $resultCollection = null;
+      if($relationship->isPolymorphic)
+      {
+        $resultCollection = PolymorphicCollection::forge(null);
+      }
+      else
+      {
+        $resultCollection = static::forge($relationship->modelType);
+      }
 
 			foreach($this->models as $model)
 			{
