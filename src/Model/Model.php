@@ -137,35 +137,35 @@ abstract class Model
             $relationshipCondition->operator = 'IN';
 
             $relationshipQuery->addCondition($relationshipCondition);
-            $relatedEntities = $relationshipQuery->fetch();
+            $referencedEntities = $relationshipQuery->fetch();
 
-            if(!empty($relatedEntities))
+            if(!empty($referencedEntities))
             {
-              $relatedModelType = null;
+              $referencedModelType = null;
               $referencedRelationship = null; // the inverse relationship
-              foreach($relatedEntities as $relatedEntity)
+              foreach($referencedEntities as $referencedEntity)
               {
-                $relatedModel = null;
-                if($relationship->isPolymorphic || empty($relatedModelType))
+                $referencedModel = null;
+                if($relationship->isPolymorphic || empty($referencedModelType))
                 {
                   // if the relationship is polymorphic we can get multiple bundles, so we must define the modeltype based on the bundle and entity of the current looping entity
                   // or if the related modeltype isn't set yet, we must set it once
-                  $relatedEntityType = $relatedEntity->getEntityTypeId();
-                  $relatedEntityBundle = $relatedEntity->type->target_id;
-                  $relatedModelType = Model::getModelClassForEntityAndBundle($relatedEntityType, $relatedEntityBundle);
+                  $referencedEntityType = $referencedEntity->getEntityTypeId();
+                  $referencedEntityBundle = $referencedEntity->type->target_id;
+                  $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
 
                   // we must also find the inverse relationship to put the current model on
-                  $referencedRelationship = $relatedModelType::getReferencedRelationshipForFieldRelationship($relationship);
+                  $referencedRelationship = $referencedModelType::getReferencedRelationshipForFieldRelationship($relationship);
                 }
 
                 // now that we have a model, lets put them one by one
-                $relatedModel = $relatedModelType::forge($relatedEntity);
-                $this->put($relationship, $relatedModel);
+                $referencedModel = $referencedModelType::forge($referencedEntity);
+                $this->put($relationship, $referencedModel);
 
                 // And finally if we found an inverse relationship, lets put (this) on the inverse (defining an inverse is optional, so we can just as easily find no inverses)
                 if(!empty($referencedRelationship))
                 {
-                  $relatedModel->put($referencedRelationship, $this);
+                  $referencedModel->put($referencedRelationship, $this);
                 }
               }
             }
@@ -176,27 +176,27 @@ abstract class Model
             $relationshipCondition->operator = '=';
 
             $relationshipQuery->addCondition($relationshipCondition);
-            $relatedEntity = $relationshipQuery->fetchSingle();
+            $referencedEntity = $relationshipQuery->fetchSingle();
 
-            if(!empty($relatedEntity))
+            if(!empty($referencedEntity))
             {
               // if the relationship is polymorphic we can get multiple bundles, so we must define the modeltype based on the bundle and entity of the fetched entity
-              $relatedEntityType = $relatedEntity->getEntityTypeId();
-              $relatedEntityBundle = $relatedEntity->type->target_id;
-              $relatedModelType = Model::getModelClassForEntityAndBundle($relatedEntityType, $relatedEntityBundle);
+              $referencedEntityType = $referencedEntity->getEntityTypeId();
+              $referencedEntityBundle = $referencedEntity->type->target_id;
+              $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
 
               // now that we have a model, lets put them one by one
-              $relatedModel = $relatedModelType::forge($relatedEntity);
+              $referencedModel = $referencedModelType::forge($referencedEntity);
 
-              $this->put($relationship, $relatedModel);
+              $this->put($relationship, $referencedModel);
 
               // we must also find the inverse relationship to put the current model on
-              $referencedRelationship = $relatedModelType::getReferencedRelationshipForFieldRelationship($relationship);
+              $referencedRelationship = $referencedModelType::getReferencedRelationshipForFieldRelationship($relationship);
 
               // And finally if we found an inverse relationship, lets put (this) on the inverse (defining an inverse is optional, so we can just as easily find no inverses)
               if(!empty($referencedRelationship))
               {
-                $relatedModel->put($referencedRelationship, $this);
+                $referencedModel->put($referencedRelationship, $this);
               }
             }
           }
@@ -217,10 +217,9 @@ abstract class Model
             foreach($referencingEntities as $referencingEntity)
             {
               $referencingModel = null;
-              if($relationship->isPolymorphic || empty($referencingModelType))
+              if(empty($referencingModelType))
               {
-                // if the relationship is polymorphic we can get multiple bundles, so we must define the modeltype based on the bundle and entity of the current looping entity
-                // or if the referencing modeltype isn't set yet, we must set it once
+                // if the referencing modeltype isn't set yet, we must set it once
                 $referencingEntityType = $referencingEntity->getEntityTypeId();
                 $referencingEntityBundle = $referencingEntity->type->target_id;
                 $referencingModelType = Model::getModelClassForEntityAndBundle($referencingEntityType, $referencingEntityBundle);
@@ -530,7 +529,7 @@ abstract class Model
   public static function getRelationship($relationshipName)
   {
     $sourceModelType = get_called_class();
-    $sourceModelType::setRelationships();
+    static::setRelationships($sourceModelType);
 
     if($sourceModelType::hasRelationship($relationshipName))
     {
@@ -562,9 +561,10 @@ abstract class Model
 
   public static function getRelationships()
   {
-      static::setRelationships();
+    $sourceModelType = get_called_class();
+    static::setRelationships($sourceModelType);
 
-      return static::$relationships;
+    return static::$relationships[$sourceModelType];
   }
 
   public static function addRelationship(Relationship $relationship)
@@ -722,6 +722,11 @@ abstract class Model
 
   public static function getModelClassForEntityAndBundle($entity, $bundle)
   {
+    if($entity === 'user' && empty($bundle)) // work around for the wierd user notation
+    {
+      $bundle = 'user';
+    }
+
     static::setModelClassMappings();
     if(array_key_exists($entity.'.'.$bundle, static::$modelClassMapping))
     {

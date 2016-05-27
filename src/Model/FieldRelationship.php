@@ -20,7 +20,7 @@ class FieldRelationship extends Relationship
 
 	public function getCondition()
 	{
-		$modelType = $this->modelType;
+		$modelType = $this->firstModelType;
 		return new Condition($modelType::$idField, 'IN', null);
 	}
 
@@ -46,15 +46,20 @@ class FieldRelationship extends Relationship
     {
       throw new \Drupal\spectrum\Exceptions\InvalidFieldException('Field '.$this->getField().' not found on modeltype: '.$relationshipSource);
     }
-
     $fieldSettings = $fieldDefinition->getItemDefinition()->getSettings();
 
     // Here we decide if our relationship is polymorphic or for a single entity/bundle type
     $relationshipEntityType = $fieldSettings['target_type'];
-    $relationshipBundle = array_shift($fieldSettings['handler_settings']['target_bundles']);
+    $relationshipBundle = null;
+    if(!empty($fieldSettings['handler_settings']['target_bundles']))
+    {
+      // with all entity references this shouldn't be a problem, however, in case of 'user', this is blank
+      // luckally we handle this correctly in getModelClassForEntityAndBundle
+      $relationshipBundle = reset($fieldSettings['handler_settings']['target_bundles']);
+    }
     $this->firstModelType = Model::getModelClassForEntityAndBundle($relationshipEntityType, $relationshipBundle);
 
-    if(sizeof($fieldSettings['handler_settings']['target_bundles']) > 1)
+    if(isset($fieldSettings['handler_settings']['target_bundles']) && sizeof($fieldSettings['handler_settings']['target_bundles']) > 1)
     {
       $this->isPolymorphic = true;
       $this->modelType = null;

@@ -101,7 +101,13 @@ class Collection implements \IteratorAggregate
                 // if the relationship is polymorphic we can get multiple bundles, so we must define the modeltype based on the bundle and entity of the current looping entity
                 // or if the related modeltype isn't set yet, we must set it once
                 $referencedEntityType = $referencedEntity->getEntityTypeId();
-                $referencedEntityBundle = $referencedEntity->type->target_id;
+                $referencedEntityBundle = null;
+                if(isset($referencedEntity->type->target_id))
+                {
+                  // with all entity references this shouldn't be a problem, however, in case of 'user', this is blank
+                  // luckally we handle this correctly in getModelClassForEntityAndBundle
+                  $referencedEntityBundle = $referencedEntity->type->target_id;
+                }
                 $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
 
                 // we must also find the inverse relationship to put the current model on
@@ -148,7 +154,7 @@ class Collection implements \IteratorAggregate
             foreach($referencingEntities as $referencingEntity)
             {
               $referencingModel = null;
-              if($relationship->isPolymorphic || empty($referencingModelType))
+              if(empty($referencingModelType))
               {
                 // if the relationship is polymorphic we can get multiple bundles, so we must define the modeltype based on the bundle and entity of the current looping entity
                 // or if the referencing modeltype isn't set yet, we must set it once
@@ -158,14 +164,8 @@ class Collection implements \IteratorAggregate
 
                 if($referencingCollection === null)
                 {
-                  if($relationship->isPolymorphic)
-                  {
-                    $referencingCollection = PolymorphicCollection::forge(null);
-                  }
-                  else
-                  {
-                    $referencingCollection = Collection::forge($referencingModelType);
-                  }
+                  // referencedRelationships are never polymorphics
+                  $referencingCollection = Collection::forge($referencingModelType);
                 }
               }
 
@@ -316,7 +316,7 @@ class Collection implements \IteratorAggregate
     }
 	}
 
-  private function addModelToArrays(Model $model)
+  protected function addModelToArrays(Model $model)
   {
     if(!array_key_exists($model->key, $this->models))
 		{

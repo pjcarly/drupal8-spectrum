@@ -51,7 +51,7 @@ class PolymorphicCollection extends Collection
       }
       else if($this->entityType !== $model::$entityType)
       {
-        throw new PolymorphicException('Only models with a shared entity type are allowed in a polymorphic collection')
+        throw new PolymorphicException('Only models with a shared entity type are allowed in a polymorphic collection');
       }
 
       // due to the the shared entity constraint, the key of polymorphic collections is unique,
