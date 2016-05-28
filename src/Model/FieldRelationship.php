@@ -76,7 +76,7 @@ class FieldRelationship extends Relationship
 	public function getField()
 	{
 		$positionOfDot = strpos($this->relationshipField, '.');
-		return substr($this->relationshipField, 0, $positionOfDot);
+		return $positionOfDot ? substr($this->relationshipField, 0, $positionOfDot) : $this->relationshipField;
 	}
 
 	public function getColumn()

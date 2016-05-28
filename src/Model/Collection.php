@@ -470,7 +470,6 @@ class Collection implements \IteratorAggregate
     foreach($referencingCollection as $referencingModel)
     {
       $fieldId = $referencingModel->getFieldId($referencingRelationship);
-
       if(!empty($fieldId))
       {
         if(is_array($fieldId)) // remember, we can also have multiple references in the same field

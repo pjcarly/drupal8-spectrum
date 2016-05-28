@@ -722,15 +722,13 @@ abstract class Model
 
   public static function getModelClassForEntityAndBundle($entity, $bundle)
   {
-    if($entity === 'user' && empty($bundle)) // work around for the wierd user notation
-    {
-      $bundle = 'user';
-    }
-
     static::setModelClassMappings();
-    if(array_key_exists($entity.'.'.$bundle, static::$modelClassMapping))
+
+    $key = Model::getKeyForEntityAndBundle($entity, $bundle);
+
+    if(array_key_exists($key, static::$modelClassMapping))
     {
-      return static::$modelClassMapping[$entity.'.'.$bundle];
+      return static::$modelClassMapping[$key];
     }
     else
     {
@@ -754,14 +752,21 @@ abstract class Model
         $entity = $modelClassName::$entityType;
         $bundle = $modelClassName::$bundle;
 
-        if(empty($entity) || empty($bundle))
+        if(empty($entity))
         {
-          throw new InvalidTypeException('Entity Type or Bundle not defined for '.$modelClassName);
+          throw new InvalidTypeException('Entity Type not defined for '.$modelClassName);
         }
 
-        static::$modelClassMapping[$entity.'.'.$bundle] = $modelClassName;
+        $key = Model::getKeyForEntityAndBundle($entity, $bundle);
+
+        static::$modelClassMapping[$key] = $modelClassName;
       }
     }
+  }
+
+  private static function getKeyForEntityAndBundle($entity, $bundle)
+  {
+    return empty($bundle) ? $entity : $entity.'.'.$bundle;
   }
 
   // This method returns the current Model as a JsonApiNode (jsonapi.org)

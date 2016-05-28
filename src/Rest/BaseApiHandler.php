@@ -77,6 +77,7 @@ abstract class BaseApiHandler
     else if($method === 'OPTIONS')
     {
       $response = $this->options($request);
+      $this->setDefaultHeaders($response);
     }
     else
     {

@@ -20,7 +20,6 @@ class ModelApiHandler extends BaseApiHandler
     $this->modelClassName = $modelClassName;
 
     $this->defaultHeaders['Content-Type'] = 'application/vnd.api+json';
-    $this->defaultHeaders['Access-Control-Allow-Origin'] = 'http://localhost:4200';
   }
 
   public function get(Request $request)
