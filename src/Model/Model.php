@@ -11,7 +11,7 @@ use Drupal\spectrum\Exceptions\NotImplementedException;
 use Drupal\spectrum\Exceptions\ModelClassNotDefinedException;
 use Drupal\spectrum\Exceptions\InvalidRelationshipTypeException;
 use Drupal\spectrum\Exceptions\RelationshipNotDefinedException;
-Use Drupal\spectrum\Utils\String;
+Use Drupal\spectrum\Utils\StringUtils;
 
 use Drupal\spectrum\Serializer\JsonApiRootNode;
 use Drupal\spectrum\Serializer\JsonApiNode;
@@ -686,7 +686,7 @@ abstract class Model
 
     foreach($fieldList as $key => $value)
     {
-      $fieldnamepretty = String::dasherize(str_replace('field_', '', $key));
+      $fieldnamepretty = StringUtils::dasherize(str_replace('field_', '', $key));
       $mapping[$fieldnamepretty] = $key;
     }
 

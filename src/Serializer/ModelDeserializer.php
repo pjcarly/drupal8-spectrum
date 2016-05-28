@@ -2,7 +2,6 @@
 
 namespace Drupal\spectrum\Serializer;
 
-Use Drupal\spectrum\Utils\String;
 use Drupal\spectrum\Model\ReferencedRelationship;
 use Drupal\spectrum\Model\FieldRelationship;
 

@@ -2,7 +2,7 @@
 
 namespace Drupal\spectrum\Utils;
 
-class String
+class StringUtils
 {
   static function camelize($input, $separator = '_')
   {
