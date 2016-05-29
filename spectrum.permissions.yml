@@ -2,3 +2,8 @@ administer spectrum:
   title: 'administer spectrum'
   description: 'Access the spectrum configuration options.'
   restrict access: TRUE
+
+api_login:
+  title: 'API Login'
+  description: 'Allows user to login via the API'
+  restrict access: TRUE;
