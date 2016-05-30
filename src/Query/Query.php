@@ -91,9 +91,16 @@ abstract class Query
     $query = $this->getQuery();
     $result = $query->execute();
 
-    $store = \Drupal::entityManager()->getStorage($this->entityType);
-
-    return empty($result) ? array() : $store->loadMultiple($result);
+    if($this->entityType === 'user')
+    {
+      // ugly fix for custom fields on User
+      return empty($result) ? array() : \Drupal\user\Entity\User::loadMultiple($result);
+    }
+    else
+    {
+      $store = \Drupal::entityManager()->getStorage($this->entityType);
+      return empty($result) ? array() : $store->loadMultiple($result);
+    }
   }
 
   public function fetchSingle()
@@ -107,9 +114,18 @@ abstract class Query
     }
     else
     {
-      $store = \Drupal::entityManager()->getStorage($this->entityType);
       $id = array_shift($result);
-      return empty($id) ? array() : $store->load($id);
+
+      if($this->entityType === 'user')
+      {
+        // ugly fix for custom fields on User
+        return empty($id) ? null : \Drupal\user\Entity\User::load($id);
+      }
+      else
+      {
+        $store = \Drupal::entityManager()->getStorage($this->entityType);
+        return empty($id) ? null : $store->load($id);
+      }
     }
   }
 

@@ -584,7 +584,14 @@ abstract class Model
 
   public static function getFieldDefinitions()
   {
-    return \Drupal::service('entity_field.manager')->getFieldDefinitions(static::$entityType, static::$bundle);
+    if(empty(static::$bundle))
+    {
+      return \Drupal::service('entity_field.manager')->getFieldDefinitions(static::$entityType, static::$entityType);
+    }
+    else
+    {
+      return \Drupal::service('entity_field.manager')->getFieldDefinitions(static::$entityType, static::$bundle);
+    }
   }
 
   public static function getFieldDefinition($fieldName)

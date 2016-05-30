@@ -57,31 +57,31 @@ abstract class BaseApiHandler
     if($method === 'GET')
     {
       $response = $this->get($request);
-      $this->setDefaultHeaders($response);
     }
     else if($method === 'POST')
     {
       $response = $this->post($request);
-      $this->setDefaultHeaders($response);
     }
     else if($method === 'PUT')
     {
       $response = $this->put($request);
-      $this->setDefaultHeaders($response);
     }
     else if($method === 'DELETE')
     {
       $response = $this->delete($request);
-      $this->setDefaultHeaders($response);
     }
     else if($method === 'OPTIONS')
     {
       $response = $this->options($request);
-      $this->setDefaultHeaders($response);
+    }
+
+    if(empty($response))
+    {
+      $response = new Response(null, 400, array());
     }
     else
     {
-      $response = new Response(null, 404, array());
+      $this->setDefaultHeaders($response);
     }
 
     return $response;
