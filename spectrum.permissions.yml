@@ -2,13 +2,3 @@ administer spectrum:
   title: 'administer spectrum'
   description: 'Access the spectrum configuration options.'
   restrict access: TRUE
-
-api login:
-  title: 'API Login'
-  description: 'Allows user to login via the API'
-  restrict access: TRUE;
-
-api token refresh:
-  title: 'API Token Refresh'
-  description: 'Allows user to refresh an access token with a refresh token'
-  restrict access: TRUE;
