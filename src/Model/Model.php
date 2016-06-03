@@ -817,6 +817,15 @@ abstract class Model
             if(!empty($this->entity->get($fieldName)->entity))
             {
               $relationshipDataNode = new JsonApiDataNode();
+
+              // Lets also check the cardinality of the field (amount of references the field can contain)
+              // If it is more than 1 item (or -1 in case of unlimited references), we must return an array
+              $fieldCardinality = $fieldDefinition->getFieldStorageDefinition()->getCardinality();
+              if($fieldCardinality !== 1)
+              {
+                $relationshipDataNode->asArray(true);
+              }
+
               $idsThatHaveBeenset = array();
               foreach($this->entity->get($fieldName) as $referencedEntity)
               {
@@ -831,6 +840,7 @@ abstract class Model
                   $relationshipDataNode->addNode($relationshipNode);
                 }
               }
+
               $node->addRelationship($fieldNamePretty, $relationshipDataNode);
             }
             break;
