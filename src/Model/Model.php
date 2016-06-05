@@ -781,7 +781,7 @@ abstract class Model
   {
     $node = new JsonApiNode();
 
-    $ignore_fields = array('revision_log', 'vid', 'revision_timestamp', 'revision_uid', 'revision_log', 'revision_translation_affected', 'revision_translation_affected', 'default_langcode', 'path', 'content_translation_source', 'content_translation_outdated', 'pass');
+    $ignore_fields = array('revision_log', 'vid', 'revision_timestamp', 'revision_uid', 'revision_log', 'revision_translation_affected', 'revision_translation_affected', 'default_langcode', 'path', 'content_translation_source', 'content_translation_outdated', 'pass', 'uuid', 'langcode');
     $manual_fields = array($this::$idField, 'type');
 
     $fieldToPrettyMapping = static::getFieldsToPrettyFieldsMapping();
@@ -806,10 +806,13 @@ abstract class Model
         switch ($fieldDefinition->getType())
         {
           case 'geolocation':
-            $attribute = new \stdClass();
-            $attribute->lat = $this->entity->get($fieldName)->lat;
-            $attribute->lng = $this->entity->get($fieldName)->lng;
-
+            $attribute = null;
+            if(!empty($this->entity->get($fieldName)->lat))
+            {
+              $attribute = new \stdClass();
+              $attribute->lat = $this->entity->get($fieldName)->lat;
+              $attribute->lng = $this->entity->get($fieldName)->lng;
+            }
             $node->addAttribute($fieldNamePretty, $attribute);
             break;
           case 'entity_reference':
@@ -865,6 +868,24 @@ abstract class Model
             {
               $node->addAttribute($fieldNamePretty, null);
             }
+            break;
+          case 'address':
+            $address = $this->entity->get($fieldName);
+            $attribute = null;
+            if(!empty($address->country_code))
+            {
+              $attribute = new \stdClass();
+              $attribute->country_code = $address->country_code;
+              $attribute->administrative_area = $address->administrative_area;
+              $attribute->locality = $address->locality;
+              $attribute->dependent_locality = $address->dependent_locality;
+              $attribute->postal_code = $address->postal_code;
+              $attribute->sorting_code = $address->sorting_code;
+              $attribute->address_line1 = $address->address_line1;
+              $attribute->address_line2 = $address->address_line2;
+
+            }
+            $node->addAttribute($fieldNamePretty, $attribute);
             break;
           case 'created':
           case 'changed':
