@@ -810,8 +810,8 @@ abstract class Model
             if(!empty($this->entity->get($fieldName)->lat))
             {
               $attribute = new \stdClass();
-              $attribute->lat = $this->entity->get($fieldName)->lat;
-              $attribute->lng = $this->entity->get($fieldName)->lng;
+              $attribute->lat = (float) $this->entity->get($fieldName)->lat;
+              $attribute->lng = (float) $this->entity->get($fieldName)->lng;
             }
             $node->addAttribute($fieldNamePretty, $attribute);
             break;
