@@ -18,27 +18,32 @@ abstract class BaseApiHandler
 
   public function get(Request $request)
   {
-    return new Response(null, 404, array());
+    return new Response(null, 405, array());
   }
 
   public function post(Request $request)
   {
-    return new Response(null, 404, array());
+    return new Response(null, 405, array());
   }
 
   public function put(Request $request)
   {
-    return new Response(null, 404, array());
+    return new Response(null, 405, array());
+  }
+
+  public function patch(Request $request)
+  {
+    return new Response(null, 405, array());
   }
 
   public function delete(Request $request)
   {
-    return new Response(null, 404, array());
+    return new Response(null, 405, array());
   }
 
   public function options(Request $request)
   {
-    return new Response(null, 404, array());
+    return new Response(null, 405, array());
   }
 
   private final function setDefaultHeaders(Response $response)
@@ -65,6 +70,10 @@ abstract class BaseApiHandler
     else if($method === 'PUT')
     {
       $response = $this->put($request);
+    }
+    else if($method === 'PATCH')
+    {
+      $response = $this->patch($request);
     }
     else if($method === 'DELETE')
     {
