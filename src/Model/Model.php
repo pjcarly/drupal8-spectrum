@@ -411,15 +411,7 @@ abstract class Model
 
   public function debugEntity()
   {
-    $values = array();
-    $fieldDefinitions = static::getFieldDefinitions();
-
-    foreach ($fieldDefinitions as $fieldName => $fieldDefinition)
-    {
-      $values[$fieldName] = $this->getFieldValue($fieldName, $fieldDefinition);
-    }
-
-    return $values;
+    return $this->serialize();
   }
 
   public static function hasRelationship($relationshipName)
@@ -463,7 +455,7 @@ abstract class Model
       }
     }
 
-    if(empty($entity))
+    if(empty($entity) && empty($id))
     {
       $values = array();
       if(!empty(static::$bundle))
@@ -476,7 +468,7 @@ abstract class Model
 
     if(!empty($entity))
     {
-        return new static($entity);
+      return new static($entity);
     }
   }
 
@@ -630,49 +622,6 @@ abstract class Model
   public function beforeUpdate(){}
   public function afterUpdate(){}
   public function beforeDelete(){}
-
-  public function getFieldValue($fieldName, $fieldDefinition = null)
-  {
-    // lets check if the fieldDefinition was passed, else let's get it
-    if($fieldDefinition === null)
-    {
-      $fieldDefinition = static::getFieldDefinition($fieldName);
-    }
-
-    if($fieldDefinition !== null)
-    {
-      $value;
-
-      // First let's check the manual fields
-      if($fieldName === 'type')
-      {
-        $value = $this->entity->get($fieldName)->target_id;
-      }
-      else if($fieldName === static::$idField)
-      {
-        $value = $this->entity->get($fieldName)->value;
-      }
-
-      // Now we'll check the other fields
-      switch ($fieldDefinition->getType())
-      {
-        case 'geolocation':
-          $value = array();
-          $value['lat'] = $this->entity->get($fieldName)->lat;
-          $value['lng'] = $this->entity->get($fieldName)->lng;
-          break;
-        case 'entity_reference':
-          $value = array();
-          $value['id'] = $this->entity->get($fieldName)->target_id;
-          break;
-        default:
-          $value = $this->entity->get($fieldName)->value;
-          break;
-      }
-
-      return $value;
-    }
-  }
 
   public static function getModelClassForEntityAndBundle($entity, $bundle)
   {

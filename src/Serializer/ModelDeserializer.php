@@ -5,30 +5,26 @@ namespace Drupal\spectrum\Serializer;
 use Drupal\spectrum\Model\ReferencedRelationship;
 use Drupal\spectrum\Model\FieldRelationship;
 
-class ModelDeserializer extends ModelSerializerBase
+class ModelDeserializer
 {
+  private $modelName;
+
   function __construct($modelName)
   {
-    parent::__construct($modelName);
+    $this->modelName = $modelName;
   }
 
-  function deserialize($type, $serialized)
+  function deserialize($serialized)
   {
-    switch($type)
-    {
-      case 'json-api':
-      default:
-        $deserialized = json_decode($serialized);
-        return $this->fromJsonApi($deserialized);
-      break;
-    }
+    $deserialized = json_decode($serialized);
+    return $this->fromJsonApi($deserialized);
   }
 
   public function fromJsonApi($deserialized)
   {
     // get helper variables
     $modelName = $this->modelName;
-    $fieldNameMapping = $this->getPrettyFieldsToFieldsMapping();
+    $fieldNameMapping = $modelName::getPrettyFieldsToFieldsMapping();
     //$fieldDefinitions = $model->getFieldDefinitions();
 
     // we'll keep track of some flags
@@ -87,6 +83,39 @@ class ModelDeserializer extends ModelSerializerBase
                 }
 
                 $model->entity->$fieldName->value = $dateValue;
+                break;
+              case 'entity_reference':
+              case 'image':
+                // TODO
+                break;
+              case 'address':
+                if(empty($attributeValue))
+                {
+                  $model->entity->$fieldName->country_code = null;
+                  $model->entity->$fieldName->administrative_area = null;
+                  $model->entity->$fieldName->locality = null;
+                  $model->entity->$fieldName->dependent_locality = null;
+                  $model->entity->$fieldName->postal_code = null;
+                  $model->entity->$fieldName->sorting_code = null;
+                  $model->entity->$fieldName->address_line1 = null;
+                  $model->entity->$fieldName->address_line2 = null;
+                }
+                else
+                {
+                  $model->entity->$fieldName->country_code = $attributeValue->country_code;
+                  $model->entity->$fieldName->administrative_area = $attributeValue->administrative_area;
+                  $model->entity->$fieldName->locality = $attributeValue->locality;
+                  $model->entity->$fieldName->dependent_locality = $attributeValue->dependent_locality;
+                  $model->entity->$fieldName->postal_code = $attributeValue->postal_code;
+                  $model->entity->$fieldName->sorting_code = $attributeValue->sorting_code;
+                  $model->entity->$fieldName->address_line1 = $attributeValue->address_line1;
+                  $model->entity->$fieldName->address_line2 = $attributeValue->address_line2;
+                }
+
+                break;
+              case 'created':
+              case 'changed':
+                // Do nothing, internal fields
                 break;
               default:
                 $model->entity->$fieldName->value = $attributeValue;

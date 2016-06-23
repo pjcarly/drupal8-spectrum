@@ -1,18 +1,18 @@
 <?php
 namespace Drupal\spectrum\Model;
 
-use Drupal\spectrum\Serializer\ModelSerializerBase;
 use Drupal\Component\Utility\Html;
 
-class Validation extends ModelSerializerBase
+class Validation
 {
   private $model;
   private $violations;
+  private $modelName;
 
 	public function __construct($model)
 	{
-    parent::__construct($model->getModelName());
 		$this->model = $model;
+    $this->modelName = $model->getModelName();
     $this->violations = $model->entity->validate();
 	}
 
@@ -65,7 +65,8 @@ class Validation extends ModelSerializerBase
     $errors = new \stdClass();
     $errors->errors = array();
 
-    $fieldToPrettyMapping = $this->getFieldsToPrettyFieldsMapping();
+    $modelName = $this->modelName;
+    $fieldToPrettyMapping = $modelName::getFieldsToPrettyFieldsMapping();
     foreach($this->violations as $violation)
     {
       if ($path = $violation->getPropertyPath())
@@ -101,5 +102,10 @@ class Validation extends ModelSerializerBase
     }
 
     return $errors;
+  }
+
+  public function serialize()
+  {
+    return $this->toJsonApi();
   }
 }
