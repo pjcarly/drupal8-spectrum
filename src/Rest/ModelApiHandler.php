@@ -243,12 +243,41 @@ class ModelApiHandler extends BaseApiHandler
 
   public function post(Request $request)
   {
+    $response;
+    $responseCode;
+
+    $jsonapidocument = json_decode($request->getContent());
+    if(!empty($jsonapidocument->data->type))
+    {
+      $modelClassName = $this->modelClassName;
+      $model = $modelClassName::createNew();
+      $model->applyChangesFromJsonAPIDocument($jsonapidocument);
+
+      $validation = $model->validate();
+
+      if($validation->hasSucceeded())
+      {
+        $model->save();
+        $response = $model->serialize();
+        $responseCode = 200;
+      }
+      else
+      {
+        $response = $validation->serialize();
+        $responseCode = 422;
+      }
+    }
+    else
+    {
+      unset($response);
+      $responseCode = 404;
+    }
     // $deserializer = new ModelDeserializer($this->modelClassName);
     // $model = $deserializer->deserialize($request->getContent());
 
     // TODO: Deserialize jsonapi document in model, and insert in DB
 
-    return parent::post($request);
+    return new Response(isset($response) ? json_encode($response) : null, $responseCode, array());
   }
 
   public function patch(Request $request)
@@ -264,13 +293,12 @@ class ModelApiHandler extends BaseApiHandler
 
       if(!empty($model)) // model found
       {
-        // TODO: apply changes from jsonapidocument to the model we fetched from the DB
-
+        $model->applyChangesFromJsonAPIDocument($jsonapidocument);
         $validation = $model->validate();
 
         if($validation->hasSucceeded())
         {
-          //$model->save();
+          $model->save();
           $response = $model->serialize();
           $responseCode = 200;
         }
