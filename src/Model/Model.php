@@ -585,6 +585,16 @@ abstract class Model
     }
   }
 
+  public static function deleteById($id)
+  {
+    if(isset($id))
+    {
+      $entityType = static::$entityType;
+      $entity = \Drupal::entityTypeManager()->getStorage($entityType)->load($id);
+      $entity->delete();
+    }
+  }
+
   public static function getFieldDefinition($fieldName)
   {
     $fieldDefinition = null;

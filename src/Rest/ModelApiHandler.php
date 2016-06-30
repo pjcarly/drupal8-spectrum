@@ -324,6 +324,21 @@ class ModelApiHandler extends BaseApiHandler
     return new Response(isset($response) ? json_encode($response) : null, $responseCode, array());
   }
 
+  public function delete(Request $request)
+  {
+    $response;
+    $responseCode;
+
+    $modelClassName = $this->modelClassName;
+    $modelClassName::deleteById($this->slug);
+
+    $response = new \stdClass();
+    $response->meta = new \stdClass();
+    $responseCode = 200;
+
+    return new Response(isset($response) ? json_encode($response) : null, $responseCode, array());
+  }
+
   protected function addSingleLink(JsonApiRootNode $jsonapi, $name, $baseUrl, $limit = 0, $page = 0, $sort = null)
   {
     $link = new JsonApiLink($name, $baseUrl);
