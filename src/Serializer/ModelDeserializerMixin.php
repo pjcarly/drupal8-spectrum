@@ -62,6 +62,9 @@ trait ModelDeserializerMixin
               case 'image':
                 // TODO
                 break;
+              case 'link':
+                $this->entity->$fieldName->uri = $attributeValue;
+                break;
               case 'address':
                 if(empty($attributeValue))
                 {
@@ -76,14 +79,17 @@ trait ModelDeserializerMixin
                 }
                 else
                 {
-                  $this->entity->$fieldName->country_code = $attributeValue->country_code;
-                  $this->entity->$fieldName->administrative_area = $attributeValue->administrative_area;
-                  $this->entity->$fieldName->locality = $attributeValue->locality;
-                  $this->entity->$fieldName->dependent_locality = $attributeValue->dependent_locality;
-                  $this->entity->$fieldName->postal_code = $attributeValue->postal_code;
-                  $this->entity->$fieldName->sorting_code = $attributeValue->sorting_code;
-                  $this->entity->$fieldName->address_line1 = $attributeValue->address_line1;
-                  $this->entity->$fieldName->address_line2 = $attributeValue->address_line2;
+                  $value = array();
+                  $value['country_code'] = $attributeValue->country_code;
+                  $value['administrative_area'] = $attributeValue->administrative_area;
+                  $value['locality'] = $attributeValue->locality;
+                  $value['dependent_locality'] = $attributeValue->dependent_locality;
+                  $value['postal_code'] = $attributeValue->postal_code;
+                  $value['sorting_code'] = $attributeValue->sorting_code;
+                  $value['address_line1'] = $attributeValue->address_line1;
+                  $value['address_line2'] = $attributeValue->address_line2;
+
+                  $this->entity->$fieldName = $value;
                 }
 
                 break;

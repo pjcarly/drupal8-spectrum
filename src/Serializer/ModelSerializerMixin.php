@@ -103,6 +103,9 @@ trait ModelSerializerMixin
               $node->addAttribute($fieldNamePretty, null);
             }
             break;
+          case 'link':
+            $node->addAttribute($fieldNamePretty, $this->entity->get($fieldName)->uri);
+            break;
           case 'address':
             $address = $this->entity->get($fieldName);
             $attribute = null;
