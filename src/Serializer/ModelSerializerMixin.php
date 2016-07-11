@@ -85,6 +85,7 @@ trait ModelSerializerMixin
             $attribute = new \stdClass();
             if(!empty($this->entity->get($fieldName)->entity))
             {
+              $attribute->id = $this->entity->get($fieldName)->target_id;
               $attribute->width = $this->entity->get($fieldName)->width;
               $attribute->height = $this->entity->get($fieldName)->height;
               $attribute->alt = $this->entity->get($fieldName)->alt;
@@ -102,6 +103,10 @@ trait ModelSerializerMixin
             {
               $node->addAttribute($fieldNamePretty, null);
             }
+            break;
+          case 'uri':
+            $node->addAttribute($fieldNamePretty, $this->entity->get($fieldName)->value);
+            $node->addAttribute('url', file_create_url($this->entity->get($fieldName)->value));
             break;
           case 'link':
             $node->addAttribute($fieldNamePretty, $this->entity->get($fieldName)->uri);

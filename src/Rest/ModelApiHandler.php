@@ -5,8 +5,6 @@ namespace Drupal\spectrum\Rest;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-use Drupal\spectrum\Serializer\ModelDeserializer;
-
 use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Serializer\JsonApiRootNode;
 use Drupal\spectrum\Serializer\JsonApiLink;
@@ -20,7 +18,6 @@ class ModelApiHandler extends BaseApiHandler
   {
     parent::__construct($slug);
     $this->modelClassName = $modelClassName;
-
     $this->defaultHeaders['Content-Type'] = 'application/vnd.api+json';
   }
 
@@ -91,7 +88,7 @@ class ModelApiHandler extends BaseApiHandler
         {
           // the json-api spec tells us, that all fields are sorted ascending, unless the field is prepended by a '-'
           // http://jsonapi.org/format/#fetching-sorting
-          $direction = $sortQueryField[0] === '-' ? 'DESC' : 'ASC';
+          $direction = (!empty($sortQueryField) && $sortQueryField[0]) === '-' ? 'DESC' : 'ASC';
           $prettyField = ltrim($sortQueryField, '-'); // lets remove the '-' from the start of the field if it exists
 
           // if the pretty field exists, lets add it to the sort order
@@ -272,10 +269,6 @@ class ModelApiHandler extends BaseApiHandler
       unset($response);
       $responseCode = 404;
     }
-    // $deserializer = new ModelDeserializer($this->modelClassName);
-    // $model = $deserializer->deserialize($request->getContent());
-
-    // TODO: Deserialize jsonapi document in model, and insert in DB
 
     return new Response(isset($response) ? json_encode($response) : null, $responseCode, array());
   }
