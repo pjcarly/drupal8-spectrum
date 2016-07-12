@@ -24,7 +24,7 @@ class BaseApiController implements ContainerAwareInterface
     $this->response = new Response(null, 404, array());
   }
 
-  public function handle(RouteMatchInterface $route_match, Request $request, $api, $slug = NULL)
+  public function handle(RouteMatchInterface $route_match, Request $request)
   {
     $config = \Drupal::service('config.factory');
     $alias_manager = \Drupal::service('path.alias_manager');
