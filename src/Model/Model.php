@@ -606,6 +606,34 @@ abstract class Model
     return $fieldDefinition;
   }
 
+  public static function getLabel()
+  {
+    $label = '';
+    $bundleInfo = static::getBundleInfo();
+    if(array_key_exists('label', $bundleInfo))
+    {
+      $label = $bundleInfo['label'];
+    }
+
+    return $label;
+  }
+
+  public static function getPlural()
+  {
+    return static::$plural; // todo, find a way to store this aside the label of the model
+  }
+
+  public static function getBundleKey()
+  {
+    return empty(static::$bundle) ? static::$entityType : static::$bundle;
+  }
+
+  public static function getBundleInfo()
+  {
+    $bundleInfo = \Drupal::service("entity_type.bundle.info")->getBundleInfo(static::$entityType);
+    return $bundleInfo[static::getBundleKey()];
+  }
+
   public function __get($property)
   {
 		if (property_exists($this, $property))
