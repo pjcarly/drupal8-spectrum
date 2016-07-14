@@ -650,18 +650,37 @@ abstract class Model
     }
   }
 
+  public static function getModelClasses()
+  {
+    if(!function_exists('get_registered_model_classes'))
+    {
+      throw new NotImplementedException('function get_registered_model_classes() hasn\'t been implemented yet, you must define a custom module with the function present, which returns a list of namespaced modelclasses');
+    }
+
+    return get_registered_model_classes();
+  }
+
+  public static function getModelClassByBundle($bundle)
+  {
+    $foundModelClass = null;
+    foreach(static::getModelClasses() as $modelClass)
+    {
+      if($modelClass::$bundle === $bundle || (empty($modelClass::$bundle) && $modelClass::$entityType === $bundle))
+      {
+        $foundModelClass = $modelClass;
+      }
+    }
+
+    return $foundModelClass;
+  }
+
   private static function setModelClassMappings()
   {
     if(static::$modelClassMapping === null)
     {
       static::$modelClassMapping = array();
 
-      if(!function_exists('get_registered_model_classes'))
-      {
-        throw new NotImplementedException('function get_registered_model_classes() hasn\'t been implemented yet');
-      }
-
-      foreach(get_registered_model_classes() as $modelClassName)
+      foreach(static::getModelClasses() as $modelClassName)
       {
         $entity = $modelClassName::$entityType;
         $bundle = $modelClassName::$bundle;

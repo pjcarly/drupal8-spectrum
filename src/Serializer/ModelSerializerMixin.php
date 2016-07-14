@@ -11,12 +11,17 @@ Use Drupal\spectrum\Utils\StringUtils;
 trait ModelSerializerMixin
 {
   // This method returns the current Model as a JsonApiNode (jsonapi.org)
+  public static function getIgnoreFields()
+  {
+    return array('type', 'revision_log', 'vid', 'revision_timestamp', 'revision_uid', 'revision_log', 'revision_translation_affected', 'revision_translation_affected', 'default_langcode', 'path', 'content_translation_source', 'content_translation_outdated', 'pass', 'uuid', 'langcode');
+  }
+
   public function getJsonApiNode()
   {
     $node = new JsonApiNode();
 
-    $ignore_fields = array('revision_log', 'vid', 'revision_timestamp', 'revision_uid', 'revision_log', 'revision_translation_affected', 'revision_translation_affected', 'default_langcode', 'path', 'content_translation_source', 'content_translation_outdated', 'pass', 'uuid', 'langcode');
-    $manual_fields = array($this::$idField, 'type');
+    $ignoreFields = static::getIgnorefields();
+    $manualFields = array($this::$idField, 'type');
 
     $fieldToPrettyMapping = static::getFieldsToPrettyFieldsMapping();
     $fieldDefinitions = static::getFieldDefinitions();
@@ -34,7 +39,7 @@ trait ModelSerializerMixin
       }
 
       // Now we'll check the other fields
-      if(!in_array($fieldName, $ignore_fields) && !in_array($fieldName, $manual_fields))
+      if(!in_array($fieldName, $ignoreFields) && !in_array($fieldName, $manualFields))
       {
         $fieldNamePretty = $fieldToPrettyMapping[$fieldName];
         switch ($fieldDefinition->getType())
@@ -177,7 +182,14 @@ trait ModelSerializerMixin
 
     foreach($fieldList as $key => $value)
     {
-      $fieldnamepretty = StringUtils::dasherize(str_replace('field_', '', $key));
+      if($key !== 'title')
+      {
+        $fieldnamepretty = StringUtils::dasherize(str_replace('field_', '', $key));
+      }
+      else
+      {
+        $fieldnamepretty = 'name';
+      }
       $mapping[$fieldnamepretty] = $key;
     }
 
