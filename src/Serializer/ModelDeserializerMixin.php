@@ -59,6 +59,18 @@ trait ModelDeserializerMixin
                 $this->entity->$fieldName->value = $dateValue;
                 break;
               case 'entity_reference':
+                // TODO
+                break;
+              case 'file':
+                if(empty($attributeValue))
+                {
+                  $this->entity->$fieldName->target_id = null;
+                }
+                else
+                {
+                  $this->entity->$fieldName->target_id = $attributeValue->id;
+                }
+                break;
               case 'image':
                 // TODO
                 break;

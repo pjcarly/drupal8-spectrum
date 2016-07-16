@@ -87,9 +87,9 @@ trait ModelSerializerMixin
             }
             break;
           case 'image':
-            $attribute = new \stdClass();
             if(!empty($this->entity->get($fieldName)->entity))
             {
+              $attribute = new \stdClass();
               $attribute->id = $this->entity->get($fieldName)->target_id;
               $attribute->width = $this->entity->get($fieldName)->width;
               $attribute->height = $this->entity->get($fieldName)->height;
@@ -99,6 +99,24 @@ trait ModelSerializerMixin
 
               $attribute->filename = $this->entity->get($fieldName)->entity->get('filename')->value;
               $attribute->uri = $this->entity->get($fieldName)->entity->get('uri')->value;
+              $attribute->filemime = $this->entity->get($fieldName)->entity->get('filemime')->value;
+              $attribute->filesize = $this->entity->get($fieldName)->entity->get('filesize')->value;
+
+              $node->addAttribute($fieldNamePretty, $attribute);
+            }
+            else
+            {
+              $node->addAttribute($fieldNamePretty, null);
+            }
+            break;
+          case 'file':
+            if(!empty($this->entity->get($fieldName)->entity))
+            {
+              $attribute = new \stdClass();
+              $attribute->id = $this->entity->get($fieldName)->target_id;
+              $attribute->filename = $this->entity->get($fieldName)->entity->get('filename')->value;
+              $attribute->uri = $this->entity->get($fieldName)->entity->get('uri')->value;
+              $attribute->url = $this->entity->get($fieldName)->entity->url();
               $attribute->filemime = $this->entity->get($fieldName)->entity->get('filemime')->value;
               $attribute->filesize = $this->entity->get($fieldName)->entity->get('filesize')->value;
 
