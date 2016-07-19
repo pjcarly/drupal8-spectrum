@@ -32,7 +32,7 @@ class PolymorphicCollection extends Collection
     throw new PolymorphicException('Fetch has no meaning for polymorphic collections');
 	}
 
-  public function put($objectToPut)
+  public function put($objectToPut, $includeInOriginalModels = FALSE)
 	{
     if($objectToPut instanceof Collection)
     {
@@ -57,9 +57,14 @@ class PolymorphicCollection extends Collection
       // due to the the shared entity constraint, the key of polymorphic collections is unique,
       // because in drupal ids are unique over different bundles withing the same entity
       // so we can just use the parent addModelToArrays function, we won't have any conflicts there
-      $this->addModelToArrays($model);
+      $this->addModelToArrays($model, $includeInOriginalModels);
     }
 	}
+
+  public function putNew()
+  {
+    throw new PolymorphicException('PutNew has no meaning for polymorphic collections, we can\'t know the type of model to create');
+  }
 
 	public function get($relationshipName)
 	{

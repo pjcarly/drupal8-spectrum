@@ -34,12 +34,40 @@ class Collection implements \IteratorAggregate
 			{
 				$model->save();
 			}
+
+      foreach($this->getModelsToDelete() as $modelToDelete)
+      {
+        $modelToDelete->delete();
+      }
 		}
 		else
 		{
 			$this->get($relationshipName)->save();
 		}
 	}
+
+  public function getModelsToDelete()
+  {
+    $existingRemovedModels = array();
+    $removedModelKeys = array_diff(array_keys($this->originalModels), array_keys($this->models));
+    foreach($removedModelKeys as $removedModelKey)
+    {
+      $removedModel = $this->originalModels[$removedModelKey];
+      if(!$removedModel->isNew())
+      {
+        $existingRemovedModels[$removedModel->key] = $removedModel;
+      }
+    }
+    return $existingRemovedModels;
+  }
+
+  public function remove($key)
+  {
+    if(array_key_exists($key, $this->models))
+    {
+      unset($this->models[$key]);
+    }
+  }
 
   public function validate($relationshipName = NULL)
   {
@@ -129,7 +157,7 @@ class Collection implements \IteratorAggregate
               // we can finally forge a new model
               $referencedModel = $referencedModelType::forge($referencedEntity);
               // and put it in the collection created above
-              $referencedCollection->put($referencedModel);
+              $referencedCollection->put($referencedModel, true);
             }
 
             static::putReferencedCollectionOnReferencingCollection($relationship, $referencedRelationship, $this, $referencedCollection);
@@ -171,7 +199,7 @@ class Collection implements \IteratorAggregate
 
               // now that we have a model, lets put them one by one
               $referencingModel = $referencingModelType::forge($referencingEntity);
-              $referencingCollection->put($referencingModel);
+              $referencingCollection->put($referencingModel, true);
             }
           }
 
@@ -291,17 +319,17 @@ class Collection implements \IteratorAggregate
 	{
 		foreach($models as $model)
 		{
-			$this->put($model);
+			$this->put($model, TRUE);
 		}
 	}
 
-	public function put($objectToPut)
+	public function put($objectToPut, $includeInOriginalModels = FALSE)
 	{
     if($objectToPut instanceof Collection)
     {
       foreach($objectToPut as $model)
       {
-        $this->put($model);
+        $this->put($model, $includeInOriginalModels);
       }
     }
     else
@@ -312,16 +340,28 @@ class Collection implements \IteratorAggregate
   			throw new InvalidTypeException('Model is not of type: '.$this->modelType);
   		}
 
-      $this->addModelToArrays($model);
+      $this->addModelToArrays($model, $includeInOriginalModels);
     }
 	}
 
-  protected function addModelToArrays(Model $model)
+  public function putNew()
+  {
+    $modelType = $this->modelType;
+    $newModel = $modelType::createNew();
+    $this->put($newModel);
+    return $newModel;
+  }
+
+  protected function addModelToArrays(Model $model, $includeInOriginalModels = FALSE)
   {
     if(!array_key_exists($model->key, $this->models))
 		{
 			$this->models[$model->key] = $model;
-			$this->originalModels[$model->key] = $model;
+
+      if($includeInOriginalModels)
+      {
+        $this->originalModels[$model->key] = $model;
+      }
 		}
   }
 

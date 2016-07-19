@@ -12,6 +12,7 @@ use Drupal\spectrum\Exceptions\NotImplementedException;
 use Drupal\spectrum\Exceptions\ModelClassNotDefinedException;
 use Drupal\spectrum\Exceptions\InvalidRelationshipTypeException;
 use Drupal\spectrum\Exceptions\RelationshipNotDefinedException;
+use Drupal\spectrum\Exceptions\PolymorphicException;
 
 abstract class Model
 {
@@ -50,14 +51,18 @@ abstract class Model
     }
   }
 
+  public function isNew()
+  {
+    return empty($this->getId());
+  }
+
   public function save($relationshipName = NULL)
   {
     if(empty($relationshipName))
     {
-      $isNew = empty($this->getId());
       $this->entity->save();
 
-      if($isNew)
+      if($this->isNew())
       {
         $this->setFieldForReferencedRelationships();
       }
@@ -65,6 +70,14 @@ abstract class Model
     else
     {
       $this->get($relationshipName)->save();
+    }
+  }
+
+  public function delete()
+  {
+    if(!$this->isNew())
+    {
+      $this->entity->delete();
     }
   }
 
@@ -264,17 +277,35 @@ abstract class Model
 
       if($relationship instanceof FieldRelationship)
       {
-        if(array_key_exists($relationship->relationshipName, $this->relatedViaFieldOnEntity))
+        if($relationship->isMultiple)
         {
+          if(!array_key_exists($relationship->relationshipName, $this->relatedViaFieldOnEntity))
+          {
+            $this->createNewCollection($relationship);
+          }
+
           return $this->relatedViaFieldOnEntity[$relationship->relationshipName];
+        }
+        else
+        {
+          if(array_key_exists($relationship->relationshipName, $this->relatedViaFieldOnEntity))
+          {
+            return $this->relatedViaFieldOnEntity[$relationship->relationshipName];
+          }
+          else
+          {
+            return NULL;
+          }
         }
       }
       else if($relationship instanceof ReferencedRelationship)
       {
-        if(array_key_exists($relationship->relationshipName, $this->relatedViaFieldOnExternalEntity))
+        if(!array_key_exists($relationship->relationshipName, $this->relatedViaFieldOnExternalEntity))
         {
-          return $this->relatedViaFieldOnExternalEntity[$relationship->relationshipName];
+          $this->createNewCollection($relationship);
         }
+
+        return $this->relatedViaFieldOnExternalEntity[$relationship->relationshipName];
       }
     }
     else
@@ -324,6 +355,32 @@ abstract class Model
     }
   }
 
+  private function createNewCollection($relationship)
+  {
+    if($relationship instanceof FieldRelationship)
+    {
+      if($relationship->isMultiple)
+      {
+        if($relationship->isPolymorphic)
+        {
+          $this->relatedViaFieldOnEntity[$relationship->relationshipName] = PolymorphicCollection::forge(null);
+        }
+        else
+        {
+          $this->relatedViaFieldOnEntity[$relationship->relationshipName] = Collection::forge($relationship->modelType);
+        }
+      }
+      else
+      {
+        throw new InvalidTypeException('Single Field Relationships do not require a collection');
+      }
+    }
+    else if($relationship instanceof ReferencedRelationship)
+    {
+      $this->relatedViaFieldOnExternalEntity[$relationship->relationshipName] = Collection::forge($relationship->modelType);
+    }
+  }
+
   public function isParentOf($model, $relationship)
   {
     $fieldId = $model->getFieldId($relationship);
@@ -364,19 +421,12 @@ abstract class Model
             // lets watch out, that the relationship can be polymorphic to create the correct collection if needed
             if(!array_key_exists($relationship->relationshipName, $this->relatedViaFieldOnEntity))
             {
-              if($relationship->isPolymorphic)
-              {
-                $this->relatedViaFieldOnEntity[$relationship->relationshipName] = PolymorphicCollection::forge(null);
-              }
-              else
-              {
-                $this->relatedViaFieldOnEntity[$relationship->relationshipName] = Collection::forge($relationship->modelType);
-              }
+              $this->createNewCollection($relationship);
             }
 
             // we put the model on the collection
             $this->relatedViaFieldOnEntity[$relationship->relationshipName]->put($objectToPut);
-            // and also append the entity field with the value (append because their can be multiple items)
+            // and also append the entity field with the value (append because there can be multiple items)
             $objectToPutId = $objectToPut->getId();
             if(!empty($objectToPutId))
             {
@@ -402,11 +452,39 @@ abstract class Model
       {
         if(!array_key_exists($relationship->relationshipName, $this->relatedViaFieldOnExternalEntity))
         {
-          $this->relatedViaFieldOnExternalEntity[$relationship->relationshipName] = Collection::forge($relationship->modelType);
+          $this->createNewCollection($relationship);
         }
 
         $this->relatedViaFieldOnExternalEntity[$relationship->relationshipName]->put($objectToPut);
       }
+    }
+  }
+
+  public function putNew($relationship)
+  {
+    if(is_string($relationship)) // we only have the relationship name
+    {
+      $relationship = static::getRelationship($relationship);
+    }
+
+    if($relationship instanceof FieldRelationship)
+    {
+      if($relationship->isPolymorphic)
+      {
+        throw new PolymorphicException('PutNew has no meaning for a polymorphic relationship, we can\'t know the type');
+      }
+
+      $relationshipModelType = $relationship->modelType;
+      $relationshipModel = $relationshipModelType::createNew();
+      $this->put($relationship, $relationshipModel);
+      return $relationshipModel;
+    }
+    else if($relationship instanceof ReferencedRelationship)
+    {
+      $relationshipModelType = $relationship->modelType;
+      $relationshipModel = $relationshipModelType::createNew();
+      $this->put($relationship, $relationshipModel);
+      return $relationshipModel;
     }
   }
 
