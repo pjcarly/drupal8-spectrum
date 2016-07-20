@@ -50,6 +50,7 @@ class Collection implements \IteratorAggregate
   {
     $existingRemovedModels = array();
     $removedModelKeys = array_diff(array_keys($this->originalModels), array_keys($this->models));
+
     foreach($removedModelKeys as $removedModelKey)
     {
       $removedModel = $this->originalModels[$removedModelKey];

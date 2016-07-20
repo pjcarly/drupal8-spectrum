@@ -172,12 +172,12 @@ abstract class Model
 
                 // now that we have a model, lets put them one by one
                 $referencedModel = $referencedModelType::forge($referencedEntity);
-                $this->put($relationship, $referencedModel);
+                $this->put($relationship, $referencedModel, true);
 
                 // And finally if we found an inverse relationship, lets put (this) on the inverse (defining an inverse is optional, so we can just as easily find no inverses)
                 if(!empty($referencedRelationship))
                 {
-                  $referencedModel->put($referencedRelationship, $this);
+                  $referencedModel->put($referencedRelationship, $this, true);
                 }
               }
             }
@@ -200,7 +200,7 @@ abstract class Model
               // now that we have a model, lets put them one by one
               $referencedModel = $referencedModelType::forge($referencedEntity);
 
-              $this->put($relationship, $referencedModel);
+              $this->put($relationship, $referencedModel, true);
 
               // we must also find the inverse relationship to put the current model on
               $referencedRelationship = $referencedModelType::getReferencedRelationshipForFieldRelationship($relationship);
@@ -208,7 +208,7 @@ abstract class Model
               // And finally if we found an inverse relationship, lets put (this) on the inverse (defining an inverse is optional, so we can just as easily find no inverses)
               if(!empty($referencedRelationship))
               {
-                $referencedModel->put($referencedRelationship, $this);
+                $referencedModel->put($referencedRelationship, $this, true);
               }
             }
           }
@@ -239,8 +239,8 @@ abstract class Model
 
               // now that we have a model, lets put them one by one
               $referencingModel = $referencingModelType::forge($referencingEntity);
-              $this->put($relationship, $referencingModel);
-              $referencingModel->put($relationship->fieldRelationship, $this);
+              $this->put($relationship, $referencingModel, true);
+              $referencingModel->put($relationship->fieldRelationship, $this, true);
             }
           }
         }
@@ -391,7 +391,7 @@ abstract class Model
     return !empty($fieldId) && !empty($id) && (is_array($fieldId) && in_array($id, $fieldId) || !is_array($fieldId) && $fieldId === $id);
   }
 
-  public function put($relationship, $objectToPut)
+  public function put($relationship, $objectToPut, $includeInOriginalModels = false)
   {
     if($objectToPut != null && ($objectToPut instanceof Model || $objectToPut instanceof Collection))
     {
@@ -412,7 +412,7 @@ abstract class Model
           {
             foreach($objectToPut as $model)
             {
-              $this->put($relationshp, $model);
+              $this->put($relationshp, $model, $includeInOriginalModels);
             }
           }
           else if($objectToPut instanceof Model)
@@ -425,7 +425,7 @@ abstract class Model
             }
 
             // we put the model on the collection
-            $this->relatedViaFieldOnEntity[$relationship->relationshipName]->put($objectToPut);
+            $this->relatedViaFieldOnEntity[$relationship->relationshipName]->put($objectToPut, $includeInOriginalModels);
             // and also append the entity field with the value (append because there can be multiple items)
             $objectToPutId = $objectToPut->getId();
             if(!empty($objectToPutId))
@@ -455,7 +455,7 @@ abstract class Model
           $this->createNewCollection($relationship);
         }
 
-        $this->relatedViaFieldOnExternalEntity[$relationship->relationshipName]->put($objectToPut);
+        $this->relatedViaFieldOnExternalEntity[$relationship->relationshipName]->put($objectToPut, $includeInOriginalModels);
       }
     }
   }
@@ -481,9 +481,21 @@ abstract class Model
     }
     else if($relationship instanceof ReferencedRelationship)
     {
+      $id = $this->getId();
       $relationshipModelType = $relationship->modelType;
       $relationshipModel = $relationshipModelType::createNew();
+
+      // If this record already has an Id, we can fill it in on the new model
+      if(!empty($id))
+      {
+        $relationshipField = $relationship->fieldRelationship->getField();
+        $relationshipColumn = $relationship->fieldRelationship->getColumn();
+
+        $relationshipModel->entity->$relationshipField->$relationshipColumn = $id;
+      }
+
       $this->put($relationship, $relationshipModel);
+
       return $relationshipModel;
     }
   }
