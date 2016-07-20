@@ -6,6 +6,8 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 use Drupal\spectrum\Query\Condition;
+use Drupal\spectrum\Model\Collection;
+use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Serializer\JsonApiRootNode;
 use Drupal\spectrum\Serializer\JsonApiLink;
 
@@ -228,6 +230,17 @@ class ModelApiHandler extends BaseApiHandler
       if(!empty($result))
       {
         $jsonapi->addNode($result->getJsonApiNode());
+
+        // let's check for includes as well
+        if($request->query->has('include'))
+        {
+          // includes are comma seperated
+          $includes = explode(',', $request->query->get('include'));
+          if(!empty($includes))
+          {
+            $this->checkForIncludes($result, $jsonapi, $includes);
+          }
+        }
       }
       else
       {
@@ -363,28 +376,55 @@ class ModelApiHandler extends BaseApiHandler
         {
           // first of all, we fetch the data
           $source->fetch($relationshipNameToInclude);
-          $fetchedCollection = $source->get($relationshipNameToInclude);
-          if(!$fetchedCollection->isEmpty)
-          {
-            // next we get the type of the data we fetched
-            $relationship = $modelClassName::getRelationship($relationshipNameToInclude);
-            $relationshipType = $relationship->modelType;
+          $fetchedObject = $source->get($relationshipNameToInclude);
 
-            // Here we check if we already fetched data of the same type
-            if(array_key_exists($relationshipType, $fetchedCollections))
+          // We don't know yet if this is a Collection or a Model we just fetched,
+          // as the source we fetched it from can be both as well
+          if($fetchedObject instanceof Collection)
+          {
+            $fetchedCollection = $fetchedObject;
+            if(!$fetchedCollection->isEmpty)
             {
-              // we already fetched data of the same type before, lets merge it with the data we have, so we don't create duplicates in the response
-              // luckally for us, collection->put() handles duplicates by checking for id
-              $previouslyFetchedCollection = $fetchedCollections[$relationshipType];
-              foreach($fetchedCollection as $model)
+              // next we get the type of the data we fetched
+              $relationship = $modelClassName::getRelationship($relationshipNameToInclude);
+              $relationshipType = $relationship->modelType;
+
+              // Here we check if we already fetched data of the same type
+              if(array_key_exists($relationshipType, $fetchedCollections))
               {
-                $previouslyFetchedCollection->put($model);
+                // we already fetched data of the same type before, lets merge it with the data we have, so we don't create duplicates in the response
+                // luckally for us, collection->put() handles duplicates by checking for id
+                $previouslyFetchedCollection = $fetchedCollections[$relationshipType];
+                foreach($fetchedCollection as $model)
+                {
+                  $previouslyFetchedCollection->put($model);
+                }
+              }
+              else
+              {
+                // we haven't fetched this type yet, lets cache it in case we do later
+                $fetchedCollections[$relationshipType] = $fetchedCollection;
               }
             }
-            else
+          }
+          else if($fetchedObject instanceof Model)
+          {
+            $fetchedModel = $fetchedObject;
+            if(!empty($fetchedModel))
             {
-              // we haven't fetched this type yet, lets cache it in case we do later
-              $fetchedCollections[$relationshipType] = $fetchedCollection;
+              // next we get the type of the data we fetched
+              $relationship = $modelClassName::getRelationship($relationshipNameToInclude);
+              $relationshipType = $relationship->modelType;
+
+              // now we check if we already included objects of the same type
+              if(!array_key_exists($relationshipType, $fetchedCollections))
+              {
+                // we haven't fetched this type yet, lets cache it in case we do later
+                $fetchedCollections[$relationshipType] = Collection::forge($relationshipType);
+              }
+
+              $previouslyFetchedCollection = $fetchedCollections[$relationshipType];
+              $previouslyFetchedCollection->put($fetchedModel);
             }
           }
         }

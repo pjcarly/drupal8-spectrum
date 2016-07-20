@@ -46,6 +46,11 @@ class Collection implements \IteratorAggregate
 		}
 	}
 
+  public function sort($sortingFunction)
+  {
+    uasort($this->models, array($this->modelType, $sortingFunction));
+  }
+
   public function getModelsToDelete()
   {
     $existingRemovedModels = array();
