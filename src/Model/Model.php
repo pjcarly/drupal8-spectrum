@@ -752,14 +752,19 @@ abstract class Model
   public function afterUpdate(){}
   public function beforeDelete(){}
 
-  public static function getModelClassForEntityAndBundle($entity, $bundle)
+  public static function hasModelClassForEntityAndBundle($entity, $bundle)
   {
     static::setModelClassMappings();
 
     $key = Model::getKeyForEntityAndBundle($entity, $bundle);
+    return array_key_exists($key, static::$modelClassMapping);
+  }
 
-    if(array_key_exists($key, static::$modelClassMapping))
+  public static function getModelClassForEntityAndBundle($entity, $bundle)
+  {
+    if(static::hasModelClassForEntityAndBundle($entity, $bundle))
     {
+      $key = Model::getKeyForEntityAndBundle($entity, $bundle);
       return static::$modelClassMapping[$key];
     }
     else

@@ -1,23 +1,22 @@
 <?php
 namespace Drupal\spectrum\Triggers;
 
+use Drupal\spectrum\Model\Model;
+
 class ModelTrigger
 {
-  private $modelClasses;
-
-  public function __construct($modelClasses)
-  {
-    $this->modelClasses = $modelClasses;
-  }
-
-  function handle($entity, $trigger)
+  public static function handle($entity, $trigger)
   {
     if(!empty($entity) && !empty($trigger))
     {
-      $modelClass = $this->getModelClassForEntity($entity);
-      if(!empty($modelClass))
+      $entityType = $entity->getEntityTypeId();
+      $bundle = $entity->bundle();
+
+      if(Model::hasModelClassForEntityAndBundle($entityType, $bundle))
       {
+        $modelClass = Model::getModelClassForEntityAndBundle($entityType, $bundle);
         $model = new $modelClass($entity);
+        
         switch($trigger)
         {
           case 'presave':
@@ -42,24 +41,5 @@ class ModelTrigger
         }
       }
     }
-  }
-
-  function getModelClassForEntity($entity)
-  {
-    $entityType = $entity->getEntityTypeId();
-    $bundle = $entity->bundle();
-
-    $foundModelClass = null;
-
-    foreach($this->modelClasses as $modelClass)
-    {
-      if($modelClass::$entityType === $entityType && $modelClass::$bundle == $bundle)
-      {
-        $foundModelClass = $modelClass;
-        break;
-      }
-    }
-
-    return $foundModelClass;
   }
 }
