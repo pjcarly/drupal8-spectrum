@@ -48,7 +48,8 @@ class Collection implements \IteratorAggregate
 
   public function sort($sortingFunction)
   {
-    uasort($this->models, array($this->modelType, $sortingFunction));
+    // Bug in PHP causes PHP warnings for uasort, we surpressed warnings with @, but be weary!
+    @uasort($this->models, array($this->modelType, $sortingFunction));
   }
 
   public function getModelsToDelete()
