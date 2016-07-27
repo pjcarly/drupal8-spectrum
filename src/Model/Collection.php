@@ -76,6 +76,11 @@ class Collection implements \IteratorAggregate
     }
   }
 
+  public function removeAll()
+  {
+    $this->models = array();
+  }
+
   public function validate($relationshipName = NULL)
   {
     if(empty($relationshipName))
