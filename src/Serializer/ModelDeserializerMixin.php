@@ -30,6 +30,9 @@ trait ModelDeserializerMixin
 
             switch($fieldDefinition->getType())
             {
+              case 'boolean':
+                $this->entity->$fieldName->value = empty($attributeValue) ? '0' : '1';
+                break;
               case 'geolocation':
                 $this->entity->$fieldName->lat = $attributeValue->lat;
                 $this->entity->$fieldName->lng = $attributeValue->lng;

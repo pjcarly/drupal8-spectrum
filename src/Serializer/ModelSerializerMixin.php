@@ -20,7 +20,7 @@ trait ModelSerializerMixin
   {
     $node = new JsonApiNode();
 
-    $ignoreFields = static::getIgnorefields();
+    $ignoreFields = static::getIgnoreFields();
     $manualFields = array($this::$idField, 'type');
 
     $fieldToPrettyMapping = static::getFieldsToPrettyFieldsMapping();
@@ -44,6 +44,9 @@ trait ModelSerializerMixin
         $fieldNamePretty = $fieldToPrettyMapping[$fieldName];
         switch ($fieldDefinition->getType())
         {
+          case 'boolean':
+            $node->addAttribute($fieldNamePretty, ($this->entity->get($fieldName)->value === '1'));
+            break;
           case 'geolocation':
             $attribute = null;
             if(!empty($this->entity->get($fieldName)->lat))
