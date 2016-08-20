@@ -58,7 +58,7 @@ trait ModelSerializerMixin
             $node->addAttribute($fieldNamePretty, $attribute);
             break;
           case 'entity_reference':
-            // this is really hacky, we must consider finding a more performant solution that the one with the target_ids now
+            // this is really hacky, we must consider finding a more performant solution than the one with the target_ids now
             if(!empty($this->entity->get($fieldName)->entity))
             {
               $relationshipDataNode = new JsonApiDataNode();
