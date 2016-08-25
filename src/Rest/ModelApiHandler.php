@@ -90,7 +90,7 @@ class ModelApiHandler extends BaseApiHandler
         {
           // the json-api spec tells us, that all fields are sorted ascending, unless the field is prepended by a '-'
           // http://jsonapi.org/format/#fetching-sorting
-          $direction = (!empty($sortQueryField) && $sortQueryField[0]) === '-' ? 'DESC' : 'ASC';
+          $direction = (!empty($sortQueryField) && $sortQueryField[0] === '-') ? 'DESC' : 'ASC';
           $prettyField = ltrim($sortQueryField, '-'); // lets remove the '-' from the start of the field if it exists
 
           // if the pretty field exists, lets add it to the sort order
@@ -135,7 +135,8 @@ class ModelApiHandler extends BaseApiHandler
 
               if(!empty($operator) && !empty($value) && !empty($field))
               {
-                $query->addCondition(new Condition($field, $operator, $value));
+                $condition = new Condition($field, $operator, $value);
+                $query->addCondition($condition);
               }
             }
           }
