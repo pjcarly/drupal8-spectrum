@@ -43,6 +43,11 @@ class JsonApiDataNode extends JsonApiBaseNode
       $serialized->links = $this->getSerializedLinks();
     }
 
+    if(!empty($this->meta))
+    {
+      $serialized->meta = $this->meta;
+    }
+
     if(is_array($this->data) || $this->asArray)
     {
       $serializedData = array();

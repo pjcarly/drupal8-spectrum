@@ -14,7 +14,7 @@ use Drupal\spectrum\Serializer\JsonApiLink;
 class ModelApiHandler extends BaseApiHandler
 {
   private $modelClassName;
-  protected $maxLimit = 2000;
+  protected $maxLimit = 200;
 
   public function __construct($modelClassName, $slug = null)
   {
@@ -168,14 +168,31 @@ class ModelApiHandler extends BaseApiHandler
           if(!empty($totalCount))
           {
             $lastPage = ceil($totalCount / $this->maxLimit);
+            $currentPage = empty($page) ? 1 : $page;
+
             $this->addSingleLink($jsonapi, 'last', $baseUrl, 0, $lastPage, $sort);
+
+            // let's include some meta data
+            $jsonapi->addMeta('count', (int)$result->size);
+            $jsonapi->addMeta('total-count', (int)$totalCount);
+            $jsonapi->addMeta('page-count', (int)$lastPage);
+            $jsonapi->addMeta('page-size', (int)$this->maxLimit);
+            $jsonapi->addMeta('page-current', (int)$currentPage);
+            if(!empty($previousPage))
+            {
+              $jsonapi->addMeta('page-prev', (int)$previousPage);
+            }
 
             // and finally, we also check if the next page isn't larger than the last page
             $nextPage = empty($page) ? 2 : $page+1;
             if($nextPage <= $lastPage)
             {
               $this->addSingleLink($jsonapi, 'next', $baseUrl, 0, $nextPage, $sort);
+              $jsonapi->addMeta('page-next', (int)$nextPage);
             }
+
+            $jsonapi->addMeta('result-row-first', (int)(($currentPage-1) * $this->maxLimit) +1 );
+            $jsonapi->addMeta('result-row-last', (int)$result->size < $this->maxLimit ? ((($currentPage-1) * $this->maxLimit) + $result->size) : ($currentPage * $this->maxLimit));
           }
         }
         else if(!empty($limit))
@@ -197,15 +214,42 @@ class ModelApiHandler extends BaseApiHandler
           if(!empty($totalCount))
           {
             $lastPage = ceil($totalCount / $limit);
+            $currentPage = empty($page) ? 1 : $page;
+
             $this->addSingleLink($jsonapi, 'last', $baseUrl, $limit, $lastPage, $sort);
+
+            // let's include some meta data
+            $jsonapi->addMeta('count', (int)$result->size);
+            $jsonapi->addMeta('total-count', (int)$totalCount);
+            $jsonapi->addMeta('page-count', (int)$lastPage);
+            $jsonapi->addMeta('page-size', (int)$limit);
+            $jsonapi->addMeta('page-current', (int)$currentPage);
+            if(!empty($previousPage))
+            {
+              $jsonapi->addMeta('page-prev', (int)$previousPage);
+            }
 
             // and finally, we also check if the next page isn't larger than the last page
             $nextPage = empty($page) ? 2 : $page+1;
             if($nextPage <= $lastPage)
             {
               $this->addSingleLink($jsonapi, 'next', $baseUrl, $limit, $nextPage, $sort);
+              $jsonapi->addMeta('page-next', (int)$nextPage);
             }
+
+            $jsonapi->addMeta('result-row-first', (int)(($currentPage-1) * $limit) +1 );
+            $jsonapi->addMeta('result-row-last', (int)$result->size < $limit ? ((($currentPage-1) * $limit) + $result->size) : ($currentPage * $limit));
           }
+        }
+        else
+        {
+          $jsonapi->addMeta('count', (int)$result->size);
+          $jsonapi->addMeta('total-count', (int)$result->size);
+          $jsonapi->addMeta('page-count', (int)1);
+          $jsonapi->addMeta('page-size', (int)$this->maxLimit);
+          $jsonapi->addMeta('page-current', (int)1);
+          $jsonapi->addMeta('result-row-first', (int)1);
+          $jsonapi->addMeta('result-row-last', (int)$result->size);
         }
 
         $node = $result->getJsonApiNode();

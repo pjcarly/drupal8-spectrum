@@ -5,6 +5,17 @@ namespace Drupal\spectrum\Serializer;
 abstract class JsonApiBaseNode
 {
   protected $links;
+  protected $meta;
+
+  public function addMeta($key, $value)
+  {
+    if($this->meta === null)
+    {
+      $this->meta = array();
+    }
+
+    $this->meta[$key] = $value;
+  }
 
   public function addLink($name, JsonApiLink $link)
   {
