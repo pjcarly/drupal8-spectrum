@@ -93,11 +93,31 @@ class ModelApiHandler extends BaseApiHandler
           $direction = (!empty($sortQueryField) && $sortQueryField[0] === '-') ? 'DESC' : 'ASC';
           $prettyField = ltrim($sortQueryField, '-'); // lets remove the '-' from the start of the field if it exists
 
+          $prettyFieldParts = explode('.', $prettyField);
+
+
           // if the pretty field exists, lets add it to the sort order
-          if(array_key_exists($prettyField, $prettyToFieldsMap))
+          if(array_key_exists($prettyFieldParts[0], $prettyToFieldsMap))
           {
-            $field = $prettyToFieldsMap[$prettyField];
-            $query->addSortOrder($field, $direction);
+            $field = $prettyToFieldsMap[$prettyFieldParts[0]];
+
+            if(sizeof($prettyFieldParts) > 1)
+            {
+              $typePrettyToFieldsMap = $modelClassName::getTypePrettyFieldToFieldsMapping();
+              // meaning we have a extra column present
+              $fieldDefinition = $modelClassName::getFieldDefinition($field);
+              $fieldType = $fieldDefinition->getType();
+
+              if(array_key_exists($fieldType, $typePrettyToFieldsMap) && array_key_exists($prettyFieldParts[1], $typePrettyToFieldsMap[$fieldType]))
+              {
+                $column = $typePrettyToFieldsMap[$fieldType][$prettyFieldParts[1]];
+                $query->addSortOrder($field.'.'.$column, $direction);
+              }
+            }
+            else
+            {
+              $query->addSortOrder($field, $direction);
+            }
           }
         }
       }

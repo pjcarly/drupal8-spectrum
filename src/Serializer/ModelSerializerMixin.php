@@ -42,7 +42,8 @@ trait ModelSerializerMixin
       if(!in_array($fieldName, $ignoreFields) && !in_array($fieldName, $manualFields))
       {
         $fieldNamePretty = $fieldToPrettyMapping[$fieldName];
-        switch ($fieldDefinition->getType())
+        $fieldType = $fieldDefinition->getType();
+        switch ($fieldType)
         {
           case 'boolean':
             $node->addAttribute($fieldNamePretty, ($this->entity->get($fieldName)->value === '1'));
@@ -143,14 +144,14 @@ trait ModelSerializerMixin
             if(!empty($address->country_code))
             {
               $attribute = new \stdClass();
-              $attribute->country_code = $address->country_code;
-              $attribute->administrative_area = $address->administrative_area;
-              $attribute->locality = $address->locality;
-              $attribute->dependent_locality = $address->dependent_locality;
-              $attribute->postal_code = $address->postal_code;
-              $attribute->sorting_code = $address->sorting_code;
-              $attribute->address_line1 = $address->address_line1;
-              $attribute->address_line2 = $address->address_line2;
+              $attribute->country = $address->country_code;
+              //$attribute->administrative_area = $address->administrative_area;
+              $attribute->city = $address->locality;
+              //$attribute->dependent_locality = $address->dependent_locality;
+              $attribute->{'postal-code'} = $address->postal_code;
+              //$attribute->sorting_code = $address->sorting_code;
+              $attribute->street = $address->address_line1;
+              //$attribute->address_line2 = $address->address_line2;
 
             }
             $node->addAttribute($fieldNamePretty, $attribute);
@@ -193,6 +194,34 @@ trait ModelSerializerMixin
     $root->addNode($node);
 
     return $root->serialize();
+  }
+
+  public static function getTypePrettyFieldToFieldsMapping()
+  {
+    $mapping = array();
+    $mapping['address'] = array();
+    $mapping['address']['country'] = 'country_code';
+    $mapping['address']['city'] = 'locality';
+    $mapping['address']['postal-code'] = 'postal_code';
+    $mapping['address']['street'] = 'address_line1';
+    return $mapping;
+  }
+
+  public static function getTypeFieldToPrettyFielsMapping()
+  {
+    $prettyMapping = static::getTypePrettyFieldToFieldsMapping();
+    $mapping = array();
+
+    foreach($prettyMapping as $type => $prettyFieldsMapping)
+    {
+      $mapping[$type] = array();
+      foreach($prettyFieldsMapping as $prettyField => $localField)
+      {
+        $mapping[$type][$localField] = $prettyField;
+      }
+    }
+
+    return $mapping;
   }
 
   // This function returns a mapping of the different fields, with "field_" stripped, and a dasherized representation of the field name
