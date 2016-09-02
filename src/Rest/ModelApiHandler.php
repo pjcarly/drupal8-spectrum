@@ -126,9 +126,9 @@ class ModelApiHandler extends BaseApiHandler
       if($request->query->has('filter'))
       {
         $filter = $request->query->get('filter');
-        if(array_key_exists('fields', $filter) && is_array($filter['fields']))
+        if(is_array($filter))
         {
-          foreach(array_keys($filter['fields']) as $prettyField)
+          foreach(array_keys($filter) as $prettyField)
           {
             // lets start by making sure the field exists
             if(array_key_exists($prettyField, $prettyToFieldsMap))
@@ -137,7 +137,7 @@ class ModelApiHandler extends BaseApiHandler
               $operator = null;
               $value = null;
 
-              $filterValue = $filter['fields'][$prettyField];
+              $filterValue = $filter[$prettyField];
 
               // the filter value can either be the specific value, or an array with extra attributes
               if(is_array($filterValue))
