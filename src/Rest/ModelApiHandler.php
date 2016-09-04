@@ -131,9 +131,12 @@ class ModelApiHandler extends BaseApiHandler
           foreach(array_keys($filter) as $prettyField)
           {
             // lets start by making sure the field exists
-            if(array_key_exists($prettyField, $prettyToFieldsMap))
+            // we explode, because we have a potential field with a column (like address.city) as opposed to just a field (like name)
+            $prettyFieldParts = explode('.', $prettyField);
+
+            if(array_key_exists($prettyFieldParts[0], $prettyToFieldsMap))
             {
-              $field = $prettyToFieldsMap[$prettyField];
+              $field = $prettyToFieldsMap[$prettyFieldParts[0]];
               $operator = null;
               $value = null;
 
@@ -155,8 +158,27 @@ class ModelApiHandler extends BaseApiHandler
 
               if(!empty($operator) && !empty($value) && !empty($field))
               {
-                $condition = new Condition($field, $operator, $value);
-                $query->addCondition($condition);
+                if(sizeof($prettyFieldParts) > 1)
+                {
+                  // this means we have a field with a column (like address.city)
+                  $typePrettyToFieldsMap = $modelClassName::getTypePrettyFieldToFieldsMapping();
+                  // meaning we have a extra column present
+                  $fieldDefinition = $modelClassName::getFieldDefinition($field);
+                  $fieldType = $fieldDefinition->getType();
+
+                  if(array_key_exists($fieldType, $typePrettyToFieldsMap) && array_key_exists($prettyFieldParts[1], $typePrettyToFieldsMap[$fieldType]))
+                  {
+                    $column = $typePrettyToFieldsMap[$fieldType][$prettyFieldParts[1]];
+                    $condition = new Condition($field.'.'.$column, $operator, $value);
+                    $query->addCondition($condition);
+                  }
+                }
+                else
+                {
+                  // just a field, no column (like name)
+                  $condition = new Condition($field, $operator, $value);
+                  $query->addCondition($condition);
+                }
               }
             }
           }
@@ -328,6 +350,7 @@ class ModelApiHandler extends BaseApiHandler
       $model = $modelClassName::createNew();
       $model->applyChangesFromJsonAPIDocument($jsonapidocument);
 
+      $model->beforeValidate();
       $validation = $model->validate();
 
       if($validation->hasSucceeded())
@@ -365,6 +388,7 @@ class ModelApiHandler extends BaseApiHandler
       if(!empty($model)) // model found
       {
         $model->applyChangesFromJsonAPIDocument($jsonapidocument);
+        $model->beforeValidate();
         $validation = $model->validate();
 
         if($validation->hasSucceeded())

@@ -746,6 +746,7 @@ abstract class Model
     return property_exists($this, $property) || array_key_exists($property, $this->relatedViaFieldOnEntity) || array_key_exists($property, $this->relatedViaFieldOnExternalEntity);
   }
 
+  public function beforeValidate(){}
   public function beforeInsert(){}
   public function afterInsert(){}
   public function beforeUpdate(){}
