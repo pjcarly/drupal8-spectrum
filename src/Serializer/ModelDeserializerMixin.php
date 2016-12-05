@@ -75,7 +75,15 @@ trait ModelDeserializerMixin
                 }
                 break;
               case 'image':
-                // TODO
+                \Drupal::logger('spectrum')->notice(json_encode($attributeValue));
+                if(empty($attributeValue))
+                {
+                  $this->entity->$fieldName->target_id = null;
+                }
+                else
+                {
+                  $this->entity->$fieldName->target_id = $attributeValue->id;
+                }
                 break;
               case 'link':
                 $this->entity->$fieldName->uri = $attributeValue;
