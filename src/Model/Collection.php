@@ -113,7 +113,6 @@ class Collection implements \IteratorAggregate
 		{
 			$modelType = $this->modelType;
 			$relationship = $modelType::getRelationship($relationshipName);
-
 			$relationshipQuery = $relationship->getRelationshipQuery();
 			$relationshipCondition = $relationship->getCondition();
 

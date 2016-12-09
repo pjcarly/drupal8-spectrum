@@ -125,7 +125,7 @@ abstract class Model
   public function fetch($relationshipName)
   {
     $lastRelationshipNameIndex = strrpos($relationshipName, '.');
-
+	
     if(empty($lastRelationshipNameIndex)) // relationship name without extra relationships
     {
       $relationship = static::getRelationship($relationshipName);
