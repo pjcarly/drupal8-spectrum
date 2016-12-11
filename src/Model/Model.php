@@ -310,9 +310,9 @@ abstract class Model
     }
     else
     {
-      $firstRelationshipName = substr($relationshipName, 0,  $firstRelationshipNameIndex);
+      $firstRelationshipName = substr($relationship, 0,  $firstRelationshipNameIndex);
       $firstRelationshipGet = $this->get($firstRelationshipName);
-      $newRelationshipName = substr($relationshipName, $firstRelationshipNameIndex+1);
+      $newRelationshipName = substr($relationship, $firstRelationshipNameIndex+1);
 
       return $firstRelationshipGet->get($newRelationshipName);
     }
@@ -753,6 +753,33 @@ abstract class Model
   public function afterUpdate(){}
   public function beforeDelete(){}
 
+	public function doCascadingDeletes()
+	{
+		$relationships = static::getRelationships();
+    foreach($relationships as $relationship)
+    {
+      if($relationship instanceof ReferencedRelationship && $relationship->cascadingDelete)
+      {
+        $this->fetch($relationship->relationshipName);
+				$referencedRelationship = $this->get($relationship->relationshipName);
+        if(!empty($referencedRelationship))
+        {
+					if($referencedRelationship instanceof Collection)
+					{
+						foreach($referencedRelationship as $model)
+						{
+							$model->entity->delete();
+						}
+					}
+					else if($referencedRelationship instanceof Model)
+					{
+						$referencedRelationship->entity->delete();
+					}
+        }
+      }
+    }
+	}
+	
   public static function hasModelClassForEntityAndBundle($entity, $bundle)
   {
     static::setModelClassMappings();

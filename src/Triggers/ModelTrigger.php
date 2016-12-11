@@ -37,6 +37,7 @@ class ModelTrigger
           break;
           case 'delete':
             $model->beforeDelete();
+            $model->doCascadingDeletes();
           break;
         }
       }
