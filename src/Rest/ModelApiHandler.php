@@ -472,24 +472,22 @@ class ModelApiHandler extends BaseApiHandler
             $fetchedCollection = $fetchedObject;
             if(!$fetchedCollection->isEmpty)
             {
-              // next we get the type of the data we fetched
-              $relationship = $modelClassName::getRelationship($relationshipNameToInclude);
-              $relationshipType = $relationship->modelType;
-              // Here we check if we already fetched data of the same type
-              if(array_key_exists($relationshipType, $fetchedCollections))
+              foreach($fetchedCollection as $model)
               {
-                // we already fetched data of the same type before, lets merge it with the data we have, so we don't create duplicates in the response
-                // luckally for us, collection->put() handles duplicates by checking for id
-                $previouslyFetchedCollection = $fetchedCollections[$relationshipType];
-                foreach($fetchedCollection as $model)
+                // watch out, we can't use $relationship->modelType, because that doesn't work for polymorphic relationships
+                $relationshipType = get_class($model);
+                // Here we check if we already fetched data of the same type
+                if(!array_key_exists($relationshipType, $fetchedCollections))
                 {
-                  $previouslyFetchedCollection->put($model);
+                  // we haven't fetched this type yet, lets cache it in case we do later
+                  $fetchedCollections[$relationshipType] = $fetchedCollection;
                 }
-              }
-              else
-              {
-                // we haven't fetched this type yet, lets cache it in case we do later
-                $fetchedCollections[$relationshipType] = $fetchedCollection;
+                
+                // we do it this way, because we might have fetched records of the same type before
+                // this way we cache collections based on type in the $fetchedCollections, and put new records on there
+                $previouslyFetchedCollection = $fetchedCollections[$relationshipType];
+                // luckally for us, collection->put() handles duplicates by checking for id
+                $previouslyFetchedCollection->put($model);
               }
             }
           }
@@ -498,10 +496,8 @@ class ModelApiHandler extends BaseApiHandler
             $fetchedModel = $fetchedObject;
             if(!empty($fetchedModel))
             {
-              // next we get the type of the data we fetched
-              $relationship = $modelClassName::getRelationship($relationshipNameToInclude);
-              $relationshipType = $relationship->modelType;
-
+              // watch out, we can't use $relationship->modelType, because that doesn't work for polymorphic relationships
+              $relationshipType = get_class($fetchedModel); 
               // now we check if we already included objects of the same type
               if(!array_key_exists($relationshipType, $fetchedCollections))
               {

@@ -618,7 +618,7 @@ abstract class Model
     }
     else
     {
-      throw new RelationshipNotDefinedException('Relationship '.$relationshipName.' does not exist');
+      throw new RelationshipNotDefinedException('Relationship '.$relationshipName.' does not exist on model '.$sourceModelType);
     }
   }
 
