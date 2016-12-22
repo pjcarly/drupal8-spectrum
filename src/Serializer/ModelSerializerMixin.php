@@ -31,7 +31,7 @@ trait ModelSerializerMixin
       // First let's check the manual fields
       if($fieldName === 'type')
       {
-        $node->setType($this->entity->get($fieldName)->target_id);
+        $node->setType(StringUtils::dasherize($this->entity->get($fieldName)->target_id));
       }
       else if($fieldName === static::$idField)
       {

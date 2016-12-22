@@ -61,9 +61,6 @@ trait ModelDeserializerMixin
 
                 $this->entity->$fieldName->value = $dateValue;
                 break;
-              case 'entity_reference':
-                // TODO
-                break;
               case 'file':
                 if(empty($attributeValue))
                 {
@@ -148,7 +145,11 @@ trait ModelDeserializerMixin
                   $relationshipField = $relationship->getField();
                   $relationshipColumn = $relationship->getColumn();
 
-                  if(!empty($relationshipValue->data))
+                  if(empty($relationshipValue->data))
+                  {
+                    $this->entity->$relationshipField->$relationshipColumn = null;
+                  }
+                  else
                   {
                     $this->entity->$relationshipField->$relationshipColumn = $relationshipValue->data->id;
                   }
