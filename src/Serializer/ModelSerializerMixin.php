@@ -45,8 +45,14 @@ trait ModelSerializerMixin
         $fieldType = $fieldDefinition->getType();
         switch ($fieldType)
         {
+          case 'autonumber':
+            $node->addAttribute($fieldNamePretty, (int) $this->entity->get($fieldName)->value);
+            break;
           case 'boolean':
             $node->addAttribute($fieldNamePretty, ($this->entity->get($fieldName)->value === '1'));
+            break;
+          case 'decimal':
+            $node->addAttribute($fieldNamePretty, (double) $this->entity->get($fieldName)->value);
             break;
           case 'geolocation':
             $attribute = null;
