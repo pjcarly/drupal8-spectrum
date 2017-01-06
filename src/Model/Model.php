@@ -34,7 +34,7 @@ abstract class Model
   public $relatedViaFieldOnExternalEntity = array();
 
   // json-api options
-  public static $inlineRelationships = array();
+  public static $embeddedApiRelationships = array();
 
   public function __construct($entity)
   {
