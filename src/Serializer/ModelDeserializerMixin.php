@@ -165,7 +165,7 @@ trait ModelDeserializerMixin
           }
         }
       }
-      else if(in_array($key, static::$inlineRelationships))
+      else if(in_array($key, static::$embeddedApiRelationships))
       {
         // first we'll check if the relationship exists
         try

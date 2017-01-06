@@ -30,11 +30,11 @@ abstract class Model
   public $entity;
   public $key;
 
-  public $relatedViaFieldOnEntity = array();
-  public $relatedViaFieldOnExternalEntity = array();
+  public $relatedViaFieldOnEntity = [];
+  public $relatedViaFieldOnExternalEntity = [];
 
   // json-api options
-  public static $embeddedApiRelationships = array();
+  public static $embeddedApiRelationships = [];
 
   public function __construct($entity)
   {
@@ -125,7 +125,7 @@ abstract class Model
   public function fetch($relationshipName)
   {
     $lastRelationshipNameIndex = strrpos($relationshipName, '.');
-	
+
     if(empty($lastRelationshipNameIndex)) // relationship name without extra relationships
     {
       $relationship = static::getRelationship($relationshipName);
@@ -779,7 +779,7 @@ abstract class Model
       }
     }
 	}
-	
+
   public static function hasModelClassForEntityAndBundle($entity, $bundle)
   {
     static::setModelClassMappings();
