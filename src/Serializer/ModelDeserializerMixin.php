@@ -4,6 +4,7 @@ namespace Drupal\spectrum\Serializer;
 
 use Drupal\spectrum\Model\ReferencedRelationship;
 use Drupal\spectrum\Model\FieldRelationship;
+use Drupal\spectrum\Serializer\JsonApiRootNode;
 
 trait ModelDeserializerMixin
 {
@@ -163,43 +164,6 @@ trait ModelDeserializerMixin
           } catch (\Drupal\spectrum\Exceptions\RelationshipNotDefinedException $e) {
             // ignore, the relationship passed doesn't exist
           }
-        }
-      }
-      else if(in_array($key, static::$embeddedApiRelationships))
-      {
-        // first we'll check if the relationship exists
-        try
-        {
-
-          $relationship = $this::getRelationship($key);
-
-          // now the relationship exists, we'll do something different depending on the type of relationship
-          if($relationship instanceof ReferencedRelationship)
-          {
-            // With children, we'll have to loop every value, and deserialize it as well
-            foreach($value as $deserializedChild)
-            {
-              // we'll get a child model by recursivly deserializing it as well
-              $childModelDeserializer = new ModelDeserializer($relationship->modelType);
-              $childModel = $childModelDeserializer->fromJsonApi($deserializedChild);
-
-              if(!empty($childModel))
-              {
-                // we'll add the child model to our parent
-                $this->put($relationship, $childModel);
-
-                // and finally add the relationship to the found relationships, so we know what to save later
-                $foundRelationships[$relationship->relationshipName] = $relationship;
-              }
-            }
-          }
-          else if ($relationship instanceof FieldRelationship)
-          {
-            //TODO: implement
-          }
-
-        } catch (\Drupal\spectrum\Exceptions\RelationshipNotDefinedException $e) {
-          // ignore, the relationship passed doesn't exist
         }
       }
     }

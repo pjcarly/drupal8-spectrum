@@ -68,4 +68,18 @@ class JsonApiRootNode extends JsonApiDataNode
       $this->data = $node->data;
     }
   }
+
+  public static function getNoneDefaultDataKeys($jsonapidocument)
+  {
+    $noneDefaultKeys = [];
+    $standardKeys = ['type', 'id', 'attributes', 'relationships', 'links'];
+    foreach($jsonapidocument->data as $key => $value)
+    {
+      if(!in_array($key, $standardKeys))
+      {
+        $noneDefaultKeys[] = $key;
+      }
+    }
+    return $noneDefaultKeys;
+  }
 }

@@ -7,9 +7,12 @@ use Symfony\Component\HttpFoundation\Response;
 
 use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Model\Collection;
+use Drupal\spectrum\Model\FieldRelationship;
+use Drupal\spectrum\Model\ReferencedRelationship;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Serializer\JsonApiRootNode;
 use Drupal\spectrum\Serializer\JsonApiLink;
+use Drupal\spectrum\Exceptions\NotImplementedException;
 
 class ModelApiHandler extends BaseApiHandler
 {
@@ -346,27 +349,99 @@ class ModelApiHandler extends BaseApiHandler
     $jsonapidocument = json_decode($request->getContent());
     if(!empty($jsonapidocument->data->type))
     {
+      // First we'll build the root model from the json api document
       $modelClassName = $this->modelClassName;
+      // since we're talking about a post here, it's always a create, a new model
       $model = $modelClassName::createNew();
+      // here we fill in the attributes on the new model from the json api document
       $model->applyChangesFromJsonAPIDocument($jsonapidocument);
-
+      // we trigger the beforeValidate as we might need to trigger some functionalitity before doing the validation
+      // and potentially sending back incorrect errors
       $model->beforeValidate();
+      // next we do the validation, in the return object we get a potential error document
       $validation = $model->validate();
 
+      // Next we'll check for included relationships
+      // We start of by getting the none default keys from the data attribute in the jsonapi document
+      // this isn't part of the jsonapi spec unfortunatly, but for now this is the only way to embed records in a POST or a PATCH
+      // the functionality is currently based on the DS.EmbeddedRecordsMixin of Ember
+      // But will be rewritten once JsonAPI includes embedding in the spec
+      $includedRelationshipsToSave = [];
+      $noneDefaultKeys = JsonApiRootNode::getNoneDefaultDataKeys($jsonapidocument);
+      foreach($noneDefaultKeys as $noneDefaultKey)
+      {
+        if(array_key_exists($noneDefaultKey, $modelClassName::$embeddedApiRelationships))
+        {
+          // Lets get the relationship from the model
+          $includedRelationshipName = $modelClassName::$embeddedApiRelationships[$noneDefaultKey];
+          $includedRelationship = $modelClassName::getRelationship($includedRelationshipName);
+
+          if($includedRelationship instanceof FieldRelationship)
+          {
+            // currently not supported
+            throw new NotImplementedException('Including parent relationships while saving is not supported yet');
+          }
+          else if($includedRelationship instanceof ReferencedRelationship)
+          {
+            // Next we will loop every included model in the included relationship in the jsonapidocument
+            // in order to create a new child model, apply the attributes from the json api document, and validate each one
+            $inlineData = $jsonapidocument->data->$noneDefaultKey;
+            foreach ($inlineData as $inlineCount => $inlineJsonApiDocument)
+            {
+              $includedRelationshipsToSave[] = $includedRelationshipName;
+              // we put a new child model on the just created model
+              $childModel = $model->putNew($includedRelationship);
+
+              // and apply all the attributes from the json document
+              $childModel->applyChangesFromJsonAPIDocument($inlineJsonApiDocument);
+
+              // and lets validate it as well
+              $childModel->beforeValidate();
+              $childValidation = $childModel->validate();
+              // we musn't forget, that both the parents and the children aren't persisted in the database yet
+              // because of models and collections, the structure is kept for saving, but it is impossible to validate a potential required parent for a child
+              // that is why we will add an ignore on the relationship field for the child for a NotNullConstraint
+              $childValidation->addIgnore($includedRelationship->fieldRelationship->getField(), 'Drupal\Core\Validation\Plugin\Validation\Constraint\NotNullConstraint');
+              // the first argument sets the path in the validation
+              // we must keep track of the position in the array, this must reflect in the path
+              $validation->addChildValidation($noneDefaultKey.'/'.$inlineCount.'/', $childValidation);
+            }
+          }
+        }
+      }
+
+      // Depending on the result of the validation, let's send the the proper result
       if($validation->hasSucceeded())
       {
+        $jsonapi = new JsonApiRootNode();
+        // No errors, we can save, and return the newly created model serialized
         $model->save();
-        $response = $model->serialize();
+        // We must also save potential included relationships
+        $uniqueIncludedRelationships = array_unique($includedRelationshipsToSave);
+        foreach($uniqueIncludedRelationships as $includedRelationshipToSave)
+        {
+          $model->save($includedRelationshipToSave);
+        }
+        // we serialize the response
+        $jsonapi->addNode($model->getJsonApiNode());
+
+        // also check if we need to include any included relationships in the response
+        $this->checkForIncludes($model, $jsonapi, $uniqueIncludedRelationships);
+
+        // and finally we can serialize and set the code
+        $response = $jsonapi->serialize();
         $responseCode = 200;
       }
       else
       {
+        // Unfortunatly we have some errors, let's serialize the error object, and set the proper response code
         $response = $validation->serialize();
         $responseCode = 422;
       }
     }
     else
     {
+      // No type, cannot be parsed
       unset($response);
       $responseCode = 404;
     }
@@ -482,7 +557,7 @@ class ModelApiHandler extends BaseApiHandler
                   // we haven't fetched this type yet, lets cache it in case we do later
                   $fetchedCollections[$relationshipType] = $fetchedCollection;
                 }
-                
+
                 // we do it this way, because we might have fetched records of the same type before
                 // this way we cache collections based on type in the $fetchedCollections, and put new records on there
                 $previouslyFetchedCollection = $fetchedCollections[$relationshipType];
@@ -497,7 +572,7 @@ class ModelApiHandler extends BaseApiHandler
             if(!empty($fetchedModel))
             {
               // watch out, we can't use $relationship->modelType, because that doesn't work for polymorphic relationships
-              $relationshipType = get_class($fetchedModel); 
+              $relationshipType = get_class($fetchedModel);
               // now we check if we already included objects of the same type
               if(!array_key_exists($relationshipType, $fetchedCollections))
               {
