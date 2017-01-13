@@ -26,6 +26,7 @@ class BaseApiController implements ContainerAwareInterface
 
   public function handle(RouteMatchInterface $route_match, Request $request, $api = NULL, $slug = NULL, $action = NULL)
   {
+    // We let the request pass through Drupal's internals, so other modules can apply correct headers
     $config = \Drupal::service('config.factory');
     $alias_manager = \Drupal::service('path.alias_manager');
     $path_matcher = new PathMatcher($config, $route_match);

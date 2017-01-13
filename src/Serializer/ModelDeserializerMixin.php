@@ -48,14 +48,12 @@ trait ModelDeserializerMixin
                   $fieldSettingsDatetimeType = $fieldDefinition->getItemDefinition()->getSettings()['datetime_type'];
                   if($fieldSettingsDatetimeType === 'date')
                   {
-                    $dateValue = new \DateTime();
-                    $dateValue->setTimestamp($attributeValue);
+                    $dateValue = new \DateTime($attributeValue);
                     $dateValue = $dateValue->format('Y-m-d');
                   }
                   else if($fieldSettingsDatetimeType === 'datetime')
                   {
-                    $dateValue = new \DateTime();
-                    $dateValue->setTimestamp($attributeValue);
+                    $dateValue = new \DateTime($attributeValue);
                     $dateValue = $dateValue->format('Y-m-d').'T'.$dateValue->format('H:i:s');
                   }
                 }
@@ -73,7 +71,6 @@ trait ModelDeserializerMixin
                 }
                 break;
               case 'image':
-                \Drupal::logger('spectrum')->notice(json_encode($attributeValue));
                 if(empty($attributeValue))
                 {
                   $this->entity->$fieldName->target_id = null;

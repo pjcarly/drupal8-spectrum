@@ -166,17 +166,17 @@ class Validation
           {
             $prettyField = $fieldToPrettyMapping[$fieldName];
             $error = new \stdClass();
-            $error->detail = strip_tags($violation->getMessage()->render());
+            $error->detail = strip_tags('('.$prettyField.') ' . $violation->getMessage()->render());
             $error->source = new \stdClass();
-            $error->source->pointer = 'data/attributes/'.$prettyField;
+            $error->source->pointer = '/data/attributes/'.$prettyField;
             $errors->errors[] = $error;
           }
           else
           {
             $error = new \stdClass();
-            $error->detail = strip_tags($violation->getMessage()->render() . ' ('.$fieldName.')');
+            $error->detail = strip_tags($violation->getMessage()->render());
             $error->source = new \stdClass();
-            $error->source->pointer = 'data';
+            $error->source->pointer = '/data';
             $errors->errors[] = $error;
           }
         }
@@ -185,7 +185,7 @@ class Validation
           $error = new \stdClass();
           $error->detail = strip_tags($violation->getMessage()->render());
           $error->source = new \stdClass();
-          $error->source->pointer = 'data';
+          $error->source->pointer = '/data';
           $errors->errors[] = $error;
         }
       }
@@ -200,7 +200,7 @@ class Validation
         foreach($childRecordErrors as $childRecordError)
         {
           // we must include the path in the error pointer
-          $childRecordError->source->pointer = $path . $childRecordError->source->pointer;
+          $childRecordError->source->pointer = '/data'. $path . $childRecordError->source->pointer;
           $errors->errors[] = $childRecordError;
         }
       }

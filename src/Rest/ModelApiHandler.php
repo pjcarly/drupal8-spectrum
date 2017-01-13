@@ -404,7 +404,7 @@ class ModelApiHandler extends BaseApiHandler
               $childValidation->addIgnore($includedRelationship->fieldRelationship->getField(), 'Drupal\Core\Validation\Plugin\Validation\Constraint\NotNullConstraint');
               // the first argument sets the path in the validation
               // we must keep track of the position in the array, this must reflect in the path
-              $validation->addChildValidation($noneDefaultKey.'/'.$inlineCount.'/', $childValidation);
+              $validation->addChildValidation('/'.$noneDefaultKey.'/'.$inlineCount, $childValidation);
             }
           }
         }

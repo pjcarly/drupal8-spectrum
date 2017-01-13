@@ -60,9 +60,10 @@ abstract class Model
   {
     if(empty($relationshipName))
     {
+      $isNew = $this->isNew();
       $this->entity->save();
 
-      if($this->isNew())
+      if($isNew)
       {
         $this->setFieldForReferencedRelationships();
       }
