@@ -82,6 +82,23 @@ abstract class Model
     }
   }
 
+  public function clear($relationshipName)
+  {
+    if(empty($relationshipName))
+    {
+      throw new InvalidTypeException('Clear only works with relationship names');
+    }
+    $relationship = static::getRelationship($relationshipName);
+    if($relationship instanceof FieldRelationship)
+    {
+      unset($this->relatedViaFieldOnEntity[$relationshipName]);
+    }
+    else if($relationship instanceof ReferencedRelationship)
+    {
+      unset($this->relatedViaFieldOnExternalEntity[$relationshipName]);
+    }
+  }
+
   public function validate($relationshipName = NULL)
   {
     if(empty($relationshipName))
@@ -752,7 +769,8 @@ abstract class Model
   public function afterInsert(){}
   public function beforeUpdate(){}
   public function afterUpdate(){}
-  public function beforeDelete(){}
+  //public function beforeDelete(){} // no hook in drupal
+  public function afterDelete(){}
 
 	public function doCascadingDeletes()
 	{

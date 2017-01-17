@@ -16,7 +16,7 @@ class ModelTrigger
       {
         $modelClass = Model::getModelClassForEntityAndBundle($entityType, $bundle);
         $model = new $modelClass($entity);
-        
+
         switch($trigger)
         {
           case 'presave':
@@ -36,7 +36,7 @@ class ModelTrigger
             $model->afterUpdate();
           break;
           case 'delete':
-            $model->beforeDelete();
+            $model->afterDelete();
             $model->doCascadingDeletes();
           break;
         }
