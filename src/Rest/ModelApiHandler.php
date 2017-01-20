@@ -300,14 +300,25 @@ class ModelApiHandler extends BaseApiHandler
         $node = $result->getJsonApiNode();
         $jsonapi->setData($node);
 
+        // Lets check for our includes
+        $includes = array();
+        // The url might define includes
         if($request->query->has('include'))
         {
-          // includes are comma seperated
-          $includes = explode(',', $request->query->get('include'));
-          if(!empty($includes))
-          {
-            $this->checkForIncludes($result, $jsonapi, $includes);
-          }
+          // includes in the url are comma seperated
+          $includes = array_merge($includes, explode(',', $request->query->get('include')));
+        }
+
+        // But some api handlers provide default includes as well
+        if(property_exists($this, 'defaultGetIncludes'))
+        {
+          $includes = array_merge($includes, $this->defaultGetIncludes);
+        }
+
+        // And finally include them
+        if(!empty($includes))
+        {
+          $this->checkForIncludes($result, $jsonapi, $includes);
         }
       }
     }
@@ -321,15 +332,26 @@ class ModelApiHandler extends BaseApiHandler
       {
         $jsonapi->addNode($result->getJsonApiNode());
 
-        // let's check for includes as well
+
+        // Lets check for our includes
+        $includes = array();
+        // The url might define includes
         if($request->query->has('include'))
         {
-          // includes are comma seperated
-          $includes = explode(',', $request->query->get('include'));
-          if(!empty($includes))
-          {
-            $this->checkForIncludes($result, $jsonapi, $includes);
-          }
+          // includes in the url are comma seperated
+          $includes = array_merge($includes, explode(',', $request->query->get('include')));
+        }
+
+        // But some api handlers provide default includes as well
+        if(property_exists($this, 'defaultGetIncludes'))
+        {
+          $includes = array_merge($includes, $this->defaultGetIncludes);
+        }
+
+        // And finally include them
+        if(!empty($includes))
+        {
+          $this->checkForIncludes($result, $jsonapi, $includes);
         }
       }
       else
@@ -428,8 +450,26 @@ class ModelApiHandler extends BaseApiHandler
         // we serialize the response
         $jsonapi->addNode($model->getJsonApiNode());
 
-        // also check if we need to include any included relationships in the response
-        $this->checkForIncludes($model, $jsonapi, $uniqueIncludedRelationships);
+        // Lets check for our includes
+        $includes = $uniqueIncludedRelationships;
+        // The url might define includes
+        if($request->query->has('include'))
+        {
+          // includes in the url are comma seperated
+          $includes = array_merge($includes, explode(',', $request->query->get('include')));
+        }
+
+        // But some api handlers provide default includes as well
+        if(property_exists($this, 'defaultPostIncludes'))
+        {
+          $includes = array_merge($includes, $this->defaultPostIncludes);
+        }
+
+        // And finally include them
+        if(!empty($includes))
+        {
+          $this->checkForIncludes($model, $jsonapi, $includes);
+        }
 
         // and finally we can serialize and set the code
         $response = $jsonapi->serialize();
@@ -591,8 +631,26 @@ class ModelApiHandler extends BaseApiHandler
           // we serialize the response
           $jsonapi->addNode($model->getJsonApiNode());
 
-          // also check if we need to include any included relationships in the response
-          $this->checkForIncludes($model, $jsonapi, $uniqueIncludedRelationships);
+          // Lets check for our includes
+          $includes = $uniqueIncludedRelationships;
+          // The url might define includes
+          if($request->query->has('include'))
+          {
+            // includes in the url are comma seperated
+            $includes = array_merge($includes, explode(',', $request->query->get('include')));
+          }
+
+          // But some api handlers provide default includes as well
+          if(property_exists($this, 'defaultPatchIncludes'))
+          {
+            $includes = array_merge($includes, $this->defaultPatchIncludes);
+          }
+
+          // And finally include them
+          if(!empty($includes))
+          {
+            $this->checkForIncludes($model, $jsonapi, $includes);
+          }
 
           // and finally we can serialize and set the code
           $response = $jsonapi->serialize();
