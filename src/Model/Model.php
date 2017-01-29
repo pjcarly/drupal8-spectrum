@@ -172,7 +172,6 @@ abstract class Model
             if(!empty($referencedEntities))
             {
               $referencedModelType = null;
-              $referencedRelationship = null; // the inverse relationship
               foreach($referencedEntities as $referencedEntity)
               {
                 $referencedModel = null;
@@ -183,20 +182,11 @@ abstract class Model
                   $referencedEntityType = $referencedEntity->getEntityTypeId();
                   $referencedEntityBundle = $referencedEntity->type->target_id;
                   $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
-
-                  // we must also find the inverse relationship to put the current model on
-                  $referencedRelationship = $referencedModelType::getReferencedRelationshipForFieldRelationship($relationship);
                 }
 
                 // now that we have a model, lets put them one by one
                 $referencedModel = $referencedModelType::forge($referencedEntity);
                 $this->put($relationship, $referencedModel, true);
-
-                // And finally if we found an inverse relationship, lets put (this) on the inverse (defining an inverse is optional, so we can just as easily find no inverses)
-                if(!empty($referencedRelationship))
-                {
-                  $referencedModel->put($referencedRelationship, $this, true);
-                }
               }
             }
           }
@@ -219,15 +209,6 @@ abstract class Model
               $referencedModel = $referencedModelType::forge($referencedEntity);
 
               $this->put($relationship, $referencedModel, true);
-
-              // we must also find the inverse relationship to put the current model on
-              $referencedRelationship = $referencedModelType::getReferencedRelationshipForFieldRelationship($relationship);
-
-              // And finally if we found an inverse relationship, lets put (this) on the inverse (defining an inverse is optional, so we can just as easily find no inverses)
-              if(!empty($referencedRelationship))
-              {
-                $referencedModel->put($referencedRelationship, $this, true);
-              }
             }
           }
         }
@@ -409,6 +390,24 @@ abstract class Model
     return !empty($fieldId) && !empty($id) && (is_array($fieldId) && in_array($id, $fieldId) || !is_array($fieldId) && $fieldId === $id);
   }
 
+  private function putInverse(Relationship $relationship, Model $referencedModel)
+  {
+    // if the relationship is polymorphic we can get multiple bundles, so we must define the modeltype based on the bundle and entity of the current looping entity
+    // or if the related modeltype isn't set yet, we must set it once
+    $referencedEntityType = $referencedModel->entity->getEntityTypeId();
+    $referencedEntityBundle = $referencedModel->entity->type->target_id;
+    $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
+
+    // we must also check for an inverse relationship and, if found, put the inverse as well
+    $referencedRelationship = $referencedModelType::getReferencedRelationshipForFieldRelationship($relationship);
+
+    // And finally if we found an inverse relationship, lets put (this) on the inverse (defining an inverse is optional, so we can just as easily find no inverses)
+    if(!empty($referencedRelationship))
+    {
+      $referencedModel->put($referencedRelationship, $this, true);
+    }
+  }
+
   public function put($relationship, $objectToPut, $includeInOriginalModels = false)
   {
     if($objectToPut != null && ($objectToPut instanceof Model || $objectToPut instanceof Collection))
@@ -450,6 +449,9 @@ abstract class Model
             {
               $this->entity->$relationshipField->appendItem($objectToPutId);
             }
+
+            // and finally set a possible inverse as well
+            $this->putInverse($relationship, $objectToPut);
           }
         }
         else if($relationship->isSingle)
@@ -458,12 +460,15 @@ abstract class Model
           // things get much easier. Namely we just put the model in the related array
           // even if the relationship is polymorphic it doesn't matter.
           $this->relatedViaFieldOnEntity[$relationship->relationshipName] = $objectToPut;
-          // and finally we also set the new id on the current entity
+          // we also set the new id on the current entity
           $objectToPutId = $objectToPut->getId();
           if(!empty($objectToPutId))
           {
             $this->entity->$relationshipField->$relationshipColumn = $objectToPutId;
           }
+
+          // and finally set a possible inverse as well
+          $this->putInverse($relationship, $objectToPut);
         }
       }
       else if($relationship instanceof ReferencedRelationship)
