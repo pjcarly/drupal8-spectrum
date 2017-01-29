@@ -26,6 +26,23 @@ class Collection implements \IteratorAggregate
     return new \ArrayIterator($this->models);
   }
 
+  public function replaceOldModelKey($oldKey, $newKey)
+  {
+    $model = $this->models[$oldKey];
+    if(!empty($model))
+    {
+      unset($this->models[$oldKey]);
+      $this->models[$newKey] = $model;
+    }
+
+    $originalModel = $this->originalModels[$oldKey];
+    if(!empty($originalModel))
+    {
+      unset($this->originalModels[$oldKey]);
+      $this->originalModels[$newKey] = $originalModel;
+    }
+  }
+
 	public function save($relationshipName = NULL)
 	{
 		if(empty($relationshipName))

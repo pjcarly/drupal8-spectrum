@@ -9,7 +9,7 @@ class Validation
   private $violations;
   private $modelName;
   private $ignores = [];
-  private $childValidations = [];
+  private $inlineValidations = [];
 
 	public function __construct($model)
 	{
@@ -43,8 +43,8 @@ class Validation
   {
     if($this->violations->count() === 0)
     {
-      // life is easy, no violations counted, if the childValidationsSucceed we are go!
-      return $this->childValidationsSucceeded();
+      // life is easy, no violations counted, if the inlineValidationsSucceed we are ready to go!
+      return $this->inlineValidationsSucceeded();
     }
     else if (sizeof($this->ignores) === 0)
     {
@@ -65,7 +65,7 @@ class Validation
         }
       }
 
-      return $foundViolationCount === 0 && $this->childValidationsSucceeded();
+      return $foundViolationCount === 0 && $this->inlineValidationsSucceeded();
     }
   }
 
@@ -92,12 +92,12 @@ class Validation
     return $ignoreFound;
   }
 
-  public function childValidationsSucceeded()
+  public function inlineValidationsSucceeded()
   {
     $succeeded = true;
-    foreach($this->childValidations as $childValidation)
+    foreach($this->inlineValidations as $inlineValidation)
     {
-      if(!$childValidation->hasSucceeded())
+      if(!$inlineValidation->hasSucceeded())
       {
         $succeeded = false;
         break;
@@ -135,9 +135,9 @@ class Validation
     $this->ignores[$fieldName] = $constraint;
   }
 
-  public function addChildValidation($path, Validation $validation)
+  public function addIncludedValidation($path, Validation $validation)
   {
-    $this->childValidations[$path] = $validation;
+    $this->inlineValidations[$path] = $validation;
   }
 
   private function getFieldNameForPropertyPath($propertyPath)
@@ -191,17 +191,17 @@ class Validation
       }
     }
 
-    // we must also include the child validations
-    foreach($this->childValidations as $path => $childValidation)
+    // we must also include the inline validations
+    foreach($this->inlineValidations as $path => $inlineValidation)
     {
-      $childRecordsErrors = $childValidation->toJsonApi();
-      foreach($childRecordsErrors as $childRecordErrors)
+      $inlineRecordsErrors = $inlineValidation->toJsonApi();
+      foreach($inlineRecordsErrors as $inlineRecordErrors)
       {
-        foreach($childRecordErrors as $childRecordError)
+        foreach($inlineRecordErrors as $inlineRecordError)
         {
           // we must include the path in the error pointer
-          $childRecordError->source->pointer = '/data'. $path . $childRecordError->source->pointer;
-          $errors->errors[] = $childRecordError;
+          $inlineRecordError->source->pointer = '/data'. $path . $inlineRecordError->source->pointer;
+          $errors->errors[] = $inlineRecordError;
         }
       }
     }

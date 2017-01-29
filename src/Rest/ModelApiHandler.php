@@ -12,7 +12,10 @@ use Drupal\spectrum\Model\ReferencedRelationship;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Serializer\JsonApiRootNode;
 use Drupal\spectrum\Serializer\JsonApiLink;
+
+use Drupal\spectrum\Exceptions\InvalidTypeException;
 use Drupal\spectrum\Exceptions\NotImplementedException;
+use Drupal\spectrum\Exceptions\ModelNotFoundException;
 
 class ModelApiHandler extends BaseApiHandler
 {
@@ -388,7 +391,9 @@ class ModelApiHandler extends BaseApiHandler
       // this isn't part of the jsonapi spec unfortunatly, but for now this is the only way to embed records in a POST or a PATCH
       // the functionality is currently based on the DS.EmbeddedRecordsMixin of Ember
       // But will be rewritten once JsonAPI includes embedding in the spec
-      $includedRelationshipsToSave = [];
+      $referencedRelationshipsToSave = [];
+      $fieldRelationshipsToSave = [];
+
       $noneDefaultKeys = JsonApiRootNode::getNoneDefaultDataKeys($jsonapidocument);
       foreach($noneDefaultKeys as $noneDefaultKey)
       {
@@ -401,19 +406,76 @@ class ModelApiHandler extends BaseApiHandler
           $includedRelationshipName = $modelClassName::$embeddedApiRelationships[$noneDefaultKey];
           $includedRelationship = $modelClassName::getRelationship($includedRelationshipName);
 
+          // We get the inline data from the json document
+          $inlineData = $jsonapidocument->data->$noneDefaultKey;
           if($includedRelationship instanceof FieldRelationship)
           {
-            // currently not supported
-            throw new NotImplementedException('Including parent relationships while saving is not supported yet');
+            // Lets do some unsupported checks first
+            if($includedRelationship->fieldCardinality === 1 && !$includedRelationship->isPolymorphic)
+            {
+              // And the json spec says there should always be a type included
+              if(!empty($inlineData->data->type))
+              {
+                $fieldRelationshipsToSave[] = $includedRelationshipName;
+                // we get the modeltype for the relationship, because we will need to forge a model later
+                $includedModelType = $includedRelationship->modelType;
+                $includedModel;
+
+                // Either this is a new record, when no ID was provided => insert
+                // or the included record exists in the db already, and it's id was provided => update
+                if(empty($inlineData->data->id))
+                {
+                  // new record, we create a new model
+                  $includedModel = $includedModelType::createNew();
+                }
+                else
+                {
+                  // existing record, lets get it from the database
+                  $includedModel = $includedModelType::forge(null, $inlineData->data->id);
+
+                  if(empty($includedModel))
+                  {
+                    throw new ModelNotFoundException('The model with ID '.$inlineData->data->id.' does not exist in the database while trying to perform an inline save with a id passed (inline type '.$noneDefaultKey.')');
+                  }
+                }
+
+                // We apply the changes from the json document to the model (both new and existing, the fields will be updated the same way)
+                $includedModel->applyChangesFromJsonAPIDocument($inlineData);
+
+                // now we validate the model
+                $includedModel->beforeValidate();
+                $fieldRelationshipValidation = $includedModel->validate();
+
+                // we musn't forget, that both the parens and the children aren't persisted in the database yet
+                // because of models and collections, the structure is kept for saving, but it is impossible to validate a potential required parent for a child
+                // that is why we will add an ignore on the relationship field for the current model for a NotNullConstraint
+                $validation->addIgnore($includedRelationship->getField(), 'Drupal\Core\Validation\Plugin\Validation\Constraint\NotNullConstraint');
+
+                // the first argument sets the path in the validation
+                $validation->addIncludedValidation('/'.$noneDefaultKey, $fieldRelationshipValidation);
+
+                // And finally put the included model on the model
+                $model->put($includedRelationship, $includedModel);
+              }
+              else
+              {
+                throw new InvalidTypeException('Tried to save an inline Field relationship that did not contain a type in the jsonapi document type hash');
+              }
+            }
+            else
+            {
+              // Either the cardinality is greater than 1 (multiple values for a field)
+              // Or the relationship is polymorphic (more than 1 type)
+              throw new NotImplementedException('Including polymorhpic parent relationships or relationships with the field cardinality greater than 1 is currently not supported');
+            }
           }
           else if($includedRelationship instanceof ReferencedRelationship)
           {
             // Next we will loop every included model in the included relationship in the jsonapidocument
             // in order to create a new child model, apply the attributes from the json api document, and validate each one
-            $inlineData = $jsonapidocument->data->$noneDefaultKey;
             foreach ($inlineData as $inlineCount => $inlineJsonApiDocument)
             {
-              $includedRelationshipsToSave[] = $includedRelationshipName;
+              $referencedRelationshipsToSave[] = $includedRelationshipName;
               // we put a new child model on the just created model
               $childModel = $model->putNew($includedRelationship);
 
@@ -429,7 +491,7 @@ class ModelApiHandler extends BaseApiHandler
               $childValidation->addIgnore($includedRelationship->fieldRelationship->getField(), 'Drupal\Core\Validation\Plugin\Validation\Constraint\NotNullConstraint');
               // the first argument sets the path in the validation
               // we must keep track of the position in the array, this must reflect in the path
-              $validation->addChildValidation('/'.$noneDefaultKey.'/'.$inlineCount, $childValidation);
+              $validation->addIncludedValidation('/'.$noneDefaultKey.'/'.$inlineCount, $childValidation);
             }
           }
         }
@@ -438,20 +500,33 @@ class ModelApiHandler extends BaseApiHandler
       // Depending on the result of the validation, let's send the the proper result
       if($validation->hasSucceeded())
       {
-        $jsonapi = new JsonApiRootNode();
         // No errors, we can save, and return the newly created model serialized
-        $model->save();
-        // We must also save potential included relationships
-        $uniqueIncludedRelationships = array_unique($includedRelationshipsToSave);
-        foreach($uniqueIncludedRelationships as $includedRelationshipToSave)
+        $jsonapi = new JsonApiRootNode();
+
+        // Before saving the model, and the referenced relationships,
+        // we must save the field relationships, as they might need to be put on the model
+        $uniqueFieldRelationshipsToSave = array_unique($fieldRelationshipsToSave);
+        foreach($uniqueFieldRelationshipsToSave as $fieldRelationshipToSave)
         {
-          $model->save($includedRelationshipToSave);
+          $model->save($fieldRelationshipToSave);
         }
+
+        // Here we save the model itself
+        $model->save();
+
+        // We must also save potential included referenced relationships
+        $uniqueReferencedRelationshipsToSave = array_unique($referencedRelationshipsToSave);
+        foreach($uniqueReferencedRelationshipsToSave as $referencedRelationshipToSave)
+        {
+          $model->save($referencedRelationshipToSave);
+        }
+
         // we serialize the response
         $jsonapi->addNode($model->getJsonApiNode());
 
         // Lets check for our includes
-        $includes = $uniqueIncludedRelationships;
+        $includes = array_merge($uniqueReferencedRelationshipsToSave, $uniqueFieldRelationshipsToSave);
+
         // The url might define includes
         if($request->query->has('include'))
         {
@@ -528,7 +603,9 @@ class ModelApiHandler extends BaseApiHandler
         // - If a related model is missing from the json api document, we'll consider it deleted, and remove it from the db
         // - If a related model is included with an ID, it should be updated in the database
         // - If a related model is included without an ID, it is a new model, and should be added
-        $includedRelationshipsToSave = [];
+        $referencedRelationshipsToSave = [];
+        $fieldRelationshipsToSave = [];
+
         $noneDefaultKeys = JsonApiRootNode::getNoneDefaultDataKeys($jsonapidocument);
         foreach($noneDefaultKeys as $noneDefaultKey)
         {
@@ -541,10 +618,68 @@ class ModelApiHandler extends BaseApiHandler
             $includedRelationshipName = $modelClassName::$embeddedApiRelationships[$noneDefaultKey];
             $includedRelationship = $modelClassName::getRelationship($includedRelationshipName);
 
+            // We get the inline data from the json document
+            $inlineData = $jsonapidocument->data->$noneDefaultKey;
             if($includedRelationship instanceof FieldRelationship)
             {
-              // currently not supported
-              throw new NotImplementedException('Including parent relationships while saving is not supported yet');
+              // Lets do some unsupported checks first
+              if($includedRelationship->fieldCardinality === 1 && !$includedRelationship->isPolymorphic)
+              {
+                // And the json spec says there should always be a type included
+                if(!empty($inlineData->data->type))
+                {
+                  $fieldRelationshipsToSave[] = $includedRelationshipName;
+                  // we get the modeltype for the relationship, because we will need to forge a model later
+                  $includedModelType = $includedRelationship->modelType;
+                  $includedModel;
+
+                  // Either this is a new record, when no ID was provided => insert
+                  // or the included record exists in the db already, and it's id was provided => update
+                  if(empty($inlineData->data->id))
+                  {
+                    // new record, we create a new model
+                    $includedModel = $includedModelType::createNew();
+                  }
+                  else
+                  {
+                    // existing record, lets get it from the database
+                    $includedModel = $includedModelType::forge(null, $inlineData->data->id);
+
+                    if(empty($includedModel))
+                    {
+                      throw new ModelNotFoundException('The model with ID '.$inlineData->data->id.' does not exist in the database while trying to perform an inline save with a id passed (inline type '.$noneDefaultKey.')');
+                    }
+                  }
+
+                  // We apply the changes from the json document to the model (both new and existing, the fields will be updated the same way)
+                  $includedModel->applyChangesFromJsonAPIDocument($inlineData);
+
+                  // now we validate the model
+                  $includedModel->beforeValidate();
+                  $fieldRelationshipValidation = $includedModel->validate();
+
+                  // we musn't forget, that both the parens and the children aren't persisted in the database yet
+                  // because of models and collections, the structure is kept for saving, but it is impossible to validate a potential required parent for a child
+                  // that is why we will add an ignore on the relationship field for the current model for a NotNullConstraint
+                  $validation->addIgnore($includedRelationship->getField(), 'Drupal\Core\Validation\Plugin\Validation\Constraint\NotNullConstraint');
+
+                  // the first argument sets the path in the validation
+                  $validation->addIncludedValidation('/'.$noneDefaultKey, $fieldRelationshipValidation);
+
+                  // And finally put the included model on the model
+                  $model->put($includedRelationship, $includedModel);
+                }
+                else
+                {
+                  throw new InvalidTypeException('Tried to save an inline Field relationship that did not contain a type in the jsonapi document type hash');
+                }
+              }
+              else
+              {
+                // Either the cardinality is greater than 1 (multiple values for a field)
+                // Or the relationship is polymorphic (more than 1 type)
+                throw new NotImplementedException('Including polymorhpic parent relationships or relationships with the field cardinality greater than 1 is currently not supported');
+              }
             }
             else if($includedRelationship instanceof ReferencedRelationship)
             {
@@ -554,9 +689,8 @@ class ModelApiHandler extends BaseApiHandler
 
               // Next we will loop every included model in the included relationship in the jsonapidocument
               // in order to create or update a child model, apply the attributes from the json api document, and validate each one
-              $inlineData = $jsonapidocument->data->$noneDefaultKey;
 
-              $includedRelationshipsToSave[] = $includedRelationshipName;
+              $referencedRelationshipsToSave[] = $includedRelationshipName;
               $childModelsInUse = [];
               foreach ($inlineData as $inlineCount => $inlineJsonApiDocument)
               {
@@ -598,7 +732,7 @@ class ModelApiHandler extends BaseApiHandler
                 $childValidation->addIgnore($includedRelationship->fieldRelationship->getField(), 'Drupal\Core\Validation\Plugin\Validation\Constraint\NotNullConstraint');
                 // the first argument sets the path in the validation
                 // we must keep track of the position in the array, this must reflect in the path
-                $validation->addChildValidation('/'.$noneDefaultKey.'/'.$inlineCount, $childValidation);
+                $validation->addIncludedValidation('/'.$noneDefaultKey.'/'.$inlineCount, $childValidation);
               }
             }
 
@@ -616,23 +750,35 @@ class ModelApiHandler extends BaseApiHandler
         // Depending on the result of the validation, let's send the the proper result
         if($validation->hasSucceeded())
         {
-          $jsonapi = new JsonApiRootNode();
           // No errors, we can save, and return the newly created model serialized
-          $model->save();
-          // We must also save potential included relationships
-          $uniqueIncludedRelationships = array_unique($includedRelationshipsToSave);
-          foreach($uniqueIncludedRelationships as $includedRelationshipToSave)
+          $jsonapi = new JsonApiRootNode();
+
+          // Before saving the model, and the referenced relationships,
+          // we must save the field relationships, as they might need to be put on the model
+          $uniqueFieldRelationshipsToSave = array_unique($fieldRelationshipsToSave);
+          foreach($uniqueFieldRelationshipsToSave as $fieldRelationshipToSave)
           {
-            $model->save($includedRelationshipToSave);
+            $model->save($fieldRelationshipToSave);
+          }
+
+          // now we save the model
+          $model->save();
+
+          // And also check for potential included relationships
+          $uniqueReferencedRelationshipsToSave = array_unique($referencedRelationshipsToSave);
+          foreach($uniqueReferencedRelationshipsToSave as $referencedRelationshipToSave)
+          {
+            $model->save($referencedRelationshipToSave);
             // Let's refetch from the database
-            $model->clear($includedRelationshipToSave);
-            $model->fetch($includedRelationshipToSave);
+            $model->clear($referencedRelationshipToSave);
+            $model->fetch($referencedRelationshipToSave);
           }
           // we serialize the response
           $jsonapi->addNode($model->getJsonApiNode());
 
           // Lets check for our includes
-          $includes = $uniqueIncludedRelationships;
+          $includes = array_merge($uniqueReferencedRelationshipsToSave, $uniqueFieldRelationshipsToSave);
+          
           // The url might define includes
           if($request->query->has('include'))
           {

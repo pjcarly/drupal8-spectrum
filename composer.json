@@ -1,7 +1,7 @@
 {
   "name": "drupal/spectrum",
   "description": "Spectrum Dependencies",
-  "type": "drupal-module",
+  "type": "drupal-mist-module",
   "require": {
       "sendgrid/sendgrid": "^4.0"
   }
