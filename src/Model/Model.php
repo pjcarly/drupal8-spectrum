@@ -66,6 +66,7 @@ abstract class Model
       if($isNew)
       {
         $this->setFieldForReferencedRelationships();
+        $this->updateKeys();
       }
     }
     else
@@ -79,6 +80,79 @@ abstract class Model
     if(!$this->isNew())
     {
       $this->entity->delete();
+    }
+  }
+
+  private function updateKeys()
+  {
+    // we start of by reputting our keys
+    $oldKey = $this->key;
+    $this->key = $this->getId();
+    // This method updates the current key, and all the inverse keys as well
+    $relationships = static::getRelationships();
+    foreach($relationships as $relationship)
+    {
+      if($relationship instanceof FieldRelationship)
+      {
+        // first we check if it is a single or multipel value field relationship
+        if($relationship->isMultiple)
+        {
+          // If we have a relationship where multiple values can be in a field
+          // we must get every value, loop over it, and update the referencing collection on each value
+          $referencedModels = $this->get($relationship);
+
+          foreach($referencedModels as $referencedModel)
+          {
+            $referencedEntityType = $referencedModel->entity->getEntityTypeId();
+            $referencedEntityBundle = $referencedModel->entity->type->target_id;
+            $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
+
+            // we must also check for an inverse relationship and, if found, put the inverse as well
+            $referencedRelationship = $referencedModelType::getReferencedRelationshipForFieldRelationship($relationship);
+
+            $referencingCollectionOnReferencedModel = $referencedModel->get($referencedRelationship);
+            $referencingCollectionOnReferencedModel->replaceOldModelKey($oldKey, $this->key);
+          }
+        }
+        else
+        {
+          // It is a single value, so we just need to get the inverse referencing collection, and update the key
+          $referencedModel = $this->get($relationship);
+
+          if(!empty($referencedModel))
+          {
+            $referencedEntityType = $referencedModel->entity->getEntityTypeId();
+            $referencedEntityBundle = $referencedModel->entity->type->target_id;
+            $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
+
+            // we must also check for an inverse relationship and, if found, put the inverse as well
+            $referencedRelationship = $referencedModelType::getReferencedRelationshipForFieldRelationship($relationship);
+
+            $referencingCollectionOnReferencedModel = $referencedModel->get($referencedRelationship);
+            $referencingCollectionOnReferencedModel->replaceOldModelKey($oldKey, $this->key);
+          }
+        }
+      }
+      else if($relationship instanceof ReferencedRelationship)
+      {
+        // This is a little complicated, we only need to update the keys when:
+        // - The field relationship of the inverse contains multiple values
+        // In that case, the value on the inverse is a collection, and this model will be stored there with its key
+        // In all other cases, a single model is stored in the relationship arrays, where no key is used
+
+        $inverseRelationship = $relationship->fieldRelationship;
+        if($inverseRelationship->isMultiple)
+        {
+          // we get the collection keeping all the models that refer to this model via a field
+          $referencingModels = $this->get($relationship);
+          foreach($referencingModels as $referencingModel)
+          {
+            // Now we get the collection on our referencing model, where this model should be an item in
+            $inverseReferencedCollection = $referencingModel->get($inverseRelationship);
+            $inverseReferencedCollection->replaceOldModelKey($oldKey, $this->key);
+          }
+        }
+      }
     }
   }
 
