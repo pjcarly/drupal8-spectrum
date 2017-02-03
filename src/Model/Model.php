@@ -33,9 +33,6 @@ abstract class Model
   public $relatedViaFieldOnEntity = [];
   public $relatedViaFieldOnExternalEntity = [];
 
-  // json-api options
-  public static $embeddedApiRelationships = [];
-
   public function __construct($entity)
   {
     $this->entity = $entity;

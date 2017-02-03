@@ -19,6 +19,8 @@ use Drupal\spectrum\Exceptions\ModelNotFoundException;
 
 class ModelApiHandler extends BaseApiHandler
 {
+  private static $embeddedApiRelationships = [];
+
   private $modelClassName;
   protected $maxLimit = 200;
 
@@ -400,10 +402,10 @@ class ModelApiHandler extends BaseApiHandler
         // It's not because there is a key in the json api document that isn't default,
         // that we can just assume it's in included relationship
         // The relationship must also be defined in the embeddedApiRelationships array on the model
-        if(array_key_exists($noneDefaultKey, $modelClassName::$embeddedApiRelationships))
+        if(array_key_exists($noneDefaultKey, static::$embeddedApiRelationships))
         {
           // Lets get the relationship from the model
-          $includedRelationshipName = $modelClassName::$embeddedApiRelationships[$noneDefaultKey];
+          $includedRelationshipName = static::$embeddedApiRelationships[$noneDefaultKey];
           $includedRelationship = $modelClassName::getRelationship($includedRelationshipName);
 
           // We get the inline data from the json document
@@ -612,10 +614,10 @@ class ModelApiHandler extends BaseApiHandler
           // It's not because there is a key in the json api document that isn't default,
           // that we can just assume it's in included relationship
           // The relationship must also be defined in the embeddedApiRelationships array on the model
-          if(array_key_exists($noneDefaultKey, $modelClassName::$embeddedApiRelationships))
+          if(array_key_exists($noneDefaultKey, static::$embeddedApiRelationships))
           {
             // Lets get the relationship from the model
-            $includedRelationshipName = $modelClassName::$embeddedApiRelationships[$noneDefaultKey];
+            $includedRelationshipName = static::$embeddedApiRelationships[$noneDefaultKey];
             $includedRelationship = $modelClassName::getRelationship($includedRelationshipName);
 
             // We get the inline data from the json document
@@ -778,7 +780,7 @@ class ModelApiHandler extends BaseApiHandler
 
           // Lets check for our includes
           $includes = array_merge($uniqueReferencedRelationshipsToSave, $uniqueFieldRelationshipsToSave);
-          
+
           // The url might define includes
           if($request->query->has('include'))
           {
