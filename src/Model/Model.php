@@ -125,8 +125,11 @@ abstract class Model
             // we must also check for an inverse relationship and, if found, put the inverse as well
             $referencedRelationship = $referencedModelType::getReferencedRelationshipForFieldRelationship($relationship);
 
-            $referencingCollectionOnReferencedModel = $referencedModel->get($referencedRelationship);
-            $referencingCollectionOnReferencedModel->replaceOldModelKey($oldKey, $this->key);
+            if(!empty($referencedRelationship)) // referencedRelationship is optional
+            {
+              $referencingCollectionOnReferencedModel = $referencedModel->get($referencedRelationship);
+              $referencingCollectionOnReferencedModel->replaceOldModelKey($oldKey, $this->key);
+            }
           }
         }
       }

@@ -368,6 +368,9 @@ class ModelApiHandler extends BaseApiHandler
     return new Response(json_encode($jsonapi->serialize()), 200, array());
   }
 
+  protected function beforePostSave(Model $model){}
+  protected function afterPostSave(Model $model){}
+
   public function post(Request $request)
   {
     $response;
@@ -502,6 +505,9 @@ class ModelApiHandler extends BaseApiHandler
       // Depending on the result of the validation, let's send the the proper result
       if($validation->hasSucceeded())
       {
+        // We call our beforeSave hook, so we can potentially fetch some relationships for the before hooks of the model
+        $this->beforePostSave($model);
+
         // No errors, we can save, and return the newly created model serialized
         $jsonapi = new JsonApiRootNode();
 
@@ -522,6 +528,9 @@ class ModelApiHandler extends BaseApiHandler
         {
           $model->save($referencedRelationshipToSave);
         }
+
+        // We call our afterSave hook, so we can potentially do some actions based on the newly created model
+        $this->afterPostSave($model);
 
         // we serialize the response
         $jsonapi->addNode($model->getJsonApiNode());
@@ -568,6 +577,9 @@ class ModelApiHandler extends BaseApiHandler
 
     return new Response(isset($response) ? json_encode($response) : null, $responseCode, array());
   }
+
+  protected function beforePatchSave(Model $model){}
+  protected function afterPatchSave(Model $model){}
 
   public function patch(Request $request)
   {
@@ -752,6 +764,9 @@ class ModelApiHandler extends BaseApiHandler
         // Depending on the result of the validation, let's send the the proper result
         if($validation->hasSucceeded())
         {
+          // We call our beforeSave hook, so we can potentially fetch some relationships for the before hooks of the model
+          $this->beforePatchSave($model);
+
           // No errors, we can save, and return the newly created model serialized
           $jsonapi = new JsonApiRootNode();
 
@@ -775,6 +790,10 @@ class ModelApiHandler extends BaseApiHandler
             $model->clear($referencedRelationshipToSave);
             $model->fetch($referencedRelationshipToSave);
           }
+
+          // We call our afterSave hook, so we can potentially do some actions based on the newly created model
+          $this->afterPatchSave($model);
+
           // we serialize the response
           $jsonapi->addNode($model->getJsonApiNode());
 
