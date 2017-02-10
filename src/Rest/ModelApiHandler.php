@@ -368,8 +368,8 @@ class ModelApiHandler extends BaseApiHandler
     return new Response(json_encode($jsonapi->serialize()), 200, array());
   }
 
-  protected function beforePostSave(Model $model){}
-  protected function afterPostSave(Model $model){}
+  protected function beforePostSave($model){}
+  protected function afterPostSave($model){}
 
   public function post(Request $request)
   {
