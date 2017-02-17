@@ -64,6 +64,29 @@ trait ModelSerializerMixin
             }
             $node->addAttribute($fieldNamePretty, $attribute);
             break;
+          case 'datetime':
+            $dateValue = null;
+            $attributeValue = $this->entity->get($fieldName)->value;
+
+            if(!empty($attributeValue))
+            {
+              // We must figure out if this is a Date field or a datetime field
+              // lets get the meta information of the field
+              $fieldSettingsDatetimeType = $fieldDefinition->getItemDefinition()->getSettings()['datetime_type'];
+              if($fieldSettingsDatetimeType === 'date')
+              {
+                $dateValue = new \DateTime($attributeValue);
+                $dateValue = $dateValue->format('Y-m-d');
+              }
+              else if($fieldSettingsDatetimeType === 'datetime')
+              {
+                $dateValue = new \DateTime($attributeValue);
+                $dateValue = $dateValue->format('c');
+              }
+            }
+
+            $node->addAttribute($fieldNamePretty, $dateValue);
+            break;
           case 'entity_reference':
             // TODO: this is really hacky, we must consider finding a more performant solution than the one with the target_ids now
             if(!empty($this->entity->get($fieldName)->entity))
@@ -168,7 +191,7 @@ trait ModelSerializerMixin
             // for some reason, created and changed aren't regular datetimes, they are unix timestamps in the database
             $timestamp = $this->entity->get($fieldName)->value;
             $datetime = \DateTime::createFromFormat('U', $timestamp);
-            $node->addAttribute($fieldNamePretty, $datetime->format( 'c' ));
+            $node->addAttribute($fieldNamePretty, $datetime->format('c'));
             break;
           default:
             $node->addAttribute($fieldNamePretty, $this->entity->get($fieldName)->value);
