@@ -2,35 +2,37 @@
 
 namespace Drupal\spectrum\Email;
 
+use Aws\Ses\SesClient;
+
 class Email
 {
   private $email;
   private $template;
-  private $templateParameters;
+  private $toAddresses = [];
+  private $fromAddress = '';
+  private $fromName = '';
+  private $replyTo = '';
 
-  public function __construct()
-  {
-    $this->email = new \SendGrid\Email();
-  }
+  private $templateParameters;
 
   public function addTo($email)
   {
-    $this->email->addTo($email);
+    $this->toAddresses[] = $email;
   }
 
   public function setFrom($email)
   {
-    $this->email->setFrom($email);
+    $this->fromAddress = $email;
   }
 
   public function setFromName($name)
   {
-    $this->email->setFromName($name);
+    $this->fromName = $name;
   }
 
   public function setReplyTo($email)
   {
-    $this->email->setReplyTo($email);
+    $this->replyTo = $email;
   }
 
   public function setTemplate($templateName)
@@ -46,19 +48,63 @@ class Email
 
   public function send()
   {
-    $config = \Drupal::config('spectrum.settings');
 
-    $api_key = $config->get('sendgrid_api_key');
-    if (!strlen($api_key)) {
-      \Drupal::logger('spectrum')->error('Spectrum Error: API Key cannot be blank.');
-      return NULL;
-    }
+    // $config = \Drupal::config('spectrum.settings');
+    //
+    // $api_key = $config->get('sendgrid_api_key');
+    // if (!strlen($api_key)) {
+    //   \Drupal::logger('spectrum')->error('Spectrum Error: API Key cannot be blank.');
+    //   return NULL;
+    // }
 
-    $this->email->setSubject($this->template->renderBlock('subject', $this->templateParameters));
-    $this->email->setText($this->template->renderBlock('body_text', $this->templateParameters));
-    $this->email->setHtml($this->template->renderBlock('body_html', $this->templateParameters));
 
-    $sendgrid = new \SendGrid($api_key);
-    $sendgrid->send($this->email);
+    $client = SesClient::factory([
+      'region' => 'eu-west-1',
+      'version' => '2010-12-01',
+      'credentials' => [
+        'key' => '<key>',
+        'secret' => '<secret>'
+      ]
+    ]);
+
+    $subject = $this->template->renderBlock('subject', $this->templateParameters);
+    $text = $this->template->renderBlock('body_text', $this->templateParameters);
+    $html = $this->template->renderBlock('body_html', $this->templateParameters);
+
+    try {
+
+      $result = $client->sendEmail([
+          'Destination' => [
+              'BccAddresses' => [],
+              'CcAddresses' => [],
+              'ToAddresses' => [
+                  'pieterjan@carly.be',
+              ],
+          ],
+          'Message' => [
+              'Body' => [
+                  'Html' => [
+                      'Charset' => 'UTF-8',
+                      'Data' => $html,
+                  ],
+                  'Text' => [
+                      'Charset' => 'UTF-8',
+                      'Data' => $text,
+                  ],
+              ],
+              'Subject' => [
+                  'Charset' => 'UTF-8',
+                  'Data' => $subject,
+              ],
+          ],
+          'Source' => 'pieterjan@entice.be',
+      ]);
+
+		} catch(\Aws\Ses\Exception\SesException $exc) {
+			$result	= $exc->getMessage();
+		}
+
+    dump($result);
+    die;
   }
 }
