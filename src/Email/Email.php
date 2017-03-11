@@ -2,18 +2,20 @@
 
 namespace Drupal\spectrum\Email;
 
-use Aws\Ses\SesClient;
+use Drupal\spectrum\Model\Model;
+use Drupal\spectrum\Model\SimpleModelWrapper;
+use Drupal\spectrum\Email\EmailTemplate;
 
 class Email
 {
   private $email;
   private $template;
+  private $scope = [];
+
   private $toAddresses = [];
   private $fromAddress = '';
   private $fromName = '';
   private $replyTo = '';
-
-  private $templateParameters;
 
   public function addTo($email)
   {
@@ -35,76 +37,145 @@ class Email
     $this->replyTo = $email;
   }
 
-  public function setTemplate($templateName)
+  public function setTemplate(EmailTemplate $template)
   {
-    $twig = \Drupal::service('twig');
-    $this->template = $twig->loadTemplate($templateName);
+    $this->template = $template;
   }
 
-  public function setTemplateParameters($parameters)
+  public function addModelToScope($name, Model $model)
   {
-    $this->templateParameters = $parameters;
+    $this->scope[$name] = new SimpleModelWrapper($model);
+  }
+
+  public function addObjectToScope($name, $object)
+  {
+    $this->scope[$name] = $object;
   }
 
   public function send()
   {
+    // Get environment variables
+    $template = $this->template;
+    $scope = $this->scope;
 
-    // $config = \Drupal::config('spectrum.settings');
-    //
-    // $api_key = $config->get('sendgrid_api_key');
-    // if (!strlen($api_key)) {
-    //   \Drupal::logger('spectrum')->error('Spectrum Error: API Key cannot be blank.');
-    //   return NULL;
-    // }
+    // We need to get the twig environment from Drupal as we will use it to render the email template
+    // Important to CLONE the twig environment, as any change we make here, shouldn't affect drupal rendering
+    $twig = clone \Drupal::service('twig');
+    $twig->setLoader(new \Twig_Loader_String());
 
+    // Lets render the different parts of the email template
+    $subject = $twig->render($template->entity->field_subject->value, $scope);
+    $html = $twig->render($template->entity->field_html_body->value, $scope);
+    $text = $twig->render($template->entity->field_text_body->value, $scope);
 
-    $client = SesClient::factory([
-      'region' => 'eu-west-1',
-      'version' => '2010-12-01',
-      'credentials' => [
-        'key' => '<key>',
-        'secret' => '<secret>'
-      ]
-    ]);
+    // we will now configure SES to send our email
+    $config = \Drupal::config('spectrum.settings');
+    $emailProvider = $config->get('email_provider');
 
-    $subject = $this->template->renderBlock('subject', $this->templateParameters);
-    $text = $this->template->renderBlock('body_text', $this->templateParameters);
-    $html = $this->template->renderBlock('body_html', $this->templateParameters);
+    // Depending on the Email provider, we do something else
 
-    try {
+    try
+    {
+      if($emailProvider === 'sendgrid')
+      {
+        $sendGridKey = $config->get('sendgrid_api_key');
 
-      $result = $client->sendEmail([
+        if (!strlen($sendGridKey)) {
+          \Drupal::logger('spectrum')->error('SendGrid API Key blank.');
+          return NULL;
+        }
+
+        // we instantiate our client
+        $sendgridMessage = new \SendGrid\Email();
+
+        // And set the values
+        $sendgridMessage->addTo($this->toAddresses);
+        $sendgridMessage->setFrom($this->fromAddress);
+        $sendgridMessage->setFromName($this->fromName);
+        $sendgridMessage->setReplyTo($this->replyTo);
+
+        // twig already rendered our template, lets set the values
+        $sendgridMessage->setSubject($subject);
+        $sendgridMessage->setText($text);
+        $sendgridMessage->setHtml($html);
+
+        // And finally send the email
+        $client = new \SendGrid($sendGridKey);
+        $client->send($sendgridMessage);
+      }
+      else if($emailProvider === 'aws-ses')
+      {
+        $awsKey = $config->get('aws_ses_api_key');
+        $awsSecret = $config->get('aws_ses_api_secret');
+        $awsRegion = $config->get('aws_ses_region');
+
+        if (!strlen($awsKey)) {
+          \Drupal::logger('spectrum')->error('AWS SES Key blank.');
+          return NULL;
+        }
+        if (!strlen($awsSecret)) {
+          \Drupal::logger('spectrum')->error('AWS SES Secret blank.');
+          return NULL;
+        }
+        if (!strlen($awsRegion)) {
+          \Drupal::logger('spectrum')->error('AWS SES Region blank.');
+          return NULL;
+        }
+
+        $client = \Aws\Ses\SesClient::factory([
+          'region' => $awsRegion,
+          'version' => '2010-12-01',
+          'credentials' => [
+            'key' => $awsKey,
+            'secret' => $awsSecret
+          ]
+        ]);
+
+        $toAddresses = $this->toAddresses;
+        $fromAddress = $this->fromAddress;
+        $fromName = $this->fromName;
+
+        $from = empty($fromName) ? $fromAddress : '"'.$fromName.'" <'.$fromAddress.'>';
+
+        $result = $client->sendEmail([
           'Destination' => [
-              'BccAddresses' => [],
-              'CcAddresses' => [],
-              'ToAddresses' => [
-                  'pieterjan@carly.be',
-              ],
+            'BccAddresses' => [],
+            'CcAddresses' => [],
+            'ToAddresses' => $toAddresses
           ],
           'Message' => [
-              'Body' => [
-                  'Html' => [
-                      'Charset' => 'UTF-8',
-                      'Data' => $html,
-                  ],
-                  'Text' => [
-                      'Charset' => 'UTF-8',
-                      'Data' => $text,
-                  ],
+            'Body' => [
+              'Html' => [
+                'Charset' => 'UTF-8',
+                'Data' => $html,
               ],
-              'Subject' => [
-                  'Charset' => 'UTF-8',
-                  'Data' => $subject,
+              'Text' => [
+                'Charset' => 'UTF-8',
+                'Data' => $text,
               ],
+            ],
+            'Subject' => [
+              'Charset' => 'UTF-8',
+              'Data' => $subject,
+            ],
           ],
-          'Source' => 'pieterjan@entice.be',
-      ]);
-
-		} catch(\Aws\Ses\Exception\SesException $exc) {
-			$result	= $exc->getMessage();
-		}
-
-    dump($result);
-    die;
+          'Source' => $from,
+        ]);
+      }
+      else
+      {
+        return NULL;
+      }
+    }
+    catch(\Aws\Ses\Exception\SesException $exc)
+    {
+      \Drupal::logger('spectrum')->error('AWS Exception: '.$exc->getMessage());
+      return NULL;
+    }
+    catch(Exception $exc)
+    {
+      \Drupal::logger('spectrum')->error('Email Sending Exception: '.$exc->getMessage());
+      return NULL;
+    }
   }
 }

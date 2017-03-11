@@ -28,16 +28,16 @@ class Collection implements \IteratorAggregate
 
   public function replaceOldModelKey($oldKey, $newKey)
   {
-    $model = $this->models[$oldKey];
-    if(!empty($model))
+    if(array_key_exists($oldKey, $this->models))
     {
+      $model = $this->models[$oldKey];
       unset($this->models[$oldKey]);
       $this->models[$newKey] = $model;
     }
 
-    $originalModel = $this->originalModels[$oldKey];
-    if(!empty($originalModel))
+    if(array_key_exists($oldKey, $this->originalModels))
     {
+      $originalModel = $this->originalModels[$oldKey];
       unset($this->originalModels[$oldKey]);
       $this->originalModels[$newKey] = $originalModel;
     }

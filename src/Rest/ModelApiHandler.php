@@ -19,7 +19,7 @@ use Drupal\spectrum\Exceptions\ModelNotFoundException;
 
 class ModelApiHandler extends BaseApiHandler
 {
-  private static $embeddedApiRelationships = [];
+  protected static $embeddedApiRelationships = [];
 
   private $modelClassName;
   protected $maxLimit = 200;

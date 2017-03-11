@@ -833,101 +833,6 @@ abstract class Model
     return str_replace('_', '-', $underscoredField);;
   }
 
-  public function getValueForEmailTemplate($underscoredField)
-  {
-    // email templates can't handle dashes, so we replaced them with underscores
-    $prettyField = static::getPrettyFieldForUnderscoredField($underscoredField);
-    $prettyFieldsToFields = static::getPrettyFieldsToFieldsMapping();
-
-    if(array_key_exists($prettyField, $prettyFieldsToFields))
-    {
-      $fieldName = $prettyFieldsToFields[$prettyField];
-      $fieldDefinition = $this->entity->getFieldDefinition($fieldName);
-
-      $fieldType = $fieldDefinition->getType();
-      $returnValue = '';
-
-
-      // TODO: add support for field cardinality
-      switch($fieldType){
-        case 'autonumber':
-          $returnValue = (int) $this->entity->get($fieldName)->value;
-          break;
-        case 'boolean':
-          $returnValue = ($this->entity->get($fieldName)->value === '1');
-          break;
-        case 'decimal':
-          $returnValue = (double) $this->entity->get($fieldName)->value;
-          break;
-        case 'geolocation':
-          $lat = (float) $this->entity->get($fieldName)->lat;
-          $lng = (float) $this->entity->get($fieldName)->lng;
-
-          $returnValue = $lat.','.$lng;
-          break;
-        case 'entity_reference':
-          $returnValue = (int) $this->entity->get($fieldName)->target_id;
-          break;
-        // If it is more than 1 item (or -1 in case of unlimited references), we must return an array
-        case 'image':
-          $returnValue = '/image/' . $this->entity->get($fieldName)->target_id;
-          break;
-        case 'file':
-          $returnValue = '/image/' . $this->entity->get($fieldName)->target_id;
-          break;
-        case 'uri':
-          $returnValue = $this->entity->get($fieldName)->value;
-          break;
-        case 'link':
-          $returnValue = $this->entity->get($fieldName)->uri;
-          break;
-        case 'address':
-          $address = $this->entity->get($fieldName);
-          $attribute = null;
-          if(!empty($address->country_code))
-          {
-            $returnValue .= $address->address_line1;
-            $returnValue .= ', ' .$address->postal_code;
-            $returnValue .= ' ' .$address->locality;
-            $returnValue .= ', '.$address->country_code;
-
-          }
-          break;
-        case 'list_string':
-          $alloweValues = $fieldDefinition->getFieldStorageDefinition()->getSetting('allowed_values');
-          $value = $this->entity->get($fieldName)->value;
-
-          if(array_key_exists($value, $alloweValues))
-          {
-            $returnValue = $alloweValues[$value];
-          }
-          else
-          {
-            $returnValue = '';
-          }
-          break;
-        case 'created':
-        case 'changed':
-            // for some reason, created and changed aren't regular datetimes, they are unix timestamps in the database
-            $timestamp = $this->entity->get($fieldName)->value;
-            $datetime = \DateTime::createFromFormat('U', $timestamp);
-            $returnValue = $datetime->format( 'c' );
-            break;
-
-          default:
-            $returnValue = $this->entity->get($fieldName)->value;
-            break;
-      }
-
-      return $returnValue;
-    }
-    else
-    {
-      throw new InvalidFieldException();
-    }
-
-  }
-
   public function __get($property)
   {
 		if (property_exists($this, $property))
@@ -942,23 +847,12 @@ abstract class Model
 		{
 			return $this->relatedViaFieldOnExternalEntity[$property];
 		}
-    else
-    {
-      try
-      {
-        return $this->getValueForEmailTemplate($property);
-      }
-      catch (InvalidFieldException $exception)
-      {
-        \Drupal::logger('Spectrum')->error('Property '.$property.' does not exist on modelclass '.get_called_class());
-      }
-    }
 	}
 
   public function __isset($property)
   {
     // Needed for twig to be able to access relationship via magic getter
-    return property_exists($this, $property) || array_key_exists($property, $this->relatedViaFieldOnEntity) || array_key_exists($property, $this->relatedViaFieldOnExternalEntity) || static::underScoredFieldExists($property);
+    return property_exists($this, $property) || array_key_exists($property, $this->relatedViaFieldOnEntity) || array_key_exists($property, $this->relatedViaFieldOnExternalEntity);
   }
 
   public function beforeValidate(){}
