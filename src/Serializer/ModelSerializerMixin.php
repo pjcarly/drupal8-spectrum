@@ -264,7 +264,7 @@ trait ModelSerializerMixin
     {
       if($key !== 'title')
       {
-        $fieldnamepretty = StringUtils::dasherize(str_replace('field_', '', $key));
+        $fieldnamepretty = trim(trim(StringUtils::dasherize(str_replace('field_', '', $key)), '-'));
       }
       else
       {
