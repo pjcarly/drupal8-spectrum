@@ -808,7 +808,7 @@ abstract class Model
 
   public static function getPlural()
   {
-    return static::$plural; // todo, find a way to store this aside the label of the model
+    return empty(static::$plural) ? '' : static::$plural; // todo, find a way to store this aside the label of the model
   }
 
   public static function getBundleKey()
