@@ -610,6 +610,33 @@ abstract class Model
     return array_key_exists($sourceModelType, static::$relationships) && array_key_exists($relationshipName, static::$relationships[$sourceModelType]);
   }
 
+  // Identical to hasRelationship, but with the difference that we search for deep relationships via the '.'
+  public static function hasDeepRelationship($relationshipName)
+  {
+    $sourceModelType = get_called_class();
+    $firstRelationshipNamePosition = strpos($relationshipName, '.');
+
+    if(empty($firstRelationshipNamePosition)) // relationship name without extra relationships
+    {
+      return static::hasRelationship($relationshipName);
+    }
+    else
+    {
+
+      $firstRelationshipName = substr($relationshipName, 0, $firstRelationshipNamePosition);
+      if(static::hasRelationship($firstRelationshipName))
+      {
+        $firstRelationship = static::getRelationship($firstRelationshipName);
+        $firstRelationshipModelType = $firstRelationship->modelType;
+        return $firstRelationshipModelType::hasDeepRelationship(substr($relationshipName, $firstRelationshipNamePosition+1));
+      }
+      else
+      {
+        return false;
+      }
+    }
+  }
+
   public static function getNextKey()
   {
       return 'PLH'.(static::$keyIndex++);

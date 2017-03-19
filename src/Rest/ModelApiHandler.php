@@ -888,7 +888,8 @@ class ModelApiHandler extends BaseApiHandler
       $fetchedCollections = array(); // we will cache collections here, so we don't get duplicate data to include when multiple relationships point to the same object
       foreach($relationshipNamesToInclude as $relationshipNameToInclude)
       {
-        if($modelClassName::hasRelationship($relationshipNameToInclude))
+        $hasRelationship = $modelClassName::hasDeepRelationship($relationshipNameToInclude);
+        if($hasRelationship)
         {
           // first of all, we fetch the data
           $source->fetch($relationshipNameToInclude);
