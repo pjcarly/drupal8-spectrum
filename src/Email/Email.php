@@ -134,33 +134,39 @@ class Email
         $toAddresses = $this->toAddresses;
         $fromAddress = $this->fromAddress;
         $fromName = $this->fromName;
+        $replyTo = $this->replyTo;
 
         $from = empty($fromName) ? $fromAddress : '"'.$fromName.'" <'.$fromAddress.'>';
-
-        $result = $client->sendEmail([
-          'Destination' => [
-            'BccAddresses' => [],
-            'CcAddresses' => [],
-            'ToAddresses' => $toAddresses
-          ],
-          'Message' => [
-            'Body' => [
-              'Html' => [
-                'Charset' => 'UTF-8',
-                'Data' => $html,
-              ],
-              'Text' => [
-                'Charset' => 'UTF-8',
-                'Data' => $text,
-              ],
-            ],
-            'Subject' => [
+        $payload = [];
+        $payload['Destination'] = [
+          'BccAddresses' => [],
+          'CcAddresses' => [],
+          'ToAddresses' => $toAddresses
+        ];
+        $payload['Message'] = [
+          'Body' => [
+            'Html' => [
               'Charset' => 'UTF-8',
-              'Data' => $subject,
+              'Data' => $html,
+            ],
+            'Text' => [
+              'Charset' => 'UTF-8',
+              'Data' => $text,
             ],
           ],
-          'Source' => $from,
-        ]);
+          'Subject' => [
+            'Charset' => 'UTF-8',
+            'Data' => $subject,
+          ],
+        ];
+        $payload['Source'] = $from;
+
+        if(!empty($replyTo))
+        {
+          $payload['ReplyToAddresses'] = [$replyTo];
+        }
+
+        $result = $client->sendEmail($payload);
       }
       else
       {
