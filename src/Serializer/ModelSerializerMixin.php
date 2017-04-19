@@ -195,7 +195,25 @@ trait ModelSerializerMixin
             $node->addAttribute($fieldNamePretty, $datetime->format('c'));
             break;
           default:
-            $node->addAttribute($fieldNamePretty, $this->entity->get($fieldName)->value);
+            $fieldCardinality = $fieldDefinition->getFieldStorageDefinition()->getCardinality();
+            $value;
+
+            if($fieldCardinality !== 1)
+            {
+              // More than 1 value allowed in the field
+              $value = [];
+              $fieldValues = $this->entity->get($fieldName);
+              foreach($fieldValues as $fieldValue)
+              {
+                $value[] = $fieldValue->value;
+              }
+            }
+            else
+            {
+              $value = $this->entity->get($fieldName)->value;
+            }
+
+            $node->addAttribute($fieldNamePretty, $value);
             break;
         }
       }

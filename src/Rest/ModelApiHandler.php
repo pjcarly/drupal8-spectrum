@@ -6,6 +6,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 use Drupal\spectrum\Query\Condition;
+use Drupal\spectrum\Query\Order;
 use Drupal\spectrum\Model\Collection;
 use Drupal\spectrum\Model\FieldRelationship;
 use Drupal\spectrum\Model\ReferencedRelationship;
@@ -73,19 +74,8 @@ class ModelApiHandler extends BaseApiHandler
       else
       {
         // no page, we can just set a limit
-        if(empty($limit))
-        {
-          // no limit, lets set the default one
-          $query->setLimit($this->maxLimit);
-        }
-        else
-        {
-          $query->setLimit($limit);
-        }
+        $query->setLimit(empty($limit) ? $this->maxLimit : $limit);
       }
-
-      // Lets get the pretty to regular field mapping for use in either sort or filter
-      $prettyToFieldsMap = $modelClassName::getPrettyFieldsToFieldsMapping();
 
       // Lets also check for an order
       if($request->query->has('sort'))
@@ -93,40 +83,11 @@ class ModelApiHandler extends BaseApiHandler
         // sort params are split by ',' so lets evaluate them individually
         $sort = $request->query->get('sort');
         $sortQueryFields = explode(',', $sort);
+        $sortOrders = static::getSortOrderListForSortArray($modelClassName, $sortQueryFields);
 
-        foreach($sortQueryFields as $sortQueryField)
+        foreach($sortOrders as $sortOrder)
         {
-          // the json-api spec tells us, that all fields are sorted ascending, unless the field is prepended by a '-'
-          // http://jsonapi.org/format/#fetching-sorting
-          $direction = (!empty($sortQueryField) && $sortQueryField[0] === '-') ? 'DESC' : 'ASC';
-          $prettyField = ltrim($sortQueryField, '-'); // lets remove the '-' from the start of the field if it exists
-
-          $prettyFieldParts = explode('.', $prettyField);
-
-
-          // if the pretty field exists, lets add it to the sort order
-          if(array_key_exists($prettyFieldParts[0], $prettyToFieldsMap))
-          {
-            $field = $prettyToFieldsMap[$prettyFieldParts[0]];
-
-            if(sizeof($prettyFieldParts) > 1)
-            {
-              $typePrettyToFieldsMap = $modelClassName::getTypePrettyFieldToFieldsMapping();
-              // meaning we have a extra column present
-              $fieldDefinition = $modelClassName::getFieldDefinition($field);
-              $fieldType = $fieldDefinition->getType();
-
-              if(array_key_exists($fieldType, $typePrettyToFieldsMap) && array_key_exists($prettyFieldParts[1], $typePrettyToFieldsMap[$fieldType]))
-              {
-                $column = $typePrettyToFieldsMap[$fieldType][$prettyFieldParts[1]];
-                $query->addSortOrder($field.'.'.$column, $direction);
-              }
-            }
-            else
-            {
-              $query->addSortOrder($field, $direction);
-            }
-          }
+          $query->addSortOrder($sortOrder);
         }
       }
 
@@ -136,59 +97,10 @@ class ModelApiHandler extends BaseApiHandler
         $filter = $request->query->get('filter');
         if(is_array($filter))
         {
-          foreach(array_keys($filter) as $prettyField)
+          $conditions = static::getConditionListForFilterArray($modelClassName, $filter);
+          foreach($conditions as $condition)
           {
-            // lets start by making sure the field exists
-            // we explode, because we have a potential field with a column (like address.city) as opposed to just a field (like name)
-            $prettyFieldParts = explode('.', $prettyField);
-
-            if(array_key_exists($prettyFieldParts[0], $prettyToFieldsMap))
-            {
-              $field = $prettyToFieldsMap[$prettyFieldParts[0]];
-              $operator = null;
-              $value = null;
-
-              $filterValue = $filter[$prettyField];
-
-              // the filter value can either be the specific value, or an array with extra attributes
-              if(is_array($filterValue))
-              {
-                // we found an array, meaning we must check for 'operator' as well
-                $operator = (array_key_exists('operator', $filterValue) && Condition::isValidSingleModelOperator($filterValue['operator'])) ? $filterValue['operator'] : null;
-                $value = array_key_exists('value', $filterValue) ? $filterValue['value'] : null;
-              }
-              else
-              {
-                // no array, so it will just be the value
-                $operator = '=';
-                $value = $filterValue;
-              }
-
-              if(!empty($operator) && !empty($value) && !empty($field))
-              {
-                if(sizeof($prettyFieldParts) > 1)
-                {
-                  // this means we have a field with a column (like address.city)
-                  $typePrettyToFieldsMap = $modelClassName::getTypePrettyFieldToFieldsMapping();
-                  // meaning we have a extra column present
-                  $fieldDefinition = $modelClassName::getFieldDefinition($field);
-                  $fieldType = $fieldDefinition->getType();
-
-                  if(array_key_exists($fieldType, $typePrettyToFieldsMap) && array_key_exists($prettyFieldParts[1], $typePrettyToFieldsMap[$fieldType]))
-                  {
-                    $column = $typePrettyToFieldsMap[$fieldType][$prettyFieldParts[1]];
-                    $condition = new Condition($field.'.'.$column, $operator, $value);
-                    $query->addCondition($condition);
-                  }
-                }
-                else
-                {
-                  // just a field, no column (like name)
-                  $condition = new Condition($field, $operator, $value);
-                  $query->addCondition($condition);
-                }
-              }
-            }
+            $query->addCondition($condition);
           }
         }
       }
@@ -951,5 +863,109 @@ class ModelApiHandler extends BaseApiHandler
         }
       }
     }
+  }
+
+  public static function getConditionListForFilterArray(string $modelClassName, array $filter) : array
+  {
+    $prettyToFieldsMap = $modelClassName::getPrettyFieldsToFieldsMapping();
+    $conditions = [];
+    foreach(array_keys($filter) as $prettyField)
+    {
+      // lets start by making sure the field exists
+      // we explode, because we have a potential field with a column (like address.city) as opposed to just a field (like name)
+      $prettyFieldParts = explode('.', $prettyField);
+
+      if(array_key_exists($prettyFieldParts[0], $prettyToFieldsMap))
+      {
+        $field = $prettyToFieldsMap[$prettyFieldParts[0]];
+        $operator = null;
+        $value = null;
+
+        $filterValue = $filter[$prettyField];
+
+        // the filter value can either be the specific value, or an array with extra attributes
+        if(is_array($filterValue))
+        {
+          // we found an array, meaning we must check for 'operator' as well
+          $operator = (array_key_exists('operator', $filterValue) && Condition::isValidSingleModelOperator($filterValue['operator'])) ? $filterValue['operator'] : null;
+          $value = array_key_exists('value', $filterValue) ? $filterValue['value'] : null;
+        }
+        else
+        {
+          // no array, so it will just be the value
+          $operator = '=';
+          $value = $filterValue;
+        }
+
+        if(!empty($operator) && !empty($value) && !empty($field))
+        {
+          if(sizeof($prettyFieldParts) > 1)
+          {
+            // this means we have a field with a column (like address.city)
+            $typePrettyToFieldsMap = $modelClassName::getTypePrettyFieldToFieldsMapping();
+            // meaning we have a extra column present
+            $fieldDefinition = $modelClassName::getFieldDefinition($field);
+            $fieldType = $fieldDefinition->getType();
+
+            if(array_key_exists($fieldType, $typePrettyToFieldsMap) && array_key_exists($prettyFieldParts[1], $typePrettyToFieldsMap[$fieldType]))
+            {
+              $column = $typePrettyToFieldsMap[$fieldType][$prettyFieldParts[1]];
+              $condition = new Condition($field.'.'.$column, $operator, $value);
+              $conditions[] = $condition;
+            }
+          }
+          else
+          {
+            // just a field, no column (like name)
+            $condition = new Condition($field, $operator, $value);
+            $conditions[] = $condition;
+          }
+        }
+      }
+    }
+
+    return $conditions;
+  }
+
+  public static function getSortOrderListForSortArray(string $modelClassName, array $sortQueryFields) : array
+  {
+    $prettyToFieldsMap = $modelClassName::getPrettyFieldsToFieldsMapping();
+    $sortOrders = [];
+    foreach($sortQueryFields as $sortQueryField)
+    {
+      // the json-api spec tells us, that all fields are sorted ascending, unless the field is prepended by a '-'
+      // http://jsonapi.org/format/#fetching-sorting
+      $direction = (!empty($sortQueryField) && $sortQueryField[0] === '-') ? 'DESC' : 'ASC';
+      $prettyField = ltrim($sortQueryField, '-'); // lets remove the '-' from the start of the field if it exists
+
+      $prettyFieldParts = explode('.', $prettyField);
+
+
+      // if the pretty field exists, lets add it to the sort order
+      if(array_key_exists($prettyFieldParts[0], $prettyToFieldsMap))
+      {
+        $field = $prettyToFieldsMap[$prettyFieldParts[0]];
+
+        if(sizeof($prettyFieldParts) > 1)
+        {
+          $typePrettyToFieldsMap = $modelClassName::getTypePrettyFieldToFieldsMapping();
+          // meaning we have a extra column present
+          $fieldDefinition = $modelClassName::getFieldDefinition($field);
+          $fieldType = $fieldDefinition->getType();
+
+          if(array_key_exists($fieldType, $typePrettyToFieldsMap) && array_key_exists($prettyFieldParts[1], $typePrettyToFieldsMap[$fieldType]))
+          {
+            $column = $typePrettyToFieldsMap[$fieldType][$prettyFieldParts[1]];
+            $sortOrders[] = new Order($field.'.'.$column, $direction);
+          }
+        }
+        else
+        {
+          $sortOrders[] = new Order($field, $direction);
+        }
+      }
+    }
+
+    return $sortOrders;
   }
 }

@@ -44,6 +44,56 @@ class JsonApiNode extends JsonApiBaseNode
     $this->attributes[$name] = $attribute;
   }
 
+  public function removeAttribute($name)
+  {
+    if(!empty($name) && array_key_exists($name, $this->attributes))
+    {
+      unset($this->attributes[$name]);
+    }
+  }
+  
+  public function renameAttribute($oldName, $newName)
+  {
+    if(!empty($oldName) && !empty($newName) && array_key_exists($oldName, $this->attributes))
+    {
+      $this->attributes[$newName] = $this->attributes[$oldName];
+      unset($this->attributes[$oldName]);
+    }
+  }
+
+  public function removeRelationship($name)
+  {
+    if(!empty($name) && array_key_exists($name, $this->relationships))
+    {
+      unset($this->relationships[$name]);
+    }
+  }
+
+  public function renameRelationship($oldName, $newName)
+  {
+    if(!empty($oldName) && !empty($newName) && array_key_exists($oldName, $this->relationships))
+    {
+      $this->relationships[$newName] = $this->relationships[$oldName];
+      unset($this->attributes[$oldName]);
+    }
+  }
+
+  public function getAttribute($name)
+  {
+    if(!empty($name) && array_key_exists($name, $this->attributes))
+    {
+      return $this->attributes[$name];
+    }
+  }
+  
+  public function getRelationship($name)
+  {
+    if(!empty($name) && array_key_exists($name, $this->relationship))
+    {
+      return $this->relationship[$name];
+    }
+  }
+
   public function serialize()
   {
     $serialized = new \stdClass();

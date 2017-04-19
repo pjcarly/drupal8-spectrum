@@ -36,9 +36,9 @@ abstract class Query
     $this->rangeLength = $length;
   }
 
-  public function addSortOrder($field, $direction = 'ASC', $langcode = null)
+  public function addSortOrder(Order $order)
   {
-    $this->sortOrders[] = new Order($field, $direction, $langcode);
+    $this->sortOrders[] = $order;
   }
 
   public function clearOrders()

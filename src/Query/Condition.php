@@ -11,7 +11,7 @@ class Condition
 	public $value;
 
 	public static $singleValueOperators = array('=', '<>', '>', '>=', '<', '<=', 'LIKE', 'CONTAINS', 'STARTS_WITH', 'ENDS_WITH');
-	public static $multipleValueOperators = array('IN', 'NOT IN');
+	public static $multipleValueOperators = array('IN', 'NOT IN', 'BETWEEN');
 
 	public function __construct($fieldName, $operator, $value)
 	{
