@@ -48,7 +48,18 @@ class Condition
     }
     else
     {
-      $query->condition($this->fieldName, $this->value, $this->operator);
+      if($this->operator === '<>' || $this->operator === 'NOT IN')
+      {
+        // Workaround for Drupal's lack of support for LEFT JOIN (else you would miss empty values)
+        $orGroup = $query->orConditionGroup();
+        $orGroup->condition($this->fieldName, $this->value, $this->operator);
+        $orGroup->notExists($this->fieldName);
+        $query->condition($orGroup);
+      }
+      else
+      {
+        $query->condition($this->fieldName, $this->value, $this->operator);
+      }
     }
 	}
 

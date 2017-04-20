@@ -4,13 +4,13 @@ namespace Drupal\spectrum\Query;
 
 class Order
 {
-	public $field;
+	public $fieldName;
 	public $direction;
   public $langcode;
 
-	public function __construct($field, $direction = 'ASC', $langcode = null)
+	public function __construct($fieldName, $direction = 'ASC', $langcode = null)
 	{
-		$this->field = $field;
+		$this->fieldName = $fieldName;
 		$this->direction = $direction;
     $this->langcode = $langcode;
 	}

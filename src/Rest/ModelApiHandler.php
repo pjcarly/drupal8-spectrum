@@ -13,6 +13,7 @@ use Drupal\spectrum\Model\ReferencedRelationship;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Serializer\JsonApiRootNode;
 use Drupal\spectrum\Serializer\JsonApiLink;
+use Drupal\spectrum\Analytics\ListView;
 
 use Drupal\spectrum\Exceptions\InvalidTypeException;
 use Drupal\spectrum\Exceptions\NotImplementedException;
@@ -24,6 +25,7 @@ class ModelApiHandler extends BaseApiHandler
 
   private $modelClassName;
   protected $maxLimit = 200;
+  protected $listView;
 
   public function __construct($modelClassName, $slug = null)
   {
@@ -77,7 +79,7 @@ class ModelApiHandler extends BaseApiHandler
         $query->setLimit(empty($limit) ? $this->maxLimit : $limit);
       }
 
-      // Lets also check for an order
+      // Lets also check for a sort order
       if($request->query->has('sort'))
       {
         // sort params are split by ',' so lets evaluate them individually
@@ -97,10 +99,34 @@ class ModelApiHandler extends BaseApiHandler
         $filter = $request->query->get('filter');
         if(is_array($filter))
         {
+          // We first get the filters provided in the filter array
           $conditions = static::getConditionListForFilterArray($modelClassName, $filter);
           foreach($conditions as $condition)
           {
             $query->addCondition($condition);
+          }
+
+          // Lets see if a listView was passed and found (done in the conditionListforfliterarray function)
+          $listview = static::getListViewForFilterArray($modelClassName, $filter);
+          if(!empty($listview))
+          {
+            $listview->fetch('conditions');
+            $listview->fetch('sort_orders');
+            // a matching listview was found
+            $listviewQuery = $listview->buildQuery();
+
+            foreach($listviewQuery->conditions as $condition)
+            {
+              $query->addCondition($condition);
+            }
+
+            foreach($listviewQuery->sort_orders as $sortOrder)
+            {
+              if(!$query->hasSortOrderForField($sortOrder->fieldName))
+              {
+                $query->addSortOrder($sortOrder);
+              }
+            }
           }
         }
       }
@@ -869,11 +895,11 @@ class ModelApiHandler extends BaseApiHandler
   {
     $prettyToFieldsMap = $modelClassName::getPrettyFieldsToFieldsMapping();
     $conditions = [];
-    foreach(array_keys($filter) as $prettyField)
+    foreach(array_keys($filter) as $prettyFilter)
     {
       // lets start by making sure the field exists
       // we explode, because we have a potential field with a column (like address.city) as opposed to just a field (like name)
-      $prettyFieldParts = explode('.', $prettyField);
+      $prettyFieldParts = explode('.', $prettyFilter);
 
       if(array_key_exists($prettyFieldParts[0], $prettyToFieldsMap))
       {
@@ -881,7 +907,7 @@ class ModelApiHandler extends BaseApiHandler
         $operator = null;
         $value = null;
 
-        $filterValue = $filter[$prettyField];
+        $filterValue = $filter[$prettyFilter];
 
         // the filter value can either be the specific value, or an array with extra attributes
         if(is_array($filterValue))
@@ -925,6 +951,25 @@ class ModelApiHandler extends BaseApiHandler
     }
 
     return $conditions;
+  }
+
+  public static function getListViewForFilterArray(string $modelClassName, array $filter)
+  {
+    if(array_key_exists('_listview', $filter))
+    {
+      $listViewParameterValue = $filter['_listview'];
+      if(!empty($listViewParameterValue) && is_numeric($listViewParameterValue))
+      {
+        $listview = ListView::forge(null, $listViewParameterValue);
+
+        if(!empty($listview) && $listview->entity->field_entity->value === $modelClassName::$entityType && $listview->entity->field_bundle->value === $modelClassName::$bundle)
+        {
+          return $listview;
+        }
+      }
+    }
+
+    return null;
   }
 
   public static function getSortOrderListForSortArray(string $modelClassName, array $sortQueryFields) : array

@@ -14,11 +14,6 @@ abstract class Query
     $this->conditions[] = $condition;
   }
 
-  public function addOrder(Order $order)
-  {
-    $this->sortOrders[] = $order;
-  }
-
   public function setLimit($limit)
   {
     $this->rangeStart = 0;
@@ -38,10 +33,15 @@ abstract class Query
 
   public function addSortOrder(Order $order)
   {
-    $this->sortOrders[] = $order;
+    $this->sortOrders[$order->fieldName] = $order;
   }
 
-  public function clearOrders()
+  public function hasSortOrderForField($fieldName)
+  {
+    return array_key_exists($fieldName, $this->sortOrders);
+  }
+
+  public function clearSortOrders()
   {
     $this->sortOrders = array();
   }
@@ -80,7 +80,7 @@ abstract class Query
     // and finally apply an order if needed
     foreach($this->sortOrders as $sortOrder)
     {
-      $query->sort($sortOrder->field, $sortOrder->direction, $sortOrder->langcode);
+      $query->sort($sortOrder->fieldName, $sortOrder->direction, $sortOrder->langcode);
     }
 
     return $query;
