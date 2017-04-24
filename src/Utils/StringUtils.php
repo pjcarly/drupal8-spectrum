@@ -14,9 +14,8 @@ class StringUtils
     return strtr($input, $separator, '-');
   }
 
-  static function underscore($input, $separator = '_')
+  static function underscore($input, $separator = '-')
   {
-    $strippedInput = preg_replace('/[^\da-z ]/i', '', $input);
-    return str_replace(' ', '_', $strippedInput);
+    return strtr($input, $separator, '_');
   }
 }

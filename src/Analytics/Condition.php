@@ -10,6 +10,9 @@ use Drupal\spectrum\Query\Condition as QueryCondition;
 
 class Condition extends Model
 {
+  public static $userLiterals = ['MYSELF'];
+  public static $dateLiterals = ['TODAY'];
+
   public static $operationMapping = [
     'EQUALS' => '=',
     'NOT_EQUALS' => '<>',
@@ -40,7 +43,7 @@ class Condition extends Model
   {
     $field = $this->entity->field_field->value;
     $operator = static::$operationMapping[$this->entity->field_operator->value];
-    $value = $this->entity->field_value->value;
+    $value = $this->getValue(); // This parses possible literals
 
     if(in_array($operator, QueryCondition::$multipleValueOperators))
     {
@@ -49,5 +52,41 @@ class Condition extends Model
     }
 
     return new QueryCondition($field, $operator, $value);
+  }
+
+  public function getValue()
+  {
+    $value = $this->entity->field_value->value;
+
+    if(in_array($value, static::$userLiterals))
+    {
+      $fieldDefinition = $this->getDrupalFieldDefinition();
+      if(!empty($fieldDefinition) && $fieldDefinition->getType() === 'entity_reference')
+      {
+        $fieldSettings = $fieldDefinition->getItemDefinition()->getSettings();
+
+        if($fieldSettings['target_type'] === 'user')
+        {
+          if($value === 'MYSELF')
+          {
+            $currentUser = \Drupal::currentUser();
+            $value = $currentUser->id();
+          }
+        }
+      }
+    }
+
+    return $value;
+  }
+
+  private function getDrupalFieldDefinition()
+  {
+    $fieldName = $this->entity->field_field->value;
+    $fieldDefinitions = $this->parent->getDrupalFieldDefinitions();
+    if(array_key_exists($fieldName, $fieldDefinitions))
+    {
+      return $fieldDefinitions[$fieldName];
+    }
+    return null;
   }
 }

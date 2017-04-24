@@ -37,4 +37,18 @@ class ListView extends Model
     }
     return $query;
   }
+
+  public function getDrupalFieldDefinitions()
+  {
+    $entityType = $this->entity->field_entity->value;
+    $bundle = $this->entity->field_bundle->value;
+    if(empty($bundle))
+    {
+      return \Drupal::service('entity_field.manager')->getFieldDefinitions($entityType, $entityType);
+    }
+    else
+    {
+      return \Drupal::service('entity_field.manager')->getFieldDefinitions($entityType, $bundle);
+    }
+  }
 }
