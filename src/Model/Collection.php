@@ -431,13 +431,25 @@ class Collection implements \IteratorAggregate
 		{
 			$relationship = $modelType::getRelationship($relationshipName);
       $resultCollection = null;
-      if($relationship->isPolymorphic)
+
+      if($relationship instanceof ReferencedRelationship)
       {
-        $resultCollection = PolymorphicCollection::forge(null);
+        $resultCollection = static::forge($relationship->modelType);
+      }
+      else if($relationship instanceof FieldRelationship)
+      {
+        if($relationship->isPolymorphic)
+        {
+          $resultCollection = PolymorphicCollection::forge(null);
+        }
+        else
+        {
+          $resultCollection = static::forge($relationship->modelType);
+        }
       }
       else
       {
-        $resultCollection = static::forge($relationship->modelType);
+        throw new InvalidTypeException('Invalid Relationship type ');
       }
 
 			foreach($this->models as $model)

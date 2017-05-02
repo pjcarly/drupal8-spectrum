@@ -61,23 +61,23 @@ trait ModelDeserializerMixin
                 $this->entity->$fieldName->value = $dateValue;
                 break;
               case 'file':
-                if(empty($attributeValue))
+                if(isset($attributeValue->id))
                 {
-                  $this->entity->$fieldName->target_id = null;
+                  $this->entity->$fieldName->target_id = $attributeValue->id;
                 }
                 else
                 {
-                  $this->entity->$fieldName->target_id = $attributeValue->id;
+                  $this->entity->$fieldName->target_id = null;
                 }
                 break;
               case 'image':
-                if(empty($attributeValue))
+                if(isset($attributeValue->id))
                 {
-                  $this->entity->$fieldName->target_id = null;
+                  $this->entity->$fieldName->target_id = $attributeValue->id;
                 }
                 else
                 {
-                  $this->entity->$fieldName->target_id = $attributeValue->id;
+                  $this->entity->$fieldName->target_id = null;
                 }
                 break;
               case 'link':

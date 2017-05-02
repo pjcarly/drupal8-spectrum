@@ -3,14 +3,12 @@
 namespace Drupal\spectrum\Email;
 
 use Drupal\spectrum\Model\Model;
-use Drupal\spectrum\Model\SimpleModelWrapper;
 use Drupal\spectrum\Email\EmailTemplate;
 
 class Email
 {
   private $email;
   private $template;
-  private $scope = [];
 
   private $toAddresses = [];
   private $fromAddress = '';
@@ -42,38 +40,17 @@ class Email
     $this->template = $template;
   }
 
-  public function addModelToScope($name, Model $model)
-  {
-    $this->scope[$name] = new SimpleModelWrapper($model);
-  }
-
-  public function addObjectToScope($name, $object)
-  {
-    $this->scope[$name] = $object;
-  }
-
   public function send()
   {
     // Get environment variables
     $template = $this->template;
-    $scope = $this->scope;
-
-    // We need to get the twig environment from Drupal as we will use it to render the email template
-    // Important to CLONE the twig environment, as any change we make here, shouldn't affect drupal rendering
-    $twig = clone \Drupal::service('twig');
-    $twig->setLoader(new \Twig_Loader_String());
-
-    // Lets render the different parts of the email template
-    $subject = $twig->render($template->entity->field_subject->value, $scope);
-    $html = $twig->render($template->entity->field_html_body->value, $scope);
-    $text = $twig->render($template->entity->field_text_body->value, $scope);
+    $template->render();
 
     // we will now configure SES to send our email
     $config = \Drupal::config('spectrum.settings');
     $emailProvider = $config->get('email_provider');
 
     // Depending on the Email provider, we do something else
-
     try
     {
       if($emailProvider === 'sendgrid')
@@ -95,9 +72,9 @@ class Email
         $sendgridMessage->setReplyTo($this->replyTo);
 
         // twig already rendered our template, lets set the values
-        $sendgridMessage->setSubject($subject);
-        $sendgridMessage->setText($text);
-        $sendgridMessage->setHtml($html);
+        $sendgridMessage->setSubject($template->subject);
+        $sendgridMessage->setText($template->text);
+        $sendgridMessage->setHtml($template->html);
 
         // And finally send the email
         $client = new \SendGrid($sendGridKey);
@@ -147,16 +124,16 @@ class Email
           'Body' => [
             'Html' => [
               'Charset' => 'UTF-8',
-              'Data' => $html,
+              'Data' => $template->html,
             ],
             'Text' => [
               'Charset' => 'UTF-8',
-              'Data' => $text,
+              'Data' => $template->text,
             ],
           ],
           'Subject' => [
             'Charset' => 'UTF-8',
-            'Data' => $subject,
+            'Data' => $template->subject,
           ],
         ];
         $payload['Source'] = $from;

@@ -18,4 +18,14 @@ class StringUtils
   {
     return strtr($input, $separator, '_');
   }
+
+  static function hasSpaces($string)
+  {
+    return preg_match('/\s/', $string);
+  }
+  
+  static function isAlphaNumericWithoutSpaces($string)
+  {
+    return preg_match('/^[a-z0-9 .\-]+$/i', $string);
+  }
 }

@@ -19,4 +19,61 @@ class DateUtils
   {
     return ceil($date->format('n')/3);
   }
+
+  static function getMonthNumber($month)
+  {
+    $monthNumber = false;
+    $month = strtoupper($month);
+
+    if($month === "JAN")
+    {
+      $monthNumber = 1;
+    }
+    else if($month === "FEB")
+    {
+      $monthNumber = 2;
+    }
+    else if($month === "MAR")
+    {
+      $monthNumber = 3;
+    }
+    else if($month === "APR")
+    {
+      $monthNumber = 4;
+    }
+    else if($month === "MAY")
+    {
+      $monthNumber = 5;
+    }
+    else if($month === "JUN")
+    {
+      $monthNumber = 6;
+    }
+    else if($month === "JUL")
+    {
+      $monthNumber = 7;
+    }
+    else if($month === "AUG")
+    {
+      $monthNumber = 8;
+    }
+    else if($month === "SEP")
+    {
+      $monthNumber = 9;
+    }
+    else if($month === "OCT")
+    {
+      $monthNumber = 10;
+    }
+    else if($month === "NOV")
+    {
+      $monthNumber = 11;
+    }
+    else if($month === "DEC")
+    {
+      $monthNumber = 12;
+    }
+
+    return $monthNumber;
+  }
 }

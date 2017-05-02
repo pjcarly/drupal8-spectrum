@@ -81,7 +81,7 @@ trait ModelSerializerMixin
               else if($fieldSettingsDatetimeType === 'datetime')
               {
                 $dateValue = new \DateTime($attributeValue);
-                $dateValue->setTimezone('UTC');
+                $dateValue->setTimezone(new \DateTimeZone('UTC'));
                 $dateValue = $dateValue->format('Y-m-d\TH:i:s');
               }
             }

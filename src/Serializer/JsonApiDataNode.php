@@ -48,12 +48,15 @@ class JsonApiDataNode extends JsonApiBaseNode
       $serialized->meta = $this->meta;
     }
 
-    if(is_array($this->data) || $this->asArray)
+    if(is_array($this->data) || ($this->asArray))
     {
       $serializedData = array();
-      foreach($this->data as $dataMember)
+      if(!empty($this->data))
       {
-        $serializedData[] = $dataMember->serialize();
+        foreach($this->data as $dataMember)
+        {
+          $serializedData[] = $dataMember->serialize();
+        }
       }
       $serialized->data = $serializedData;
     }

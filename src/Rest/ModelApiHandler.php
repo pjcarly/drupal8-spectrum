@@ -120,7 +120,7 @@ class ModelApiHandler extends BaseApiHandler
               $query->addCondition($condition);
             }
 
-            foreach($listviewQuery->sort_orders as $sortOrder)
+            foreach($listviewQuery->sortOrders as $sortOrder)
             {
               if(!$query->hasSortOrderForField($sortOrder->fieldName))
               {
@@ -306,8 +306,8 @@ class ModelApiHandler extends BaseApiHandler
     return new Response(json_encode($jsonapi->serialize()), 200, array());
   }
 
-  protected function beforePostSave($model){}
-  protected function afterPostSave($model){}
+  protected function beforePostSave(Model $model){}
+  protected function afterPostSave(Model $model){}
 
   public function post(Request $request)
   {

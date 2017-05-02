@@ -102,7 +102,7 @@ abstract class Model
           foreach($referencedModels as $referencedModel)
           {
             $referencedEntityType = $referencedModel->entity->getEntityTypeId();
-            $referencedEntityBundle = $referencedModel->entity->type->target_id;
+            $referencedEntityBundle = empty($referencedModel->entity->type) ? null : $referencedModel->entity->type->target_id;
             $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
 
             // we must also check for an inverse relationship and, if found, put the inverse as well
@@ -120,7 +120,7 @@ abstract class Model
           if(!empty($referencedModel))
           {
             $referencedEntityType = $referencedModel->entity->getEntityTypeId();
-            $referencedEntityBundle = $referencedModel->entity->type->target_id;
+            $referencedEntityBundle = empty($referencedModel->entity->type) ? null : $referencedModel->entity->type->target_id;
             $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
 
             // we must also check for an inverse relationship and, if found, put the inverse as well
@@ -255,7 +255,7 @@ abstract class Model
                   // if the relationship is polymorphic we can get multiple bundles, so we must define the modeltype based on the bundle and entity of the current looping entity
                   // or if the related modeltype isn't set yet, we must set it once
                   $referencedEntityType = $referencedEntity->getEntityTypeId();
-                  $referencedEntityBundle = $referencedEntity->type->target_id;
+                  $referencedEntityBundle = empty($referencedEntity->type) ? null : $referencedEntity->type->target_id;
                   $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
                 }
 
@@ -277,7 +277,7 @@ abstract class Model
             {
               // if the relationship is polymorphic we can get multiple bundles, so we must define the modeltype based on the bundle and entity of the fetched entity
               $referencedEntityType = $referencedEntity->getEntityTypeId();
-              $referencedEntityBundle = $referencedEntity->type->target_id;
+              $referencedEntityBundle = empty($referencedEntity->type) ? null : $referencedEntity->type->target_id;
               $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
 
               // now that we have a model, lets put them one by one
@@ -307,7 +307,7 @@ abstract class Model
               {
                 // if the referencing modeltype isn't set yet, we must set it once
                 $referencingEntityType = $referencingEntity->getEntityTypeId();
-                $referencingEntityBundle = $referencingEntity->type->target_id;
+                $referencingEntityBundle = empty($referencingEntity->type) ? null : $referencingEntity->type->target_id;
                 $referencingModelType = Model::getModelClassForEntityAndBundle($referencingEntityType, $referencingEntityBundle);
               }
 
@@ -470,7 +470,7 @@ abstract class Model
     // if the relationship is polymorphic we can get multiple bundles, so we must define the modeltype based on the bundle and entity of the current looping entity
     // or if the related modeltype isn't set yet, we must set it once
     $referencedEntityType = $referencedModel->entity->getEntityTypeId();
-    $referencedEntityBundle = $referencedModel->entity->type->target_id;
+    $referencedEntityBundle = empty($referencedModel->entity->type) ? null : $referencedModel->entity->type->target_id;
     $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
 
     // we must also check for an inverse relationship and, if found, put the inverse as well
@@ -603,7 +603,17 @@ abstract class Model
     return $this->serialize();
   }
 
-  public static function hasRelationship($relationshipName)
+  protected function isNewlyInserted() : bool
+  {
+    return empty($this->entity->original);
+  }
+
+  protected function fieldChanged(string $fieldName) : bool
+  {
+    return $this->isNewlyInserted() || $this->entity->$fieldName->value != $this->entity->original->$fieldName->value;
+  }
+
+  public static function hasRelationship($relationshipName) : bool
   {
     $sourceModelType = get_called_class();
     static::setRelationships($sourceModelType);
