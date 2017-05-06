@@ -14,13 +14,7 @@ class TwigFile
   private $scope = [];
   private $fileContent;
   public $html = '';
-	/* TRIGGERS */
 
-
-	/* TRIGGER METHODS */
-
-
-	/* BUSINESS LOGIC */
   public function __construct(string $path)
   {
     $fileContent = file_get_contents($path);
@@ -29,6 +23,7 @@ class TwigFile
       $this->fileContent = $fileContent;
     }
   }
+
   public function addModelToScope($name, Model $model)
   {
     $this->scope[$name] = new SimpleModelWrapper($model);
@@ -41,12 +36,5 @@ class TwigFile
 
     // Lets render the different parts of the email template
     $this->html = $twig->render($this->fileContent, $this->scope);
-  }
-
-  public static function getByKey($name)
-  {
-    $query = new ModelQuery('Drupal\spectrum\Template\Page');
-    $query->addCondition(new Condition('field_key', '=', $name));
-    return $query->fetchSingleModel();
   }
 }
