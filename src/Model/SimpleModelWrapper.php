@@ -114,9 +114,11 @@ class SimpleModelWrapper
 
   public function __get($property)
   {
-    if(array_key_exists($property, $this->model->relatedViaFieldOnEntity)) // lets check for pseudo properties
+    $model = $this->model;
+
+    if(array_key_exists($property, $model->relatedViaFieldOnEntity)) // lets check for pseudo properties
     {
-      $object = $this->model->relatedViaFieldOnEntity[$property];
+      $object = $model->relatedViaFieldOnEntity[$property];
 
       if($object instanceof Model)
       {
@@ -131,9 +133,9 @@ class SimpleModelWrapper
         return null;
       }
     }
-    else if(array_key_exists($property, $this->model->relatedViaFieldOnExternalEntity)) // lets check for pseudo properties
+    else if(array_key_exists($property, $model->relatedViaFieldOnExternalEntity)) // lets check for pseudo properties
     {
-      $object = $this->model->relatedViaFieldOnExternalEntity[$property];
+      $object = $model->relatedViaFieldOnExternalEntity[$property];
 
       if($object instanceof Model)
       {
@@ -148,16 +150,21 @@ class SimpleModelWrapper
         return null;
       }
     }
-    else
+    else if($model::underScoredFieldExists($property))
     {
       try
       {
-        return $this->getValue($property);
+        $value = $this->getValue($property);
+        return $value;
       }
       catch (InvalidFieldException $exception)
       {
         \Drupal::logger('Spectrum')->error('Property '.$property.' does not exist on modelclass '.get_called_class());
       }
+    }
+    else if(Model::getterExists($model, $property))
+    {
+      return $model->callGetter($property);
     }
   }
 
@@ -165,6 +172,6 @@ class SimpleModelWrapper
   {
     $model = $this->model;
     // Needed for twig to be able to access relationship via magic getter
-    return array_key_exists($property, $model->relatedViaFieldOnEntity) || array_key_exists($property, $model->relatedViaFieldOnExternalEntity) || $model::underScoredFieldExists($property);
+    return array_key_exists($property, $model->relatedViaFieldOnEntity) || array_key_exists($property, $model->relatedViaFieldOnExternalEntity) || $model::underScoredFieldExists($property) || Model::getterExists($model, $property);
   }
 }

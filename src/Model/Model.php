@@ -865,6 +865,26 @@ abstract class Model
     return static::prettyFieldExists($prettyField);
   }
 
+  public static function getterExists(Model $model, string $property)
+  {
+    $getterName = 'get'.$property;
+    if(!empty($property) && is_callable(array($model, $getterName)))
+    {
+      $reflector = new \ReflectionMethod($model, $getterName);
+      $isProto = ($reflector->getDeclaringClass()->getName() !== get_class($model));
+
+      return !$isProto; // Meaning the function may only exist on the child class (shielding Model class functions from this)
+    }
+
+    return false;
+  }
+
+  public function callGetter($property)
+  {
+    $getterName = 'get'.$property;
+    return $this->$getterName();
+  }
+
   public static function getPrettyFieldForUnderscoredField($underscoredField)
   {
     return str_replace('_', '-', $underscoredField);;
