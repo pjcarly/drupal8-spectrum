@@ -7,6 +7,7 @@ use Drupal\spectrum\Exceptions\InvalidTypeException;
 class JsonApiRootNode extends JsonApiDataNode
 {
   protected $included;
+  protected $usedNodeForData;
 
   public function addInclude($jsonapi)
   {

@@ -240,9 +240,6 @@ class ModelApiHandler extends BaseApiHandler
           $jsonapi->addMeta('result-row-last', (int)$result->size);
         }
 
-        $node = $result->getJsonApiNode();
-        $jsonapi->setData($node);
-
         // Lets check for our includes
         $includes = array();
         // The url might define includes
@@ -263,6 +260,10 @@ class ModelApiHandler extends BaseApiHandler
         {
           $this->checkForIncludes($result, $jsonapi, $includes);
         }
+
+        // Finally we can set the jsonapi with the data of our result
+        $node = $result->getJsonApiNode();
+        $jsonapi->setData($node);
       }
     }
     else
@@ -273,9 +274,6 @@ class ModelApiHandler extends BaseApiHandler
       $this->addSingleLink($jsonapi, 'self', $baseUrl);
       if(!empty($result))
       {
-        $jsonapi->addNode($result->getJsonApiNode());
-
-
         // Lets check for our includes
         $includes = array();
         // The url might define includes
@@ -296,6 +294,9 @@ class ModelApiHandler extends BaseApiHandler
         {
           $this->checkForIncludes($result, $jsonapi, $includes);
         }
+
+        // Finally we add the result
+        $jsonapi->addNode($result->getJsonApiNode());
       }
       else
       {
@@ -818,6 +819,15 @@ class ModelApiHandler extends BaseApiHandler
     $jsonapi->addLink($name, $link);
   }
 
+  protected function setPsuedoRelationshipForSerialization($relationshipName)
+  {
+    $modelClassName = $this->modelClassName;
+    $relationship = $modelClassName::getDeepRelationship($relationshipName);
+    $sourceModelType = $relationship->getSourceModelType();
+
+    $sourceModelType::addPsuedoRelationshipForSerialization($relationship->relationshipName);
+  }
+
   protected function checkForIncludes($source, JsonApiRootNode $jsonApiRootNode, $relationshipNamesToInclude)
   {
     if(!$source->isEmpty)
@@ -829,6 +839,8 @@ class ModelApiHandler extends BaseApiHandler
         $hasRelationship = $modelClassName::hasDeepRelationship($relationshipNameToInclude);
         if($hasRelationship)
         {
+          $this->setPsuedoRelationshipForSerialization($relationshipNameToInclude);
+
           // first of all, we fetch the data
           $source->fetch($relationshipNameToInclude);
           $fetchedObject = $source->get($relationshipNameToInclude);

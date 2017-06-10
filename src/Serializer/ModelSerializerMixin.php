@@ -5,15 +5,26 @@ namespace Drupal\spectrum\Serializer;
 use Drupal\spectrum\Serializer\JsonApiRootNode;
 use Drupal\spectrum\Serializer\JsonApiNode;
 use Drupal\spectrum\Serializer\JsonApiDataNode;
-
+use Drupal\spectrum\Model\Collection;
 Use Drupal\spectrum\Utils\StringUtils;
 
 trait ModelSerializerMixin
 {
+  protected static $psuedoRelationshipsForSerialization = [];
   // This method returns the current Model as a JsonApiNode (jsonapi.org)
   public static function getIgnoreFields()
   {
     return array('type', 'revision_log', 'vid', 'revision_timestamp', 'revision_uid', 'revision_log', 'revision_translation_affected', 'revision_translation_affected', 'default_langcode', 'path', 'content_translation_source', 'content_translation_outdated', 'pass', 'uuid', 'langcode');
+  }
+
+  public static function addPsuedoRelationshipForSerialization($relationshipName)
+  {
+    $sourceModelType = get_called_class();
+    if(!array_key_exists($sourceModelType, static::$psuedoRelationshipsForSerialization))
+    {
+      static::$psuedoRelationshipsForSerialization[$sourceModelType] = [];
+    }
+    static::$psuedoRelationshipsForSerialization[$sourceModelType][] = $relationshipName;
   }
 
   public function getJsonApiNode()
@@ -175,15 +186,14 @@ trait ModelSerializerMixin
             if(!empty($address->country_code))
             {
               $attribute = new \stdClass();
-              $attribute->country = $address->country_code;
-              //$attribute->administrative_area = $address->administrative_area;
-              $attribute->city = $address->locality;
-              //$attribute->dependent_locality = $address->dependent_locality;
+              $attribute->{'country-code'} = $address->country_code;
+              $attribute->{'administrative-area'} = $address->administrative_area;
+              $attribute->{'locality'} = $address->locality;
+              $attribute->{'dependent-locality'} = $address->dependent_locality;
               $attribute->{'postal-code'} = $address->postal_code;
-              //$attribute->sorting_code = $address->sorting_code;
-              $attribute->street = $address->address_line1;
-              //$attribute->address_line2 = $address->address_line2;
-
+              $attribute->{'sorting-code'} = $address->sorting_code;
+              $attribute->{'address-line1'} = $address->address_line1;
+              $attribute->{'address-line2'} = $address->address_line2;
             }
             $node->addAttribute($fieldNamePretty, $attribute);
             break;
@@ -217,6 +227,39 @@ trait ModelSerializerMixin
             break;
         }
       }
+
+      // Check for pseudo relationships
+      $sourceModelType = get_called_class();
+      $psuedoRelationshipsForSerialization = static::$psuedoRelationshipsForSerialization;
+
+      if(!empty($psuedoRelationshipsForSerialization) && array_key_exists($sourceModelType, $psuedoRelationshipsForSerialization))
+      {
+        foreach(static::$psuedoRelationshipsForSerialization[$sourceModelType] as $pseudoRelationshipName)
+        {
+          $fieldNamePretty = StringUtils::dasherize($pseudoRelationshipName);
+          $psuedoModels = $this->get($pseudoRelationshipName);
+
+          if($psuedoModels instanceof Collection)
+          {
+            $pseudoDataNode = new JsonApiDataNode();
+            $pseudoDataNode->asArray(true);
+            foreach($psuedoModels as $psuedoModel)
+            {
+              $psuedoNode = new JsonApiNode();
+              $psuedoNode->setId($psuedoModel->getId());
+              $psuedoNode->setType(StringUtils::dasherize($psuedoModel->entity->get('type')->target_id));
+              $pseudoDataNode->addNode($psuedoNode);
+            }
+
+            $node->addRelationship($fieldNamePretty, $pseudoDataNode);
+          }
+          else if($psuedoModels instanceof Model)
+          {
+            // TODO
+          }
+        }
+      }
+
     }
 
     // some entity types don't have a type field, we must rely on static definitions
@@ -249,10 +292,14 @@ trait ModelSerializerMixin
   {
     $mapping = array();
     $mapping['address'] = array();
-    $mapping['address']['country'] = 'country_code';
-    $mapping['address']['city'] = 'locality';
+    $mapping['address']['country-code'] = 'country_code';
+    $mapping['address']['administrative-area'] = 'administrative_area';
+    $mapping['address']['locality'] = 'locality';
+    $mapping['address']['dependent-locality'] = 'dependent-locality';
     $mapping['address']['postal-code'] = 'postal_code';
-    $mapping['address']['street'] = 'address_line1';
+    $mapping['address']['sorting-code'] = 'sorting_code';
+    $mapping['address']['address-line1'] = 'address_line1';
+    $mapping['address']['address-line2'] = 'address_line2';
     return $mapping;
   }
 

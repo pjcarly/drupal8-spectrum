@@ -25,7 +25,7 @@ abstract class Model
   public static $idField;
 
   public static $modelClassMapping = null;
-  public static $relationships = array();
+  public static $relationships = [];
   public static $keyIndex = 1;
 
   public $entity;
@@ -644,6 +644,26 @@ abstract class Model
       {
         return false;
       }
+    }
+  }
+
+  public static function getDeepRelationship($relationshipName)
+  {
+    $sourceModelType = get_called_class();
+    $firstRelationshipNamePosition = strpos($relationshipName, '.');
+
+    if(empty($firstRelationshipNamePosition)) // relationship name without extra relationships
+    {
+      return static::getRelationship($relationshipName);
+    }
+    else
+    {
+      $firstRelationshipName = substr($relationshipName, 0, $firstRelationshipNamePosition);
+      $nextRelationshipNames  = substr($relationshipName, $firstRelationshipNamePosition+1, strlen($relationshipName));
+      $firstRelationship = static::getRelationship($firstRelationshipName);
+      $firstRelationshipModelType = $firstRelationship->modelType;
+
+      return $firstRelationshipModelType::getDeepRelationship($nextRelationshipNames);
     }
   }
 

@@ -24,6 +24,11 @@ abstract class Relationship
     $this->setRelationshipMetaData();
   }
 
+  public function getSourceModelType()
+  {
+    return $this->relationshipSource;
+  }
+
   public function getRelationshipKey()
   {
     return $this->relationshipName;
