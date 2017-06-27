@@ -839,8 +839,6 @@ class ModelApiHandler extends BaseApiHandler
         $hasRelationship = $modelClassName::hasDeepRelationship($relationshipNameToInclude);
         if($hasRelationship)
         {
-          $this->setPsuedoRelationshipForSerialization($relationshipNameToInclude);
-
           // first of all, we fetch the data
           $source->fetch($relationshipNameToInclude);
           $fetchedObject = $source->get($relationshipNameToInclude);
