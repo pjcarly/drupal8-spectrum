@@ -603,17 +603,17 @@ abstract class Model
     return $this->serialize();
   }
 
-  protected function isNewlyInserted() : bool
+  protected function isNewlyInserted()//: bool
   {
     return empty($this->entity->original);
   }
 
-  protected function fieldChanged(string $fieldName) : bool
+  protected function fieldChanged(string $fieldName)//: bool
   {
     return $this->isNewlyInserted() || $this->entity->$fieldName->value != $this->entity->original->$fieldName->value;
   }
 
-  public static function hasRelationship($relationshipName) : bool
+  public static function hasRelationship($relationshipName)//: bool
   {
     $sourceModelType = get_called_class();
     static::setRelationships($sourceModelType);

@@ -901,7 +901,7 @@ class ModelApiHandler extends BaseApiHandler
     }
   }
 
-  public static function getConditionListForFilterArray(string $modelClassName, array $filter) : array
+  public static function getConditionListForFilterArray(string $modelClassName, array $filter)//: array
   {
     $prettyToFieldsMap = $modelClassName::getPrettyFieldsToFieldsMapping();
     $conditions = [];
@@ -982,7 +982,7 @@ class ModelApiHandler extends BaseApiHandler
     return null;
   }
 
-  public static function getSortOrderListForSortArray(string $modelClassName, array $sortQueryFields) : array
+  public static function getSortOrderListForSortArray(string $modelClassName, array $sortQueryFields)//: array
   {
     $prettyToFieldsMap = $modelClassName::getPrettyFieldsToFieldsMapping();
     $sortOrders = [];

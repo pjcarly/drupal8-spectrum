@@ -21,7 +21,7 @@ class Order extends Model
     static::addRelationship(new FieldRelationship('parent', 'field_parent.target_id'));
 	}
 
-  public function buildQueryOrder() : QueryOrder
+  public function buildQueryOrder()//: QueryOrder
   {
     return new QueryOrder($this->entity->field_field->value, $this->entity->field_direction->value);
   }

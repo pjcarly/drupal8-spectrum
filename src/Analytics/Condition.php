@@ -39,7 +39,7 @@ class Condition extends Model
     static::addRelationship(new FieldRelationship('parent', 'field_parent.target_id'));
 	}
 
-  public function buildQueryCondition() : QueryCondition
+  public function buildQueryCondition()//: QueryCondition
   {
     $field = $this->entity->field_field->value;
     $operator = static::$operationMapping[$this->entity->field_operator->value];

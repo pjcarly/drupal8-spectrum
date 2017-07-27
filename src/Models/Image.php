@@ -20,7 +20,7 @@ class Image extends Model
   public function getBase64SRC(string $style = NULL)
   {
     $mime = $this->entity->get('filemime')->value;
-    $base64Image = file_get_contents($this->getSRC($style));
+    $base64Image = base64_encode(file_get_contents($this->getSRC($style)));
 
     return 'data:'.$mime.';base64,'.$base64Image;
   }

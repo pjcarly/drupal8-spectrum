@@ -24,7 +24,7 @@ class ListView extends Model
     static::addRelationship(new ReferencedRelationship('sort_orders', 'Drupal\spectrum\Analytics\Order', 'parent'));
 	}
 
-  public function buildQuery() : BundleQuery
+  public function buildQuery()//: BundleQuery
   {
     $query = new BundleQuery($this->entity->field_entity->value, $this->entity->field_bundle->value);
     foreach($this->conditions as $condition)
