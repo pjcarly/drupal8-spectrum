@@ -6,6 +6,9 @@ use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Model\Collection;
 use Drupal\spectrum\Model\SimpleCollectionWrapper;
 
+use Drupal\spectrum\Models\Image;
+use Drupal\spectrum\Models\File;
+
 class SimpleModelWrapper
 {
   // This class exposes magic getters to get values from a model without having to know the drupal implementation
@@ -51,14 +54,25 @@ class SimpleModelWrapper
           $returnValue = $lat.','.$lng;
           break;
         case 'entity_reference':
-          $returnValue = (int) $model->entity->get($fieldName)->target_id;
+          $fileId = $model->entity->get($fieldName)->target_id;
+
+          if(!empty($fileId))
+          {
+            $returnValue = File::forge(null, $fileId);
+          }
           break;
         // If it is more than 1 item (or -1 in case of unlimited references), we must return an array
         case 'image':
-          $returnValue = '/image/' . $model->entity->get($fieldName)->target_id;
+          $fileId = $model->entity->get($fieldName)->target_id;
+
+          if(!empty($fileId))
+          {
+            $returnValue = Image::forge(null, $fileId);
+          }
           break;
         case 'file':
-          $returnValue = '/image/' . $model->entity->get($fieldName)->target_id;
+          return 'NOT YET SUPPORTED';
+          $returnValue = $model->entity->get($fieldName)->target_id;
           break;
         case 'uri':
           $returnValue = $model->entity->get($fieldName)->value;
@@ -99,9 +113,9 @@ class SimpleModelWrapper
             $returnValue = $datetime->format('c');
             break;
 
-          default:
-            $returnValue = $model->entity->get($fieldName)->value;
-            break;
+        default:
+          $returnValue = $model->entity->get($fieldName)->value;
+          break;
       }
 
       return $returnValue;

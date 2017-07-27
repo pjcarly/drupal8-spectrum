@@ -1,0 +1,6 @@
+services:
+  spectrum.twig_extension:
+    arguments: ['@renderer']
+    class: Drupal\spectrum\Template\TwigFilters
+    tags:
+      - { name: twig.extension }
