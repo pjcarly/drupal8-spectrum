@@ -2,3 +2,5 @@ administer spectrum:
   title: 'administer spectrum'
   description: 'Access the spectrum configuration options.'
   restrict access: TRUE
+permission_callbacks:
+  - Drupal\spectrum\UserPermissions::permissions

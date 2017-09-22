@@ -28,6 +28,8 @@ abstract class Model
   public static $relationships = [];
   public static $keyIndex = 1;
 
+  protected static $permissions = [];
+
   public $entity;
   public $key;
 
@@ -1035,8 +1037,72 @@ abstract class Model
     }
   }
 
-  private static function getKeyForEntityAndBundle($entity, $bundle)
+  public static function getKeyForEntityAndBundle($entity, $bundle)
   {
     return empty($bundle) ? $entity : $entity.'.'.$bundle;
+  }
+
+  // Currently not supported, due to bug in Core where currentuser doesnt return custom permissions
+  // public static function getReadPermissionKey()
+  // {
+  //   $modelKey = static::getKeyForEntityAndBundle(static::$entityType, static::$bundle);
+  //   return str_replace('.', '_', 'spectrum api ' . $modelKey.' read');
+  // }
+
+  // public static function getCreatePermissionKey()
+  // {
+  //   $modelKey = static::getKeyForEntityAndBundle(static::$entityType, static::$bundle);
+  //   return str_replace('.', '_', 'spectrum api ' . $modelKey.' create');
+  // }
+
+  // public static function getDeletePermissionKey()
+  // {
+  //   $modelKey = static::getKeyForEntityAndBundle(static::$entityType, static::$bundle);
+  //   return str_replace('.', '_', 'spectrum api ' . $modelKey.' delete');
+  // }
+
+  // public static function getEditPermissionKey()
+  // {
+  //   $modelKey = static::getKeyForEntityAndBundle(static::$entityType, static::$bundle);
+  //   return str_replace('.', '_', 'spectrum api ' . $modelKey.' edit');
+  // }
+
+  private static function modelHasPermission($permission)
+  {
+    $currentUser = \Drupal::currentUser();
+    $userRoles = $currentUser->getRoles();
+    $permissions = static::$permissions;
+
+    $permissionGranted = false;
+    foreach($userRoles as $userRole)
+    {
+      if(array_key_exists($userRole, $permissions) && (strpos($permissions[$userRole], 'R') !== false))
+      {
+        $permissionGranted = true;
+        break;
+      }
+    }
+
+    return $permissionGranted;
+  }
+
+  public static function userHasReadPermission()
+  {
+    return static::modelHasPermission('R');
+  }
+
+  public static function userHasCreatePermission()
+  {
+    return static::modelHasPermission('C');
+  }
+
+  public static function userHasEditPermission()
+  {
+    return static::modelHasPermission('U');
+  }
+
+  public static function userHasDeletePermission()
+  {
+    return static::modelHasPermission('D');
   }
 }

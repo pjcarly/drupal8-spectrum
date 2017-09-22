@@ -41,6 +41,13 @@ class ModelApiHandler extends BaseApiHandler
     $limit = null; $page = null; $sort = null; // variables to build our links later on
     $jsonapi = new JsonApiRootNode();
 
+    // Before anything, we check if the user has permission to access this content
+    if(!$modelClassName::userHasReadPermission())
+    {
+      // No access, return a 400 response
+      return new Response(null, 400, array());
+    }
+
     // We start by adding the link to this request
     $baseUrl = $request->getSchemeAndHttpHost() . $request->getPathInfo(); // this might not work with a different port than 80, check later
 
