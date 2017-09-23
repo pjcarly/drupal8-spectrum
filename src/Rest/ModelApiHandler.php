@@ -44,8 +44,8 @@ class ModelApiHandler extends BaseApiHandler
     // Before anything, we check if the user has permission to access this content
     if(!$modelClassName::userHasReadPermission())
     {
-      // No access, return a 400 response
-      return new Response(null, 400, array());
+      // No access, return a 405 response
+      return new Response(null, 405, array());
     }
 
     // We start by adding the link to this request
@@ -322,6 +322,13 @@ class ModelApiHandler extends BaseApiHandler
     $response;
     $responseCode;
 
+    // Before anything, we check if the user has permission to access this content
+    if(!$modelClassName::userHasCreatePermission())
+    {
+      // No access, return a 405 response
+      return new Response(null, 405, array());
+    }
+
     $jsonapidocument = json_decode($request->getContent());
     if(!empty($jsonapidocument->data->type))
     {
@@ -531,6 +538,13 @@ class ModelApiHandler extends BaseApiHandler
   {
     $response;
     $responseCode;
+
+    // Before anything, we check if the user has permission to access this content
+    if(!$modelClassName::userHasEditPermission())
+    {
+      // No access, return a 405 response
+      return new Response(null, 405, array());
+    }
 
     $jsonapidocument = json_decode($request->getContent());
     // Since we're talking about a patch here, the ID must be set, as it is an update to an existing record
@@ -798,6 +812,13 @@ class ModelApiHandler extends BaseApiHandler
     $response;
     $responseCode;
 
+    // Before anything, we check if the user has permission to access this content
+    if(!$modelClassName::userHasDeletePermission())
+    {
+      // No access, return a 405 response
+      return new Response(null, 405, array());
+    }
+
     $modelClassName = $this->modelClassName;
     $modelClassName::deleteById($this->slug);
 
@@ -846,6 +867,16 @@ class ModelApiHandler extends BaseApiHandler
         $hasRelationship = $modelClassName::hasDeepRelationship($relationshipNameToInclude);
         if($hasRelationship)
         {
+          // Before anything else, we check if the user has access to the data
+          $deepRelationship = $modelClassName::getDeepRelationship($relationshipNameToInclude);
+          $deepRelationshipModelClassName = $deepRelationship->modelType;
+
+          if(!$deepRelationshipModelClassName::userHasReadPermission())
+          {
+            // No access to model class, skip the include
+            continue;
+          }
+
           // first of all, we fetch the data
           $source->fetch($relationshipNameToInclude);
           $fetchedObject = $source->get($relationshipNameToInclude);

@@ -53,7 +53,7 @@ class UserPermissions implements ContainerInjectionInterface
   {
     $permissions = [];
 
-    // Currently not supported, due to bug in Core where currentuser doesnt return custom permissions
+    //Currently not supported, due to bug in Core where currentuser doesnt return custom permissions
     // if(function_exists('get_registered_model_classes'))
     // {
     //   foreach(get_registered_model_classes() as $modelClass)

@@ -1043,45 +1043,68 @@ abstract class Model
   }
 
   // Currently not supported, due to bug in Core where currentuser doesnt return custom permissions
-  // public static function getReadPermissionKey()
-  // {
-  //   $modelKey = static::getKeyForEntityAndBundle(static::$entityType, static::$bundle);
-  //   return str_replace('.', '_', 'spectrum api ' . $modelKey.' read');
-  // }
+  public static function getBasePermissionKey()
+  {
+    return str_replace('.', '_', static::getKeyForEntityAndBundle(static::$entityType, static::$bundle));
+  }
 
-  // public static function getCreatePermissionKey()
-  // {
-  //   $modelKey = static::getKeyForEntityAndBundle(static::$entityType, static::$bundle);
-  //   return str_replace('.', '_', 'spectrum api ' . $modelKey.' create');
-  // }
+  public static function getReadPermissionKey()
+  {
+    $permissionKey = static::getBasePermissionKey();
+    return 'spectrum api ' . $permissionKey.' read';
+  }
 
-  // public static function getDeletePermissionKey()
-  // {
-  //   $modelKey = static::getKeyForEntityAndBundle(static::$entityType, static::$bundle);
-  //   return str_replace('.', '_', 'spectrum api ' . $modelKey.' delete');
-  // }
+  public static function getCreatePermissionKey()
+  {
+    $permissionKey = static::getBasePermissionKey();
+    return 'spectrum api ' . $permissionKey.' create';
+  }
 
-  // public static function getEditPermissionKey()
-  // {
-  //   $modelKey = static::getKeyForEntityAndBundle(static::$entityType, static::$bundle);
-  //   return str_replace('.', '_', 'spectrum api ' . $modelKey.' edit');
-  // }
+  public static function getDeletePermissionKey()
+  {
+    $permissionKey = static::getBasePermissionKey();
+    return 'spectrum api ' . $permissionKey.' delete';
+  }
+
+  public static function getEditPermissionKey()
+  {
+    $permissionKey = static::getBasePermissionKey();
+    return 'spectrum api ' . $permissionKey.' edit';
+  }
 
   private static function modelHasPermission($permission)
   {
     $currentUser = \Drupal::currentUser();
-    $userRoles = $currentUser->getRoles();
-    $permissions = static::$permissions;
+
+    if($currentUser->id() == 1)
+    {
+      //Admin always has access
+      //return true;
+    }
 
     $permissionGranted = false;
-    foreach($userRoles as $userRole)
+
+    // Workaround because of custom permission bug in Drupal
+    if(function_exists('get_permission_checker'))
     {
-      if(array_key_exists($userRole, $permissions) && (strpos($permissions[$userRole], 'R') !== false))
+      $permissionChecker = get_permission_checker();
+      $permissionKey = static::getBasePermissionKey();
+
+      $userRoles = $currentUser->getRoles();
+      foreach($userRoles as $userRole)
       {
-        $permissionGranted = true;
-        break;
+        if($permissionChecker::roleHasPermission($userRole, $permissionKey, $permission))
+        {
+          $permissionGranted = true;
+          break;
+        }
       }
     }
+    else
+    {
+      $permissionGranted = false;
+    }
+
 
     return $permissionGranted;
   }
