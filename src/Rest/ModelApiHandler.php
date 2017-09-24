@@ -319,6 +319,7 @@ class ModelApiHandler extends BaseApiHandler
 
   public function post(Request $request)
   {
+    $modelClassName = $this->modelClassName;
     $response;
     $responseCode;
 
@@ -333,7 +334,6 @@ class ModelApiHandler extends BaseApiHandler
     if(!empty($jsonapidocument->data->type))
     {
       // First we'll build the root model from the json api document
-      $modelClassName = $this->modelClassName;
       // since we're talking about a post here, it's always a create, a new model
       $model = $modelClassName::createNew();
       // here we fill in the attributes on the new model from the json api document
@@ -536,6 +536,8 @@ class ModelApiHandler extends BaseApiHandler
 
   public function patch(Request $request)
   {
+    $modelClassName = $this->modelClassName;
+
     $response;
     $responseCode;
 
@@ -551,7 +553,6 @@ class ModelApiHandler extends BaseApiHandler
     if(!empty($jsonapidocument->data->id) && !empty($jsonapidocument->data->type))
     {
       // First we'll build the root model from the json api document
-      $modelClassName = $this->modelClassName;
       // since we're talking about a patch here, the model must already exist in the database
       $model = $modelClassName::forge(null, $jsonapidocument->data->id);
 
@@ -809,6 +810,7 @@ class ModelApiHandler extends BaseApiHandler
 
   public function delete(Request $request)
   {
+    $modelClassName = $this->modelClassName;
     $response;
     $responseCode;
 
@@ -819,7 +821,6 @@ class ModelApiHandler extends BaseApiHandler
       return new Response(null, 405, array());
     }
 
-    $modelClassName = $this->modelClassName;
     $modelClassName::deleteById($this->slug);
 
     $response = new \stdClass();
