@@ -56,12 +56,13 @@ class ParenthesisParser
           // add just saved scope to current scope
           $this->current[] = $t;
         break;
-       /*
-        case ' ':
+        case ',':
             // make each word its own token
             $this->push();
             break;
-        */
+        case ' ':
+            // ignore whitespace
+            break;
         default:
           // remember the offset to do a string capture later
           // could've also done $buffer .= $string[$position]

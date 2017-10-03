@@ -14,7 +14,7 @@ trait ModelSerializerMixin
   // This method returns the current Model as a JsonApiNode (jsonapi.org)
   public static function getIgnoreFields()
   {
-    return array('type', 'revision_log', 'vid', 'revision_timestamp', 'revision_uid', 'revision_log', 'revision_translation_affected', 'revision_translation_affected', 'default_langcode', 'path', 'content_translation_source', 'content_translation_outdated', 'pass', 'uuid', 'langcode');
+    return array('type', 'revision_log', 'vid', 'revision_timestamp', 'revision_uid', 'revision_log', 'revision_translation_affected', 'revision_translation_affected', 'default_langcode', 'path', 'content_translation_source', 'content_translation_outdated', 'pass', 'uuid', 'langcode', 'metatag', 'field_meta_tags');
   }
 
   public static function addPsuedoRelationshipForSerialization($relationshipName)

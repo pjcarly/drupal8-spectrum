@@ -2,12 +2,22 @@
 
 namespace Drupal\spectrum\Query;
 
+use Drupal\spectrum\Utils\ParenthesisParser;
+use Drupal\spectrum\Exceptions\InvalidQueryException;
+
 abstract class Query
 {
-  public $conditions = array();
-  public $sortOrders = array();
+  protected $baseConditions = [];
+  public $conditions = [];
+  public $sortOrders = [];
   public $rangeStart;
   public $rangeLength;
+  public $conditionLogic;
+
+  public function addBaseCondition(Condition $condition)
+  {
+    $this->baseConditions[] = $condition;
+  }
 
   public function addCondition(Condition $condition)
   {
@@ -23,6 +33,11 @@ abstract class Query
   public function hasLimit()
   {
     return !empty($this->rangeLength);
+  }
+
+  public function setConditionLogic($conditionLogic)
+  {
+    $this->conditionLogic = $conditionLogic;
   }
 
   public function setRange($start, $length)
@@ -72,9 +87,28 @@ abstract class Query
     $query = \Drupal::entityQuery($this->entityType);
 
     // next we check for conditions and add them if needed
-    foreach($this->conditions as $condition)
+
+    // Base conditions must always be applied, regardless of the logic
+    foreach($this->baseConditions as $condition)
     {
       $condition->addQueryCondition($query);
+    }
+
+    // We might have a logic, lets check for it
+    if(empty($this->conditionLogic))
+    {
+      foreach($this->conditions as $condition)
+      {
+        $condition->addQueryCondition($query);
+      }
+    }
+    else
+    {
+      $parser = new ParenthesisParser();
+      $structure = $parser->parse($this->conditionLogic);
+      //print_r($structure);
+      $this->setConditionsOnBase($query, $structure, $query);
+      //die;
     }
 
     // and finally apply an order if needed
@@ -84,6 +118,52 @@ abstract class Query
     }
 
     return $query;
+  }
+
+  private function setConditionsOnBase($base, $logic, $query)
+  {
+    $conditionGroup;
+    foreach($logic as $key => $value)
+    {
+      if(is_array($value))
+      {
+        if(empty($conditionGroup))
+        {
+          // we dont need to do anything recursive, we"ve reached the end, lets apply the conditions to the base
+          throw new InvalidQueryException();
+        }
+        else
+        {
+          $this->setConditionsOnBase($conditionGroup, $value, $query);
+        }
+      }
+      else if(strtoupper($value) === 'OR')
+      {
+        $conditionGroup = $query->orConditionGroup();
+      }
+      else if(strtoupper($value) === 'AND')
+      {
+        $conditionGroup = $query->andConditionGroup();
+      }
+      else if(is_numeric($value))
+      {
+        // check for condition in list
+        if(array_key_exists($value-1, $this->conditions))
+        {
+          $condition = $this->conditions[$value-1];
+          $condition->addQueryCondition($base);
+        }
+        else
+        {
+          // Condition doesnt exist, ignore it
+        }
+      }
+    }
+
+    if(!empty($conditionGroup))
+    {
+      $base->condition($conditionGroup);
+    }
   }
 
   public function fetch()

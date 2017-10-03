@@ -108,6 +108,15 @@ class ModelApiHandler extends BaseApiHandler
         {
           // We first get the filters provided in the filter array
           $conditions = static::getConditionListForFilterArray($modelClassName, $filter);
+
+          // Next we check if the filters require filterlogic
+          if(array_key_exists('_logic', $filter))
+          {
+            $logic = $filter['_logic'];
+            $query->setConditionLogic($logic);
+          }
+
+          // And apply the conditions
           foreach($conditions as $condition)
           {
             $query->addCondition($condition);
