@@ -687,6 +687,16 @@ abstract class Model
       return static::forge($entity);
   }
 
+  public static function forgeByEntity($entity)
+  {
+    return static::forge($entity);
+  }
+
+  public static function forgeById($id)
+  {
+    return static::forge(null, $id);
+  }
+
   public static function forge($entity = null, $id = null)
   {
     if(!empty($id))
@@ -1072,14 +1082,14 @@ abstract class Model
     return 'spectrum api ' . $permissionKey.' edit';
   }
 
-  private static function modelHasPermission($permission)
+  private static function currentUserHasPermission($access)
   {
     $currentUser = \Drupal::currentUser();
 
     if($currentUser->id() == 1)
     {
       //Admin always has access
-      //return true;
+      return true;
     }
 
     $permissionGranted = false;
@@ -1088,12 +1098,12 @@ abstract class Model
     if(function_exists('get_permission_checker'))
     {
       $permissionChecker = get_permission_checker();
-      $permissionKey = static::getBasePermissionKey();
+      $permission = static::getBasePermissionKey();
 
       $userRoles = $currentUser->getRoles();
       foreach($userRoles as $userRole)
       {
-        if($permissionChecker::roleHasPermission($userRole, $permissionKey, $permission))
+        if($permissionChecker::roleHasModelPermission($userRole, $permission, $access))
         {
           $permissionGranted = true;
           break;
@@ -1111,21 +1121,21 @@ abstract class Model
 
   public static function userHasReadPermission()
   {
-    return static::modelHasPermission('R');
+    return static::currentUserHasPermission('R');
   }
 
   public static function userHasCreatePermission()
   {
-    return static::modelHasPermission('C');
+    return static::currentUserHasPermission('C');
   }
 
   public static function userHasEditPermission()
   {
-    return static::modelHasPermission('U');
+    return static::currentUserHasPermission('U');
   }
 
   public static function userHasDeletePermission()
   {
-    return static::modelHasPermission('D');
+    return static::currentUserHasPermission('D');
   }
 }
