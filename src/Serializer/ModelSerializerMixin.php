@@ -10,21 +10,10 @@ Use Drupal\spectrum\Utils\StringUtils;
 
 trait ModelSerializerMixin
 {
-  protected static $psuedoRelationshipsForSerialization = [];
   // This method returns the current Model as a JsonApiNode (jsonapi.org)
   public static function getIgnoreFields()
   {
     return array('type', 'revision_log', 'vid', 'revision_timestamp', 'revision_uid', 'revision_log', 'revision_translation_affected', 'revision_translation_affected', 'default_langcode', 'path', 'content_translation_source', 'content_translation_outdated', 'pass', 'uuid', 'langcode', 'metatag', 'field_meta_tags', 'menu_link');
-  }
-
-  public static function addPsuedoRelationshipForSerialization($relationshipName)
-  {
-    $sourceModelType = get_called_class();
-    if(!array_key_exists($sourceModelType, static::$psuedoRelationshipsForSerialization))
-    {
-      static::$psuedoRelationshipsForSerialization[$sourceModelType] = [];
-    }
-    static::$psuedoRelationshipsForSerialization[$sourceModelType][] = $relationshipName;
   }
 
   public function getValueToSerialize($fieldName, $fieldDefinition = null)
@@ -249,38 +238,6 @@ trait ModelSerializerMixin
         else
         {
           $node->addAttribute($fieldNamePretty, $valueToSerialize);
-        }
-      }
-    }
-
-    // Check for pseudo relationships
-    $sourceModelType = get_called_class();
-    $psuedoRelationshipsForSerialization = static::$psuedoRelationshipsForSerialization;
-
-    if(!empty($psuedoRelationshipsForSerialization) && array_key_exists($sourceModelType, $psuedoRelationshipsForSerialization))
-    {
-      foreach(static::$psuedoRelationshipsForSerialization[$sourceModelType] as $pseudoRelationshipName)
-      {
-        $fieldNamePretty = StringUtils::dasherize($pseudoRelationshipName);
-        $psuedoModels = $this->get($pseudoRelationshipName);
-
-        if($psuedoModels instanceof Collection)
-        {
-          $pseudoDataNode = new JsonApiDataNode();
-          $pseudoDataNode->asArray(true);
-          foreach($psuedoModels as $psuedoModel)
-          {
-            $psuedoNode = new JsonApiNode();
-            $psuedoNode->setId($psuedoModel->getId());
-            $psuedoNode->setType(StringUtils::dasherize($psuedoModel->entity->get('type')->target_id));
-            $pseudoDataNode->addNode($psuedoNode);
-          }
-
-          $node->addRelationship($fieldNamePretty, $pseudoDataNode);
-        }
-        else if($psuedoModels instanceof Model)
-        {
-          // TODO
         }
       }
     }

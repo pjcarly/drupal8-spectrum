@@ -857,15 +857,6 @@ class ModelApiHandler extends BaseApiHandler
     $jsonapi->addLink($name, $link);
   }
 
-  protected function setPsuedoRelationshipForSerialization($relationshipName)
-  {
-    $modelClassName = $this->modelClassName;
-    $relationship = $modelClassName::getDeepRelationship($relationshipName);
-    $sourceModelType = $relationship->getSourceModelType();
-
-    $sourceModelType::addPsuedoRelationshipForSerialization($relationship->relationshipName);
-  }
-
   protected function checkForIncludes($source, JsonApiRootNode $jsonApiRootNode, $relationshipNamesToInclude)
   {
     if(!$source->isEmpty)
