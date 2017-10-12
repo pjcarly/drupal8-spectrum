@@ -217,8 +217,6 @@ trait ModelSerializerMixin
     $node = new JsonApiNode();
 
     $ignoreFields = static::getIgnoreFields();
-    $manualFields = array($this::$idField, 'type');
-
     $fieldToPrettyMapping = static::getFieldsToPrettyFieldsMapping();
     $fieldDefinitions = static::getFieldDefinitions();
 
@@ -237,7 +235,7 @@ trait ModelSerializerMixin
       }
 
       // Now we'll check the other fields
-      if(!in_array($fieldName, $ignoreFields) && !in_array($fieldName, $manualFields))
+      if(!in_array($fieldName, $ignoreFields))
       {
         $fieldNamePretty = $fieldToPrettyMapping[$fieldName];
         $fieldType = $fieldDefinition->getType();
