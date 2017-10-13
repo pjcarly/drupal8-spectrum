@@ -18,7 +18,7 @@ class JsonApiRootNode extends JsonApiDataNode
 
     if($jsonapi instanceof JsonApiNode)
     {
-      $this->included[] = $node;
+      $this->included[] = $jsonapi;
     }
     else if($jsonapi instanceof JsonApiDataNode)
     {

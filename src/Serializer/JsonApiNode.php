@@ -24,7 +24,7 @@ class JsonApiNode extends JsonApiBaseNode
     return !empty($this->type);
   }
 
-  public function addRelationship($name, JsonApiDataNode $node)
+  public function addRelationship($name, ?JsonApiDataNode $node)
   {
     if(empty($this->relationships))
     {
@@ -51,7 +51,7 @@ class JsonApiNode extends JsonApiBaseNode
       unset($this->attributes[$name]);
     }
   }
-  
+
   public function renameAttribute($oldName, $newName)
   {
     if(!empty($oldName) && !empty($newName) && array_key_exists($oldName, $this->attributes))
@@ -85,7 +85,7 @@ class JsonApiNode extends JsonApiBaseNode
       return $this->attributes[$name];
     }
   }
-  
+
   public function getRelationship($name)
   {
     if(!empty($name) && array_key_exists($name, $this->relationship))
@@ -116,7 +116,11 @@ class JsonApiNode extends JsonApiBaseNode
       $serializedRelationships = array();
       foreach(array_keys($this->relationships) as $relationshipName)
       {
-        $serializedRelationships[$relationshipName] = $this->relationships[$relationshipName]->serialize();
+        $relationship = $this->relationships[$relationshipName];
+        if(!empty($relationship))
+        {
+          $serializedRelationships[$relationshipName] = $relationship->serialize();
+        }
       }
       $serialized->relationships = $serializedRelationships;
     }

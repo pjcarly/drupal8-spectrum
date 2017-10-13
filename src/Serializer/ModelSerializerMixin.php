@@ -13,38 +13,47 @@ trait ModelSerializerMixin
   // This method returns the current Model as a JsonApiNode (jsonapi.org)
   public static function getIgnoreFields()
   {
-    return array('type', 'revision_log', 'vid', 'revision_timestamp', 'revision_uid', 'revision_log', 'revision_translation_affected', 'revision_translation_affected', 'default_langcode', 'path', 'content_translation_source', 'content_translation_outdated', 'pass', 'uuid', 'langcode', 'metatag', 'field_meta_tags', 'menu_link');
+    return array('type', 'revision_log', 'vid', 'revision_timestamp', 'revision_uid', 'revision_log', 'revision_translation_affected', 'revision_translation_affected', 'default_langcode', 'path', 'content_translation_source', 'content_translation_outdated', 'pass', 'uuid', 'langcode', 'metatag', 'field_meta_tags', 'menu_link', 'roles');
   }
 
   public function getValueToSerialize($fieldName, $fieldDefinition = null)
   {
     $fieldDefinition = empty($fieldDefinition) ? static::getFieldDefinition($fieldName) : $fieldDefinition;
     $valueToSerialize = null;
-
-    $fieldNamePretty = $fieldToPrettyMapping[$fieldName];
     $fieldType = $fieldDefinition->getType();
 
     switch ($fieldType)
     {
+      case 'address':
+        $address = $this->entity->get($fieldName);
+        $attribute = null;
+        if(!empty($address->country_code))
+        {
+          $attribute = new \stdClass();
+          $attribute->{'country-code'} = $address->country_code;
+          $attribute->{'administrative-area'} = $address->administrative_area;
+          $attribute->{'locality'} = $address->locality;
+          $attribute->{'dependent-locality'} = $address->dependent_locality;
+          $attribute->{'postal-code'} = $address->postal_code;
+          $attribute->{'sorting-code'} = $address->sorting_code;
+          $attribute->{'address-line1'} = $address->address_line1;
+          $attribute->{'address-line2'} = $address->address_line2;
+        }
+        $valueToSerialize = $attribute;
+        break;
       case 'autonumber':
         $valueToSerialize = (int) $this->entity->get($fieldName)->value;
         break;
       case 'boolean':
         $valueToSerialize = ($this->entity->get($fieldName)->value === '1');
         break;
-      case 'decimal':
-        $valueToSerialize = (double) $this->entity->get($fieldName)->value;
-        break;
-
-      case 'geolocation':
-        $attribute = null;
-        if(!empty($this->entity->get($fieldName)->lat))
-        {
-          $attribute = new \stdClass();
-          $attribute->lat = (float) $this->entity->get($fieldName)->lat;
-          $attribute->lng = (float) $this->entity->get($fieldName)->lng;
-        }
-        $valueToSerialize = $attribute;
+      case 'changed':
+      case 'created':
+      case 'timestamp':
+        // for some reason, created and changed aren't regular datetimes, they are unix timestamps in the database
+        $timestamp = $this->entity->get($fieldName)->value;
+        $datetime = \DateTime::createFromFormat('U', $timestamp);
+        $valueToSerialize = $datetime->format('c');
         break;
       case 'datetime':
         $dateValue = null;
@@ -69,6 +78,9 @@ trait ModelSerializerMixin
         }
 
         $valueToSerialize = $dateValue;
+        break;
+      case 'decimal':
+        $valueToSerialize = (double) $this->entity->get($fieldName)->value;
         break;
       case 'entity_reference':
         // TODO: this is really hacky, we must consider finding a more performant solution than the one with the target_ids now
@@ -102,6 +114,37 @@ trait ModelSerializerMixin
           $valueToSerialize = $relationshipDataNode;
         }
         break;
+      case 'file':
+        if(!empty($this->entity->get($fieldName)->entity))
+        {
+          $attribute = new \stdClass();
+          $attribute->id = $this->entity->get($fieldName)->target_id;
+          $attribute->filename = $this->entity->get($fieldName)->entity->get('filename')->value;
+          $attribute->uri = $this->entity->get($fieldName)->entity->get('uri')->value;
+          $attribute->url = $this->entity->get($fieldName)->entity->url();
+          $attribute->filemime = $this->entity->get($fieldName)->entity->get('filemime')->value;
+          $attribute->filesize = $this->entity->get($fieldName)->entity->get('filesize')->value;
+
+          $valueToSerialize = $attribute;
+        }
+        else
+        {
+          $valueToSerialize = null;
+        }
+        break;
+      case 'geolocation':
+        $attribute = null;
+        if(!empty($this->entity->get($fieldName)->lat))
+        {
+          $attribute = new \stdClass();
+          $attribute->lat = (float) $this->entity->get($fieldName)->lat;
+          $attribute->lng = (float) $this->entity->get($fieldName)->lng;
+        }
+        $valueToSerialize = $attribute;
+        break;
+      case 'integer':
+        $valueToSerialize = (int) $this->entity->get($fieldName)->value;
+        break;
       case 'image':
         if(!empty($this->entity->get($fieldName)->entity))
         {
@@ -126,54 +169,12 @@ trait ModelSerializerMixin
           $valueToSerialize = null;
         }
         break;
-      case 'file':
-        if(!empty($this->entity->get($fieldName)->entity))
-        {
-          $attribute = new \stdClass();
-          $attribute->id = $this->entity->get($fieldName)->target_id;
-          $attribute->filename = $this->entity->get($fieldName)->entity->get('filename')->value;
-          $attribute->uri = $this->entity->get($fieldName)->entity->get('uri')->value;
-          $attribute->url = $this->entity->get($fieldName)->entity->url();
-          $attribute->filemime = $this->entity->get($fieldName)->entity->get('filemime')->value;
-          $attribute->filesize = $this->entity->get($fieldName)->entity->get('filesize')->value;
-
-          $valueToSerialize = $attribute;
-        }
-        else
-        {
-          $valueToSerialize = null;
-        }
+      case 'link':
+        $valueToSerialize = $this->entity->get($fieldName)->uri;
         break;
       case 'uri':
         $valueToSerialize = $this->entity->get($fieldName)->value;
         //$node->addAttribute('url', file_create_url($this->entity->get($fieldName)->value));
-        break;
-      case 'link':
-        $valueToSerialize = $this->entity->get($fieldName)->uri;
-        break;
-      case 'address':
-        $address = $this->entity->get($fieldName);
-        $attribute = null;
-        if(!empty($address->country_code))
-        {
-          $attribute = new \stdClass();
-          $attribute->{'country-code'} = $address->country_code;
-          $attribute->{'administrative-area'} = $address->administrative_area;
-          $attribute->{'locality'} = $address->locality;
-          $attribute->{'dependent-locality'} = $address->dependent_locality;
-          $attribute->{'postal-code'} = $address->postal_code;
-          $attribute->{'sorting-code'} = $address->sorting_code;
-          $attribute->{'address-line1'} = $address->address_line1;
-          $attribute->{'address-line2'} = $address->address_line2;
-        }
-        $valueToSerialize = $attribute;
-        break;
-      case 'created':
-      case 'changed':
-        // for some reason, created and changed aren't regular datetimes, they are unix timestamps in the database
-        $timestamp = $this->entity->get($fieldName)->value;
-        $datetime = \DateTime::createFromFormat('U', $timestamp);
-        $valueToSerialize = $datetime->format('c');
         break;
       default:
         $fieldCardinality = $fieldDefinition->getFieldStorageDefinition()->getCardinality();
