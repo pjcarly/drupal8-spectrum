@@ -146,21 +146,22 @@ trait ModelSerializerMixin
         $valueToSerialize = (int) $this->entity->get($fieldName)->value;
         break;
       case 'image':
-        if(!empty($this->entity->get($fieldName)->entity))
+        $fileEntity = $this->entity->get($fieldName)->entity;
+
+        if(!empty($fileEntity))
         {
           $attribute = new \stdClass();
           $attribute->id = $this->entity->get($fieldName)->target_id;
-          $attribute->filename = $this->entity->get($fieldName)->entity->get('filename')->value;
-          $attribute->filemime = $this->entity->get($fieldName)->entity->get('filemime')->value;
-          $attribute->filesize = $this->entity->get($fieldName)->entity->get('filesize')->value;
+          $attribute->filename = $fileEntity->get('filename')->value;
+          $attribute->filemime = $fileEntity->get('filemime')->value;
+          $attribute->filesize = $fileEntity->get('filesize')->value;
           $attribute->width = $this->entity->get($fieldName)->width;
           $attribute->height = $this->entity->get($fieldName)->height;
           $attribute->alt = $this->entity->get($fieldName)->alt;
           $attribute->title = $this->entity->get($fieldName)->title;
-          //$attribute->url = $this->entity->get($fieldName)->entity->url();
 
           $request = \Drupal::request();
-          $attribute->url = $request->getSchemeAndHttpHost() . $request->getBasePath() . '/image/' . $attribute->id;
+          $attribute->url = $request->getSchemeAndHttpHost() . $request->getBasePath() . '/image/' . $fileEntity->get('filename')->value . '?fid=' . $attribute->id . '&dg=' . md5($fileEntity->get('uuid')->value);
 
           $valueToSerialize = $attribute;
         }
