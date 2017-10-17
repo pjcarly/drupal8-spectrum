@@ -111,7 +111,14 @@ trait ModelSerializerMixin
             }
           }
 
-          $valueToSerialize = $relationshipDataNode;
+          if($fieldName === 'field_currency')
+          {
+            $valueToSerialize = $referencedEntity->target_id;
+          }
+          else
+          {
+            $valueToSerialize = $relationshipDataNode;
+          }
         }
         break;
       case 'file':
@@ -235,7 +242,14 @@ trait ModelSerializerMixin
 
         if($fieldType === 'entity_reference')
         {
-          $node->addRelationship($fieldNamePretty, $valueToSerialize);
+          if($fieldName === 'field_currency')
+          {
+            $node->addAttribute($fieldNamePretty, $valueToSerialize);
+          }
+          else
+          {
+            $node->addRelationship($fieldNamePretty, $valueToSerialize);
+          }
         }
         else
         {

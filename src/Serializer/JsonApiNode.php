@@ -19,6 +19,11 @@ class JsonApiNode extends JsonApiBaseNode
     $this->type = $type;
   }
 
+  public function getType()
+  {
+    return $this->type;
+  }
+
   public function hasType()
   {
     return !empty($this->type);

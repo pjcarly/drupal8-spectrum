@@ -326,8 +326,11 @@ abstract class Model
     {
       $secondToLastRelationshipName = substr($relationshipName, 0, $lastRelationshipNameIndex);
       $resultCollection = $this->get($secondToLastRelationshipName);
-      $lastRelationshipName = substr($relationshipName, $lastRelationshipNameIndex+1);
-      $resultCollection->fetch($lastRelationshipName);
+      if(!empty($resultCollection))
+      {
+        $lastRelationshipName = substr($relationshipName, $lastRelationshipNameIndex+1);
+        $resultCollection->fetch($lastRelationshipName);
+      }
     }
   }
 
@@ -388,9 +391,12 @@ abstract class Model
     {
       $firstRelationshipName = substr($relationship, 0,  $firstRelationshipNameIndex);
       $firstRelationshipGet = $this->get($firstRelationshipName);
-      $newRelationshipName = substr($relationship, $firstRelationshipNameIndex+1);
 
-      return $firstRelationshipGet->get($newRelationshipName);
+      if(!empty($firstRelationshipGet))
+      {
+        $newRelationshipName = substr($relationship, $firstRelationshipNameIndex+1);
+        return $firstRelationshipGet->get($newRelationshipName);
+      }
     }
 
     return null;
@@ -610,9 +616,48 @@ abstract class Model
     return empty($this->entity->original);
   }
 
-  protected function fieldChanged(string $fieldName)//: bool
+  protected function fieldChanged(string $fieldName) : bool
   {
-    return $this->isNewlyInserted() || $this->entity->$fieldName->value != $this->entity->original->$fieldName->value;
+    $returnValue = $this->isNewlyInserted();
+
+    if($returnValue)
+    {
+      return true;
+    }
+
+    $fieldDefinition = static::getFieldDefinition($fieldName);
+    $newAttribute = $this->entity->$fieldName;
+    $oldAttribute = $this->entity->original->$fieldName;
+
+    switch($fieldDefinition->getType())
+    {
+      case 'address':
+        $returnValue = ($newAttribute->country_code != $oldAttribute->country_code)
+                        || ($newAttribute->country_code != $oldAttribute->country_code)
+                        || ($newAttribute->administrative_area != $oldAttribute->administrative_area)
+                        || ($newAttribute->locality != $oldAttribute->locality)
+                        || ($newAttribute->postal_code != $oldAttribute->postal_code)
+                        || ($newAttribute->sorting_code != $oldAttribute->sorting_code)
+                        || ($newAttribute->address_line1 != $oldAttribute->address_line1)
+                        || ($newAttribute->address_line2 != $oldAttribute->address_line2);
+        break;
+      case 'entity_reference':
+      case 'file':
+      case 'image':
+        $returnValue = ($newAttribute->target_id != $oldAttribute->target_id);
+        break;
+      case 'geolocation':
+        $returnValue = ($newAttribute->lag != $oldAttribute->lag) || ($newAttribute->lng != $oldAttribute->lng);
+        break;
+      case 'link':
+        $returnValue = ($newAttribute->uri != $oldAttribute->uri);
+        break;
+      default:
+        $returnValue = ($newAttribute->value != $oldAttribute->value);
+        break;
+    }
+
+    return $returnValue;
   }
 
   public static function hasRelationship($relationshipName)//: bool

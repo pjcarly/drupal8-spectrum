@@ -111,6 +111,12 @@ trait ModelDeserializerMixin
                 }
 
                 break;
+              case 'entity_reference':
+                if($fieldName === 'field_currency')
+                {
+                  $this->entity->$fieldName->target_id = $attributeValue;
+                }
+                break;
               case 'created':
               case 'changed':
                 // Do nothing, internal fields

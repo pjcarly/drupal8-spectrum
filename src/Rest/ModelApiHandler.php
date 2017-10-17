@@ -859,7 +859,7 @@ class ModelApiHandler extends BaseApiHandler
 
   protected function checkForIncludes($source, JsonApiRootNode $jsonApiRootNode, $relationshipNamesToInclude)
   {
-    if(!$source->isEmpty)
+    if(!empty($source) && !$source->isEmpty)
     {
       $modelClassName = $this->modelClassName;
       $fetchedCollections = array(); // we will cache collections here, so we don't get duplicate data to include when multiple relationships point to the same object
