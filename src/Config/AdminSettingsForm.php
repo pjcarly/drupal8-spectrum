@@ -22,6 +22,13 @@ class AdminSettingsForm extends ConfigFormBase
   {
     $config = $this->config('spectrum.settings');
 
+    $form['wkhtmltopdf_executable'] = array(
+      '#type' => 'textfield',
+      '#title' => t('wkhtmltopdf executable'),
+      '#default_value' => $config->get('wkhtmltopdf_executable'),
+      '#description' => t('The location of the wkhtmltopdf executable.')
+    );
+
     $form['email_provider'] = [
       '#type' => 'select',
       '#title' => $this->t('Preferred Email Provider'),
@@ -72,6 +79,7 @@ class AdminSettingsForm extends ConfigFormBase
   public function submitForm(array &$form, FormStateInterface $form_state)
   {
     $config = $this->config('spectrum.settings');
+    $config->set('wkhtmltopdf_executable', $form_state->getValue('wkhtmltopdf_executable'));
     $config->set('email_provider', $form_state->getValue('email_provider'));
     $config->set('sendgrid_api_key', $form_state->getValue('sendgrid_api_key'));
     $config->set('aws_ses_api_key', $form_state->getValue('aws_ses_api_key'));
