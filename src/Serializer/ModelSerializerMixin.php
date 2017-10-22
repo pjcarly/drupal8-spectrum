@@ -168,7 +168,7 @@ trait ModelSerializerMixin
           $attribute->title = $this->entity->get($fieldName)->title;
 
           $request = \Drupal::request();
-          $attribute->url = $request->getSchemeAndHttpHost() . $request->getBasePath() . '/image/' . $fileEntity->get('filename')->value . '?fid=' . $attribute->id . '&dg=' . md5($fileEntity->get('uuid')->value);
+          $attribute->url = $request->getSchemeAndHttpHost() . $request->getBasePath() . '/image/' . $fileEntity->get('filename')->value . '/?fid=' . $attribute->id . '&dg=' . md5($fileEntity->get('uuid')->value);
 
           $valueToSerialize = $attribute;
         }
