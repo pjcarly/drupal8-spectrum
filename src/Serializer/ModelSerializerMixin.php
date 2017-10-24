@@ -8,6 +8,8 @@ use Drupal\spectrum\Serializer\JsonApiDataNode;
 use Drupal\spectrum\Model\Collection;
 Use Drupal\spectrum\Utils\StringUtils;
 
+use Drupal\spectrum\Models\File;
+
 trait ModelSerializerMixin
 {
   // This method returns the current Model as a JsonApiNode (jsonapi.org)
@@ -124,13 +126,18 @@ trait ModelSerializerMixin
       case 'file':
         if(!empty($this->entity->get($fieldName)->entity))
         {
+          $fileModel = File::forgeByEntity($this->entity->get($fieldName)->entity);
+          $jsonapinode = $fileModel->getJsonApiNode();
+
           $attribute = new \stdClass();
-          $attribute->id = $this->entity->get($fieldName)->target_id;
-          $attribute->filename = $this->entity->get($fieldName)->entity->get('filename')->value;
-          $attribute->uri = $this->entity->get($fieldName)->entity->get('uri')->value;
-          $attribute->url = $this->entity->get($fieldName)->entity->url();
-          $attribute->filemime = $this->entity->get($fieldName)->entity->get('filemime')->value;
-          $attribute->filesize = $this->entity->get($fieldName)->entity->get('filesize')->value;
+          $attribute->id = $jsonapinode->getId();
+          $attribute->filename = $jsonapinode->getAttribute('filename');
+          $attribute->url = $jsonapinode->getAttribute('url');
+          $attribute->filemime = $jsonapinode->getAttribute('filemime');
+          $attribute->filesize = $jsonapinode->getAttribute('filesize');
+          $attribute->hash = $jsonapinode->getAttribute('hash');
+
+          // TODO: add URL like image
 
           $valueToSerialize = $attribute;
         }
@@ -157,6 +164,8 @@ trait ModelSerializerMixin
 
         if(!empty($fileEntity))
         {
+          // TODO: abstract functionality like FILE
+
           $attribute = new \stdClass();
           $attribute->id = $this->entity->get($fieldName)->target_id;
           $attribute->filename = $fileEntity->get('filename')->value;
@@ -181,7 +190,8 @@ trait ModelSerializerMixin
         $valueToSerialize = $this->entity->get($fieldName)->uri;
         break;
       case 'uri':
-        $valueToSerialize = $this->entity->get($fieldName)->value;
+        // ignore for now, this is used in the deserialization of the file entity, we choose not to return it for now
+        //$valueToSerialize = $this->entity->get($fieldName)->value;
         //$node->addAttribute('url', file_create_url($this->entity->get($fieldName)->value));
         break;
       default:

@@ -15,5 +15,13 @@ class File extends Model
 
   public static function relationships()
 	{
-	}
+  }
+
+  public function getJsonApiNode()
+  {
+    $node = parent::getJsonApiNode();
+    $node->addAttribute('hash', md5($this->entity->uuid->value));
+
+    return $node;
+  }
 }

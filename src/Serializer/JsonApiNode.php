@@ -14,6 +14,11 @@ class JsonApiNode extends JsonApiBaseNode
     $this->id = $id;
   }
 
+  public function getId()
+  {
+    return $this->id;
+  }
+
   public function setType($type)
   {
     $this->type = $type;
