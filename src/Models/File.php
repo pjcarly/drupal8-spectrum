@@ -17,11 +17,35 @@ class File extends Model
 	{
   }
 
+  protected function getBaseApiPath()
+  {
+    return 'file';
+  }
+
   public function getJsonApiNode()
   {
+    $hash = md5($this->entity->uuid->value);
+
+    $request = \Drupal::request();
+    $url = $request->getSchemeAndHttpHost() . $request->getBasePath() . '/'.$this->getBaseApiPath().'/' . $this->entity->get('filename')->value . '/?fid=' . $this->getId() . '&dg=' . $hash;
+
     $node = parent::getJsonApiNode();
-    $node->addAttribute('hash', md5($this->entity->uuid->value));
+    $node->addAttribute('hash', $hash);
+    $node->addAttribute('url', $url);
 
     return $node;
+  }
+
+  public function getBase64SRC()
+  {
+    $mime = $this->entity->get('filemime')->value;
+    $base64 = base64_encode(file_get_contents($this->getSRC()));
+
+    return 'data:'.$mime.';base64,'.$base64;
+  }
+
+  public function getSRC(string $style = NULL)
+  {
+    return $this->entity->url();
   }
 }

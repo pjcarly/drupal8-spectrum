@@ -2,20 +2,20 @@
 
 namespace Drupal\spectrum\Models;
 
-use Drupal\spectrum\Model\Model;
-
 use Drupal\image\Entity\ImageStyle;
 
-class Image extends Model
+class Image extends File
 {
-	public static $entityType = 'file';
-	public static $idField = 'fid';
-
-  public static $plural = 'Files';
+  public static $plural = 'Images';
 
   public static function relationships()
 	{
-	}
+  }
+
+  protected function getBaseApiPath()
+  {
+    return 'image';
+  }
 
   public function getBase64SRC(string $style = NULL)
   {
@@ -30,7 +30,7 @@ class Image extends Model
     $url;
     if(empty($style))
     {
-      $url = $this->entity->url();
+      $url = parent::getSRC();
     }
     else
     {

@@ -9,6 +9,7 @@ use Drupal\spectrum\Model\Collection;
 Use Drupal\spectrum\Utils\StringUtils;
 
 use Drupal\spectrum\Models\File;
+use Drupal\spectrum\Models\Image;
 
 trait ModelSerializerMixin
 {
@@ -160,25 +161,25 @@ trait ModelSerializerMixin
         $valueToSerialize = (int) $this->entity->get($fieldName)->value;
         break;
       case 'image':
-        $fileEntity = $this->entity->get($fieldName)->entity;
-
-        if(!empty($fileEntity))
+        if(!empty($this->entity->get($fieldName)->entity))
         {
-          // TODO: abstract functionality like FILE
+          $imageModel = Image::forgeByEntity($this->entity->get($fieldName)->entity);
+          $jsonapinode = $imageModel->getJsonApiNode();
 
           $attribute = new \stdClass();
-          $attribute->id = $this->entity->get($fieldName)->target_id;
-          $attribute->filename = $fileEntity->get('filename')->value;
-          $attribute->filemime = $fileEntity->get('filemime')->value;
-          $attribute->filesize = $fileEntity->get('filesize')->value;
+          $attribute->id = $jsonapinode->getId();
+          $attribute->filename = $jsonapinode->getAttribute('filename');
+          $attribute->url = $jsonapinode->getAttribute('url');
+          $attribute->filemime = $jsonapinode->getAttribute('filemime');
+          $attribute->filesize = $jsonapinode->getAttribute('filesize');
+          $attribute->hash = $jsonapinode->getAttribute('hash');
+
           $attribute->width = $this->entity->get($fieldName)->width;
           $attribute->height = $this->entity->get($fieldName)->height;
           $attribute->alt = $this->entity->get($fieldName)->alt;
           $attribute->title = $this->entity->get($fieldName)->title;
 
-          $request = \Drupal::request();
-          $attribute->url = $request->getSchemeAndHttpHost() . $request->getBasePath() . '/image/' . $fileEntity->get('filename')->value . '/?fid=' . $attribute->id . '&dg=' . md5($fileEntity->get('uuid')->value);
-
+          // TODO: add URL like image
           $valueToSerialize = $attribute;
         }
         else
