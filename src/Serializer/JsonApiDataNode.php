@@ -29,6 +29,11 @@ class JsonApiDataNode extends JsonApiBaseNode
     }
   }
 
+  public function getData()
+  {
+    return $this->data;
+  }
+
   public function asArray($asArray)
   {
     $this->asArray = $asArray;
