@@ -1134,7 +1134,7 @@ abstract class Model
     if($currentUser->id() == 1)
     {
       //Admin always has access
-      return true;
+      //return true;
     }
 
     $permissionGranted = false;

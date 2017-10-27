@@ -13,6 +13,12 @@ abstract class Query
   public $rangeStart;
   public $rangeLength;
   public $conditionLogic;
+  public $tag;
+
+  public function setTag($tag)
+  {
+    $this->tag = $tag;
+  }
 
   public function addBaseCondition(Condition $condition)
   {
@@ -115,6 +121,11 @@ abstract class Query
     foreach($this->sortOrders as $sortOrder)
     {
       $query->sort($sortOrder->fieldName, $sortOrder->direction, $sortOrder->langcode);
+    }
+
+    if(!empty($this->tag))
+    {
+      $query->addTag($this->tag);
     }
 
     return $query;
