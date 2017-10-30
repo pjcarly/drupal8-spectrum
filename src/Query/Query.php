@@ -112,9 +112,7 @@ abstract class Query
     {
       $parser = new ParenthesisParser();
       $structure = $parser->parse($this->conditionLogic);
-      //print_r($structure);
       $this->setConditionsOnBase($query, $structure, $query);
-      //die;
     }
 
     // and finally apply an order if needed
@@ -150,10 +148,20 @@ abstract class Query
       }
       else if(strtoupper($value) === 'OR')
       {
+        if(!empty($conditionGroup))
+        {
+          $base->condition($conditionGroup);
+        }
+
         $conditionGroup = $query->orConditionGroup();
       }
       else if(strtoupper($value) === 'AND')
       {
+        if(!empty($conditionGroup))
+        {
+          $base->condition($conditionGroup);
+        }
+
         $conditionGroup = $query->andConditionGroup();
       }
       else if(is_numeric($value))
