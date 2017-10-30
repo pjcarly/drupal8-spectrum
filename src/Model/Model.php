@@ -29,6 +29,7 @@ abstract class Model
   public static $keyIndex = 1;
 
   protected static $permissions = [];
+  protected static $inheritPermissions = null;
 
   public $entity;
   public $key;
@@ -1100,7 +1101,15 @@ abstract class Model
   // Currently not supported, due to bug in Core where currentuser doesnt return custom permissions
   public static function getBasePermissionKey()
   {
-    return str_replace('.', '_', static::getKeyForEntityAndBundle(static::$entityType, static::$bundle));
+    $inheritPermissionsFrom = static::$inheritPermissions;
+    if(empty($inheritPermissionsFrom))
+    {
+      return str_replace('.', '_', static::getKeyForEntityAndBundle(static::$entityType, static::$bundle));
+    }
+    else
+    {
+      return str_replace('.', '_', $inheritPermissionsFrom::getKeyForEntityAndBundle($inheritPermissionsFrom::$entityType, $inheritPermissionsFrom::$bundle));
+    }
   }
 
   public static function getReadPermissionKey()
