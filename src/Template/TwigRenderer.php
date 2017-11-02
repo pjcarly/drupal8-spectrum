@@ -27,7 +27,7 @@ class TwigRenderer
     if(!empty($template))
     {
       $twig = $this->getTwigRenderer();
-      $renderedContent = $twig->render($template, $scope);
+      $renderedContent = $twig->loadTemplate($template)->render($scope);
       return $renderedContent;
     }
     return '';

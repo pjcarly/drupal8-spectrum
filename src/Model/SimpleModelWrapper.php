@@ -9,6 +9,9 @@ use Drupal\spectrum\Model\SimpleCollectionWrapper;
 use Drupal\spectrum\Models\Image;
 use Drupal\spectrum\Models\File;
 
+use CommerceGuys\Addressing\Address;
+use CommerceGuys\Addressing\Formatter\PostalLabelFormatter;
+
 class SimpleModelWrapper
 {
   // This class exposes magic getters to get values from a model without having to know the drupal implementation
@@ -35,7 +38,6 @@ class SimpleModelWrapper
       $fieldType = $fieldDefinition->getType();
       $returnValue = '';
 
-
       // TODO: add support for field cardinality
       switch($fieldType){
         case 'autonumber':
@@ -54,14 +56,12 @@ class SimpleModelWrapper
           $returnValue = $lat.','.$lng;
           break;
         case 'entity_reference':
-          $fileId = $model->entity->get($fieldName)->target_id;
-
-          if(!empty($fileId))
+          if($fieldName === 'field_currency')
           {
-            $returnValue = File::forge(null, $fileId);
+            $returnValue = $model->entity->get($fieldName)->target_id;
           }
+
           break;
-        // If it is more than 1 item (or -1 in case of unlimited references), we must return an array
         case 'image':
           $fileId = $model->entity->get($fieldName)->target_id;
 
@@ -71,8 +71,15 @@ class SimpleModelWrapper
           }
           break;
         case 'file':
-          return 'NOT YET SUPPORTED';
-          $returnValue = $model->entity->get($fieldName)->target_id;
+          $returnValue = 'NOT YET SUPPORTED';
+          break;
+          $fileId = $model->entity->get($fieldName)->target_id;
+
+          if(!empty($fileId))
+          {
+            $returnValue = File::forge(null, $fileId);
+          }
+
           break;
         case 'uri':
           $returnValue = $model->entity->get($fieldName)->value;
@@ -81,15 +88,23 @@ class SimpleModelWrapper
           $returnValue = $model->entity->get($fieldName)->uri;
           break;
         case 'address':
-          $address = $model->entity->get($fieldName);
-          $attribute = null;
-          if(!empty($address->country_code))
-          {
-            $returnValue .= $address->address_line1;
-            $returnValue .= ', ' .$address->postal_code;
-            $returnValue .= ' ' .$address->locality;
-            $returnValue .= ', '.$address->country_code;
+          $value = $model->entity->get($fieldName);
 
+          if(!empty($value->country_code))
+          {
+            $address = new Address($value->country_code,
+            $value->administrative_area,
+            $value->locality,
+            $value->dependent_locality,
+            $value->postal_code,
+            $value->sorting_code,
+            $value->address_line1,
+            $value->address_line2);
+
+            $container = \Drupal::getContainer();
+            $formatter = new PostalLabelFormatter($container->get('address.address_format_repository'), $container->get('address.country_repository'), $container->get('address.subdivision_repository'), 'EN', 'en');
+
+            $returnValue = $formatter->format($address);
           }
           break;
         case 'list_string':
@@ -107,12 +122,33 @@ class SimpleModelWrapper
           break;
         case 'created':
         case 'changed':
-            // for some reason, created and changed aren't regular datetimes, they are unix timestamps in the database
-            $timestamp = $model->entity->get($fieldName)->value;
-            $datetime = \DateTime::createFromFormat('U', $timestamp);
-            $returnValue = $datetime->format('c');
-            break;
+        case 'timestamp':
+          // for some reason, created and changed aren't regular datetimes, they are unix timestamps in the database
+          $timestamp = $model->entity->get($fieldName)->value;
+          $returnValue = \DateTime::createFromFormat('U', $timestamp);
+          break;
+        case 'datetime':
+          $dateValue = null;
+          $attributeValue = $model->entity->get($fieldName)->value;
 
+          if(!empty($attributeValue))
+          {
+            // We must figure out if this is a Date field or a datetime field
+            // lets get the meta information of the field
+            $fieldSettingsDatetimeType = $fieldDefinition->getItemDefinition()->getSettings()['datetime_type'];
+            if($fieldSettingsDatetimeType === 'date')
+            {
+              $dateValue = new \DateTime($attributeValue);
+            }
+            else if($fieldSettingsDatetimeType === 'datetime')
+            {
+              $dateValue = new \DateTime($attributeValue);
+              $dateValue->setTimezone(new \DateTimeZone('UTC'));
+            }
+          }
+
+          $returnValue = $dateValue;
+          break;
         default:
           $returnValue = $model->entity->get($fieldName)->value;
           break;
