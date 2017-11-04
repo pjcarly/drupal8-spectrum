@@ -22,11 +22,21 @@ class TwigFile
     {
       $this->fileContent = $fileContent;
     }
+
+    $request = \Drupal::request();
+    $rootUrl = $request->getSchemeAndHttpHost() . base_path();
+
+    $this->addObjectToScope('rootUrl', $rootUrl);
   }
 
   public function addModelToScope($name, Model $model)
   {
     $this->scope[$name] = new SimpleModelWrapper($model);
+  }
+
+  public function addObjectToScope($name, $object)
+  {
+    $this->scope[$name] = $object;
   }
 
   public function render()
