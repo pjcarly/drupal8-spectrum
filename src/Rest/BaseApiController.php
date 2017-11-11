@@ -110,9 +110,9 @@ class BaseApiController implements ContainerAwareInterface
   {
     $response = new Response(null, 500, array());
 
-    if($this->apiPermissionExists($routeMatch->routeName))
+    if($this->apiPermissionExists($routeMatch->getRouteName(), $api))
     {
-      if($this->userHasApiPermission($request, $routeMatch->routeName, $api))
+      if($this->userHasApiPermission($request, $routeMatch->getRouteName(), $api))
       {
         $response->setStatusCode(204); // OK, no content
         $response->setContent = null;
