@@ -29,95 +29,97 @@ trait ModelDeserializerMixin
             $fieldName = $fieldNameMapping[$attributeKey];
             $fieldDefinition = static::getFieldDefinition($fieldName);
 
-            switch($fieldDefinition->getType())
+            if(static::currentUserHasFieldPermission($fieldName)) // Only allow fields the user has access to
             {
-              case 'boolean':
-                $this->entity->$fieldName->value = empty($attributeValue) ? '0' : '1';
-                break;
-              case 'geolocation':
-                $this->entity->$fieldName->lat = $attributeValue->lat;
-                $this->entity->$fieldName->lng = $attributeValue->lng;
-                break;
-              case 'datetime':
-                $dateValue = null;
+              switch($fieldDefinition->getType())
+              {
+                case 'boolean':
+                  $this->entity->$fieldName->value = empty($attributeValue) ? '0' : '1';
+                  break;
+                case 'geolocation':
+                  $this->entity->$fieldName->lat = $attributeValue->lat;
+                  $this->entity->$fieldName->lng = $attributeValue->lng;
+                  break;
+                case 'datetime':
+                  $dateValue = null;
 
-                if(!empty($attributeValue))
-                {
-                  // We must figure out if this is a Date field or a datetime field
-                  // lets get the meta information of the field
-                  $fieldSettingsDatetimeType = $fieldDefinition->getItemDefinition()->getSettings()['datetime_type'];
-                  if($fieldSettingsDatetimeType === 'date')
+                  if(!empty($attributeValue))
                   {
-                    $dateValue = new \DateTime($attributeValue);
-                    $dateValue = $dateValue->format('Y-m-d');
+                    // We must figure out if this is a Date field or a datetime field
+                    // lets get the meta information of the field
+                    $fieldSettingsDatetimeType = $fieldDefinition->getItemDefinition()->getSettings()['datetime_type'];
+                    if($fieldSettingsDatetimeType === 'date')
+                    {
+                      $dateValue = new \DateTime($attributeValue);
+                      $dateValue = $dateValue->format('Y-m-d');
+                    }
+                    else if($fieldSettingsDatetimeType === 'datetime')
+                    {
+                      $dateValue = new \DateTime($attributeValue);
+                      $dateValue = $dateValue->format('Y-m-d').'T'.$dateValue->format('H:i:s');
+                    }
                   }
-                  else if($fieldSettingsDatetimeType === 'datetime')
+
+                  $this->entity->$fieldName->value = $dateValue;
+                  break;
+                case 'file':
+                case 'image':
+                  // TODO: add hash check
+                  if(isset($attributeValue->id))
                   {
-                    $dateValue = new \DateTime($attributeValue);
-                    $dateValue = $dateValue->format('Y-m-d').'T'.$dateValue->format('H:i:s');
+                    $this->entity->$fieldName->target_id = $attributeValue->id;
                   }
-                }
+                  else
+                  {
+                    $this->entity->$fieldName->target_id = null;
+                  }
+                  break;
+                case 'link':
+                  $this->entity->$fieldName->uri = $attributeValue;
+                  break;
+                case 'address':
+                  if(empty($attributeValue))
+                  {
+                    $this->entity->$fieldName->country_code = null;
+                    $this->entity->$fieldName->administrative_area = null;
+                    $this->entity->$fieldName->locality = null;
+                    $this->entity->$fieldName->dependent_locality = null;
+                    $this->entity->$fieldName->postal_code = null;
+                    $this->entity->$fieldName->sorting_code = null;
+                    $this->entity->$fieldName->address_line1 = null;
+                    $this->entity->$fieldName->address_line2 = null;
+                  }
+                  else
+                  {
+                    $value = array();
+                    $value['country_code'] = $attributeValue->{'country-code'};
+                    $value['administrative_area'] = $attributeValue->{'administrative-area'};
+                    $value['locality'] = $attributeValue->{'locality'};
+                    $value['dependent_locality'] = $attributeValue->{'dependent-locality'};
+                    $value['postal_code'] = $attributeValue->{'postal-code'};
+                    $value['sorting_code'] = $attributeValue->{'sorting-code'};
+                    $value['address_line1'] = $attributeValue->{'address-line1'};
+                    $value['address_line2'] = $attributeValue->{'address-line2'};
 
-                $this->entity->$fieldName->value = $dateValue;
-                break;
-              case 'file':
-              case 'image':
-                // TODO: add hash check
-                if(isset($attributeValue->id))
-                {
-                  $this->entity->$fieldName->target_id = $attributeValue->id;
-                }
-                else
-                {
-                  $this->entity->$fieldName->target_id = null;
-                }
-                break;
-              case 'link':
-                $this->entity->$fieldName->uri = $attributeValue;
-                break;
-              case 'address':
-                if(empty($attributeValue))
-                {
-                  $this->entity->$fieldName->country_code = null;
-                  $this->entity->$fieldName->administrative_area = null;
-                  $this->entity->$fieldName->locality = null;
-                  $this->entity->$fieldName->dependent_locality = null;
-                  $this->entity->$fieldName->postal_code = null;
-                  $this->entity->$fieldName->sorting_code = null;
-                  $this->entity->$fieldName->address_line1 = null;
-                  $this->entity->$fieldName->address_line2 = null;
-                }
-                else
-                {
-                  $value = array();
-                  $value['country_code'] = $attributeValue->{'country-code'};
-                  $value['administrative_area'] = $attributeValue->{'administrative-area'};
-                  $value['locality'] = $attributeValue->{'locality'};
-                  $value['dependent_locality'] = $attributeValue->{'dependent-locality'};
-                  $value['postal_code'] = $attributeValue->{'postal-code'};
-                  $value['sorting_code'] = $attributeValue->{'sorting-code'};
-                  $value['address_line1'] = $attributeValue->{'address-line1'};
-                  $value['address_line2'] = $attributeValue->{'address-line2'};
+                    $this->entity->$fieldName = $value;
+                  }
 
-                  $this->entity->$fieldName = $value;
-                }
-
-                break;
-              case 'entity_reference':
-                if($fieldName === 'field_currency')
-                {
-                  $this->entity->$fieldName->target_id = $attributeValue;
-                }
-                break;
-              case 'created':
-              case 'changed':
-                // Do nothing, internal fields
-                break;
-              default:
-                $this->entity->$fieldName->value = $attributeValue;
-                break;
+                  break;
+                case 'entity_reference':
+                  if($fieldName === 'field_currency')
+                  {
+                    $this->entity->$fieldName->target_id = $attributeValue;
+                  }
+                  break;
+                case 'created':
+                case 'changed':
+                  // Do nothing, internal fields
+                  break;
+                default:
+                  $this->entity->$fieldName->value = $attributeValue;
+                  break;
+              }
             }
-
           }
         }
       }
@@ -131,28 +133,32 @@ trait ModelDeserializerMixin
             if(array_key_exists($relationshipFieldName, $fieldNameMapping))
             {
               $fieldName = $fieldNameMapping[$relationshipFieldName];
-              $relationship = static::getRelationshipByFieldName($fieldName);
 
-              if(!empty($relationship))
+              if(static::currentUserHasFieldPermission($fieldName)) // Only allow fields the user has access to
               {
-                // now the relationship exists, we'll do something different depending on the type of relationship
-                if($relationship instanceof FieldRelationship)
-                {
-                  $relationshipField = $relationship->getField();
-                  $relationshipColumn = $relationship->getColumn();
+                $relationship = static::getRelationshipByFieldName($fieldName);
 
-                  if(empty($relationshipValue->data))
-                  {
-                    $this->entity->$relationshipField->$relationshipColumn = null;
-                  }
-                  else
-                  {
-                    $this->entity->$relationshipField->$relationshipColumn = $relationshipValue->data->id;
-                  }
-                }
-                else if ($relationship instanceof ReferencedRelationship)
+                if(!empty($relationship))
                 {
-                  // TODO: make this work with entity reference multi-field
+                  // now the relationship exists, we'll do something different depending on the type of relationship
+                  if($relationship instanceof FieldRelationship)
+                  {
+                    $relationshipField = $relationship->getField();
+                    $relationshipColumn = $relationship->getColumn();
+
+                    if(empty($relationshipValue->data))
+                    {
+                      $this->entity->$relationshipField->$relationshipColumn = null;
+                    }
+                    else
+                    {
+                      $this->entity->$relationshipField->$relationshipColumn = $relationshipValue->data->id;
+                    }
+                  }
+                  else if ($relationship instanceof ReferencedRelationship)
+                  {
+                    // TODO: make this work with entity reference multi-field
+                  }
                 }
               }
             }

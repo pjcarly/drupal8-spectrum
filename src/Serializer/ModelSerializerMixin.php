@@ -244,7 +244,7 @@ trait ModelSerializerMixin
       }
 
       // Now we'll check the other fields
-      if(!in_array($fieldName, $ignoreFields))
+      if(!in_array($fieldName, $ignoreFields) && static::currentUserHasFieldPermission($fieldName))
       {
         $fieldNamePretty = $fieldToPrettyMapping[$fieldName];
         $fieldType = $fieldDefinition->getType();
@@ -380,5 +380,35 @@ trait ModelSerializerMixin
   {
     $field = static::getFieldForPrettyField($prettyField);
     return !empty($field);
+  }
+
+  protected static function currentUserHasFieldPermission(string $field) : bool
+  {
+    $currentUser = \Drupal::currentUser();
+    $permissionGranted = false;
+
+    // Workaround because of custom permission bug in Drupal
+    if(function_exists('get_permission_checker'))
+    {
+      $permissionChecker = get_permission_checker();
+
+      $userRoles = $currentUser->getRoles();
+      $entity = static::getBasePermissionKey();
+
+      foreach($userRoles as $userRole)
+      {
+        if($permissionChecker::roleHasFieldPermission($userRole, $entity, $field))
+        {
+          $permissionGranted = true;
+          break;
+        }
+      }
+    }
+    else
+    {
+      $permissionGranted = false;
+    }
+
+    return $permissionGranted;
   }
 }
