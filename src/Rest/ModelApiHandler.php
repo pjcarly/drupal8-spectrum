@@ -26,6 +26,7 @@ class ModelApiHandler extends BaseApiHandler
   private $modelClassName;
   protected $maxLimit = 200;
   protected $listView;
+  protected $baseConditions = [];
 
   public function __construct($modelClassName, $slug = null)
   {
@@ -97,6 +98,16 @@ class ModelApiHandler extends BaseApiHandler
         foreach($sortOrders as $sortOrder)
         {
           $query->addSortOrder($sortOrder);
+        }
+      }
+
+      // We check for base conditions (these are conditions that always need to be applied, regardless of the api)
+      // This can be used to limit the results based on the logged in user, when the user only has access to certain records
+      if(sizeof($this->baseConditions) > 0)
+      {
+        foreach($this->baseConditions as $condition)
+        {
+          $query->addBaseCondition($condition);
         }
       }
 
@@ -284,6 +295,17 @@ class ModelApiHandler extends BaseApiHandler
     }
     else
     {
+      // We check for base conditions (these are conditions that always need to be applied, regardless of the api)
+      // This can be used to limit the results based on the logged in user, when the user only has access to certain records
+      if(sizeof($this->baseConditions) > 0)
+      {
+        foreach($this->baseConditions as $condition)
+        {
+          $query->addBaseCondition($condition);
+        }
+      }
+
+      // Next we add the specific condition for the slug
       $query->addCondition(new Condition($modelClassName::$idField, '=', $this->slug));
       $result = $query->fetchSingleModel();
 
@@ -563,7 +585,20 @@ class ModelApiHandler extends BaseApiHandler
     {
       // First we'll build the root model from the json api document
       // since we're talking about a patch here, the model must already exist in the database
-      $model = $modelClassName::forge(null, $jsonapidocument->data->id);
+      $query = $modelClassName::getModelQuery();
+      $query->addCondition(new Condition($modelClassName::$idField, '=', $jsonapidocument->data->id));
+
+      // We check for base conditions (these are conditions that always need to be applied, regardless of the api)
+      // This can be used to limit the results based on the logged in user, when the user only has access to certain records
+      if(sizeof($this->baseConditions) > 0)
+      {
+        foreach($this->baseConditions as $condition)
+        {
+          $query->addBaseCondition($condition);
+        }
+      }
+
+      $model = $query->fetchSingleModel();
 
       // Only if the model was found in the database can we continue
       if(!empty($model))
@@ -830,11 +865,33 @@ class ModelApiHandler extends BaseApiHandler
       return new Response(null, 405, array());
     }
 
-    $modelClassName::deleteById($this->slug);
+    $query = $modelClassName::getModelQuery();
+    $query->addCondition(new Condition($modelClassName::$idField, '=', $this->slug));
 
-    $response = new \stdClass();
-    $response->meta = new \stdClass();
-    $responseCode = 200;
+    // We check for base conditions (these are conditions that always need to be applied, regardless of the api)
+    // This can be used to limit the results based on the logged in user, when the user only has access to certain records
+    if(sizeof($this->baseConditions) > 0)
+    {
+      foreach($this->baseConditions as $condition)
+      {
+        $query->addBaseCondition($condition);
+      }
+    }
+
+    $model = $query->fetchSingleModel();
+
+    // Only if the model was found in the database can we continue
+    if(!empty($model))
+    {
+      $model->delete();
+      $response = new \stdClass();
+      $responseCode = 204;
+    }
+    else
+    {
+      $response = new \stdClass();
+      $responseCode = 404;
+    }
 
     return new Response(isset($response) ? json_encode($response) : null, $responseCode, array());
   }
