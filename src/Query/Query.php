@@ -187,44 +187,48 @@ abstract class Query
 
   public function fetch()
   {
-    $query = $this->getQuery();
-    $result = $query->execute();
+    $ids = $this->fetchIds();
 
     if($this->entityType === 'user')
     {
       // ugly fix for custom fields on User
-      return empty($result) ? array() : \Drupal\user\Entity\User::loadMultiple($result);
+      return empty($ids) ? [] : \Drupal\user\Entity\User::loadMultiple($ids);
     }
     else
     {
       $store = \Drupal::entityManager()->getStorage($this->entityType);
-      return empty($result) ? array() : $store->loadMultiple($result);
+      return empty($ids) ? [] : $store->loadMultiple($ids);
     }
   }
 
-  public function fetchSingle()
+  public function fetchIds()
   {
     $query = $this->getQuery();
     $result = $query->execute();
 
-    if(empty($result))
+    return empty($result) ? [] : $result;
+  }
+
+  public function fetchId()
+  {
+    $ids = $this->fetchIds();
+
+    return empty($ids) ? null : array_shift($ids);
+  }
+
+  public function fetchSingle()
+  {
+    $id = $this->fetchId();
+
+    if($this->entityType === 'user')
     {
-      return null;
+      // ugly fix for custom fields on User
+      return empty($id) ? null : \Drupal\user\Entity\User::load($id);
     }
     else
     {
-      $id = array_shift($result);
-
-      if($this->entityType === 'user')
-      {
-        // ugly fix for custom fields on User
-        return empty($id) ? null : \Drupal\user\Entity\User::load($id);
-      }
-      else
-      {
-        $store = \Drupal::entityManager()->getStorage($this->entityType);
-        return empty($id) ? null : $store->load($id);
-      }
+      $store = \Drupal::entityManager()->getStorage($this->entityType);
+      return empty($id) ? null : $store->load($id);
     }
   }
 
