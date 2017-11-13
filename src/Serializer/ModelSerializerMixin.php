@@ -5,6 +5,7 @@ namespace Drupal\spectrum\Serializer;
 use Drupal\spectrum\Serializer\JsonApiRootNode;
 use Drupal\spectrum\Serializer\JsonApiNode;
 use Drupal\spectrum\Serializer\JsonApiDataNode;
+use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Model\Collection;
 Use Drupal\spectrum\Utils\StringUtils;
 
@@ -109,7 +110,23 @@ trait ModelSerializerMixin
               $idsThatHaveBeenset[$target_id] = $target_id;
               $relationshipNode = new JsonApiNode();
               $relationshipNode->setId($referencedEntity->target_id);
-              $relationshipNode->setType($referencedEntity->entity->bundle());
+
+              // Lets see if we have a modelclass to get the type from
+              $targetBundle = $referencedEntity->entity->bundle();
+              $targetEntityType = $referencedEntity->entity->getEntityType()->id();
+
+              if(Model::hasModelClassForEntityAndBundle($targetEntityType, $targetBundle))
+              {
+                $targetModelClass = Model::getModelClassForEntityAndBundle($targetEntityType, $targetBundle);
+
+                $relationshipNode->setType($targetModelClass::getSerializationType());
+              }
+              else
+              {
+                // nothing found. Lets use the bundle
+                $relationshipNode->setType($referencedEntity->entity->bundle());
+              }
+
               $relationshipDataNode->addNode($relationshipNode);
             }
           }
@@ -234,7 +251,8 @@ trait ModelSerializerMixin
       // First let's check the manual fields
       if($fieldName === 'type')
       {
-        $node->setType(StringUtils::dasherize($this->entity->get($fieldName)->target_id));
+        // Disabled for now, we use the type of the model
+        //$node->setType(StringUtils::dasherize($this->entity->get($fieldName)->target_id));
         continue;
       }
       else if($fieldName === static::$idField)
@@ -273,14 +291,7 @@ trait ModelSerializerMixin
     if(!$node->hasType())
     {
       // some entity types don't have a bundle (user for example) so we must rely on the entity type itself
-      if(empty(static::$bundle))
-      {
-        $node->setType(static::$entityType);
-      }
-      else
-      {
-        $node->setType(static::$bundle);
-      }
+      $node->setType(static::getSerializationType());
     }
 
     return $node;

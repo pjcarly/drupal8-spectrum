@@ -15,6 +15,8 @@ use Drupal\spectrum\Exceptions\RelationshipNotDefinedException;
 use Drupal\spectrum\Exceptions\PolymorphicException;
 use Drupal\spectrum\Exceptions\InvalidFieldException;
 
+Use Drupal\spectrum\Utils\StringUtils;
+
 abstract class Model
 {
   use \Drupal\spectrum\Serializer\ModelSerializerMixin;
@@ -30,6 +32,7 @@ abstract class Model
 
   protected static $permissions = [];
   protected static $inheritPermissions = null;
+  protected static $serializationTypeAliases = [];
 
   public $entity;
   public $key;
@@ -851,6 +854,37 @@ abstract class Model
     }
 
     return $foundRelationship;
+  }
+
+  public static function getSerializationType()
+  {
+    $returnValue = '';
+    $key = static::getKeyForEntityAndBundle(static::$entityType, static::$bundle);
+    $alias = array_key_exists($key, static::$serializationTypeAliases) ? static::$serializationTypeAliases[$key] : null;
+
+    if(empty($alias))
+    {
+      if(empty(static::$bundle))
+      {
+        $returnValue = static::$entityType;
+      }
+      else
+      {
+        $returnValue = static::$bundle;
+      }
+    }
+    else
+    {
+      $returnValue = $alias;
+    }
+
+    return StringUtils::dasherize($returnValue);
+  }
+
+  public static function setSerializationTypeAlias($type)
+  {
+    $key = static::getKeyForEntityAndBundle(static::$entityType, static::$bundle);
+    static::$serializationTypeAliases[$key] = $type;
   }
 
   public static function getRelationships()
