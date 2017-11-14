@@ -12,6 +12,7 @@ use Drupal\spectrum\Model\FieldRelationship;
 use Drupal\spectrum\Model\ReferencedRelationship;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Serializer\JsonApiRootNode;
+use Drupal\spectrum\Serializer\JsonApiBaseNode;
 use Drupal\spectrum\Serializer\JsonApiLink;
 use Drupal\spectrum\Analytics\ListView;
 
@@ -33,6 +34,11 @@ class ModelApiHandler extends BaseApiHandler
     parent::__construct($slug);
     $this->modelClassName = $modelClassName;
     $this->defaultHeaders['Content-Type'] = 'application/vnd.api+json';
+  }
+
+  protected function getJsonApiNodeForModelOrCollection($object) : JsonApiBaseNode
+  {
+    return $object->getJsonApiNode();
   }
 
   public function get(Request $request)
@@ -289,7 +295,7 @@ class ModelApiHandler extends BaseApiHandler
         }
 
         // Finally we can set the jsonapi with the data of our result
-        $node = $result->getJsonApiNode();
+        $node = $this->getJsonApiNodeForModelOrCollection($result);
         $jsonapi->setData($node);
       }
     }
@@ -334,7 +340,7 @@ class ModelApiHandler extends BaseApiHandler
         }
 
         // Finally we add the result
-        $jsonapi->addNode($result->getJsonApiNode());
+        $jsonapi->addNode($this->getJsonApiNodeForModelOrCollection($result));
       }
       else
       {
@@ -517,7 +523,7 @@ class ModelApiHandler extends BaseApiHandler
         $this->afterPostSave($model);
 
         // we serialize the response
-        $jsonapi->addNode($model->getJsonApiNode());
+        $jsonapi->addNode($this->getJsonApiNodeForModelOrCollection($model));
 
         // Lets check for our includes
         $includes = array_merge($uniqueReferencedRelationshipsToSave, $uniqueFieldRelationshipsToSave);
@@ -800,7 +806,7 @@ class ModelApiHandler extends BaseApiHandler
           $this->afterPatchSave($model);
 
           // we serialize the response
-          $jsonapi->addNode($model->getJsonApiNode());
+          $jsonapi->addNode($this->getJsonApiNodeForModelOrCollection($model));
 
           // Lets check for our includes
           $includes = array_merge($uniqueReferencedRelationshipsToSave, $uniqueFieldRelationshipsToSave);

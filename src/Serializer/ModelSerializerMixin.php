@@ -4,6 +4,7 @@ namespace Drupal\spectrum\Serializer;
 
 use Drupal\spectrum\Serializer\JsonApiRootNode;
 use Drupal\spectrum\Serializer\JsonApiNode;
+use Drupal\spectrum\Serializer\JsonApiBaseNode;
 use Drupal\spectrum\Serializer\JsonApiDataNode;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Model\Collection;
@@ -238,7 +239,7 @@ trait ModelSerializerMixin
     return $valueToSerialize;
   }
 
-  public function getJsonApiNode()
+  public function getJsonApiNode() : JsonApiBaseNode
   {
     $node = new JsonApiNode();
 

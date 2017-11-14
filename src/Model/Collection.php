@@ -4,6 +4,7 @@ namespace Drupal\spectrum\Model;
 use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Exceptions\InvalidTypeException;
 use Drupal\spectrum\Serializer\JsonApiRootNode;
+use Drupal\spectrum\Serializer\JsonApiBaseNode;
 use Drupal\spectrum\Serializer\JsonApiDataNode;
 
 class Collection implements \IteratorAggregate
@@ -532,7 +533,7 @@ class Collection implements \IteratorAggregate
     return $root->serialize();
   }
 
-  public function getJsonApiNode()
+  public function getJsonApiNode() : JsonApiBaseNode
   {
     $data = new JsonApiDataNode();
 
