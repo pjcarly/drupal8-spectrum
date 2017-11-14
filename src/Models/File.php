@@ -5,6 +5,7 @@ namespace Drupal\spectrum\Models;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Model\FieldRelationship;
 use Drupal\spectrum\Model\ReferencedRelationship;
+use Drupal\spectrum\Serializer\JsonApiBaseNode;
 
 class File extends Model
 {
@@ -22,31 +23,39 @@ class File extends Model
     return 'file';
   }
 
-  public function getJsonApiNode()
+  public function getJsonApiNode() : JsonApiBaseNode
   {
-    $hash = md5($this->entity->uuid->value);
-
-    $request = \Drupal::request();
-    $url = $request->getSchemeAndHttpHost() . $request->getBasePath() . '/'.$this->getBaseApiPath().'/' . $this->entity->get('filename')->value . '/?fid=' . $this->getId() . '&dg=' . $hash;
-
     $node = parent::getJsonApiNode();
-    $node->addAttribute('hash', $hash);
-    $node->addAttribute('url', $url);
+    $node->addAttribute('hash', $this->getHash());
+    $node->addAttribute('url', $this->getSRC());
 
     return $node;
+  }
+
+  public function getHash()
+  {
+    return md5($this->entity->uuid->value);
+  }
+
+  public function getRealSrc()
+  {
+    return $this->entity->url();
   }
 
   public function getBase64SRC()
   {
     $mime = $this->entity->get('filemime')->value;
-    $base64 = base64_encode(file_get_contents($this->getSRC()));
+    $base64 = base64_encode(file_get_contents($this->getRealSrc()));
 
     return 'data:'.$mime.';base64,'.$base64;
   }
 
-  public function getSRC(string $style = NULL)
+  public function getSRC()
   {
-    return $this->entity->url();
+    $request = \Drupal::request();
+    $url = $request->getSchemeAndHttpHost() . $request->getBasePath() . '/'.$this->getBaseApiPath().'/' . $this->entity->get('filename')->value . '/?fid=' . $this->getId() . '&dg=' . $this->getHash();
+
+    return $url;
   }
 
   public static function createNewFile($data, $filename)

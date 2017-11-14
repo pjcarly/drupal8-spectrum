@@ -2,6 +2,7 @@
 namespace Drupal\spectrum\Template;
 
 use Drupal\spectrum\Models\Image;
+use Drupal\spectrum\Models\File;
 use Drupal\spectrum\Utils\DateUtils;
 
 use CommerceGuys\Addressing\Formatter\PostalLabelFormatter;
@@ -15,6 +16,7 @@ class TwigFilters extends \Twig_Extension
   {
     return [
       new \Twig_SimpleFilter('src', array($this, 'src')),
+      new \Twig_SimpleFilter('file_src', array($this, 'fileSrc')),
       new \Twig_SimpleFilter('base64src', array($this, 'base64src')),
       new \Twig_SimpleFilter('address', array($this, 'address')),
       new \Twig_SimpleFilter('price', array($this, 'price')),
@@ -37,6 +39,11 @@ class TwigFilters extends \Twig_Extension
   public static function src(Image $image, string $imagestyle = null)
   {
     return $image->getSRC($imagestyle);
+  }
+
+  public static function fileSrc(File $file)
+  {
+    return $file->getSRC();
   }
 
   /**

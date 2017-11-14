@@ -71,15 +71,12 @@ class SimpleModelWrapper
           }
           break;
         case 'file':
-          $returnValue = 'NOT YET SUPPORTED';
-          break;
           $fileId = $model->entity->get($fieldName)->target_id;
 
           if(!empty($fileId))
           {
             $returnValue = File::forge(null, $fileId);
           }
-
           break;
         case 'uri':
           $returnValue = $model->entity->get($fieldName)->value;

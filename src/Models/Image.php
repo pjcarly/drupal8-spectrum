@@ -25,20 +25,27 @@ class Image extends File
     return 'data:'.$mime.';base64,'.$base64Image;
   }
 
-  public function getSRC(string $style = NULL)
+  public function getRealSrc(string $style = NULL)
   {
-    $url;
-    if(empty($style))
-    {
-      $url = parent::getSRC();
-    }
-    else
+    if(!empty($style))
     {
       $imageStyle = ImageStyle::load($style);
       if(!empty($imageStyle))
       {
         $url = $imageStyle->buildUrl($this->entity->get('uri')->value);
+        return $url;
       }
+    }
+
+    return parent::getRealSrc();
+  }
+
+  public function getSRC(string $style = NULL)
+  {
+    $url = parent::getSRC();
+    if(!empty($style) && !empty($url))
+    {
+      $url .= '&style='.$style;
     }
 
     return $url;
