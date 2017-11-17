@@ -64,7 +64,7 @@ class TwigFilters extends \Twig_Extension
 
   public static function price($price, $currency = null)
   {
-    return number_format($price, 2, ',', ' ') . ' ' . $currency;
+    return number_format((float) $price, 2, ',', ' ') . ' ' . $currency;
   }
 
   public static function padLeft($value, $length, $padvalue = '0')
