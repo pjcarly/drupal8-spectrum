@@ -53,7 +53,7 @@ class File extends Model
   public function getSRC()
   {
     $request = \Drupal::request();
-    $url = $request->getSchemeAndHttpHost() . $request->getBasePath() . '/'.$this->getBaseApiPath().'/' . $this->entity->get('filename')->value . '/?fid=' . $this->getId() . '&dg=' . $this->getHash();
+    $url = $request->getSchemeAndHttpHost() . $request->getBasePath() . '/'.$this->getBaseApiPath().'/' . $this->entity->get('filename')->value . '?fid=' . $this->getId() . '&dg=' . $this->getHash();
 
     return $url;
   }
