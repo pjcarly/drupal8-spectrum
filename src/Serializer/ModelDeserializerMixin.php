@@ -5,6 +5,7 @@ namespace Drupal\spectrum\Serializer;
 use Drupal\spectrum\Model\ReferencedRelationship;
 use Drupal\spectrum\Model\FieldRelationship;
 use Drupal\spectrum\Serializer\JsonApiRootNode;
+use Drupal\spectrum\Models\File;
 
 trait ModelDeserializerMixin
 {
@@ -64,10 +65,19 @@ trait ModelDeserializerMixin
                   break;
                 case 'file':
                 case 'image':
-                  // TODO: add hash check
-                  if(isset($attributeValue->id))
+                  if(isset($attributeValue->id) && isset($attributeValue->hash))
                   {
-                    $this->entity->$fieldName->target_id = $attributeValue->id;
+                    $fileModel = File::forgeById($attributeValue->id);
+                    // We must be sure that the hash provided in the deserialization, matches the file entity in the database
+                    // That way no unauthorized file linking can occur
+                    if($fileModel->getHash() === $attributeValue->hash)
+                    {
+                      $this->entity->$fieldName->target_id = $attributeValue->id;
+                    }
+                    else
+                    {
+                      $this->entity->$fieldName->target_id = null;
+                    }
                   }
                   else
                   {
