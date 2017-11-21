@@ -2,6 +2,7 @@
 
 namespace Drupal\spectrum\Serializer;
 
+use Drupal\spectrum\Model\Collection;
 use Drupal\spectrum\Model\ReferencedRelationship;
 use Drupal\spectrum\Model\FieldRelationship;
 use Drupal\spectrum\Serializer\JsonApiRootNode;
@@ -29,6 +30,7 @@ trait ModelDeserializerMixin
           {
             $fieldName = $fieldNameMapping[$attributeKey];
             $fieldDefinition = static::getFieldDefinition($fieldName);
+            $fieldCardinality = $fieldDefinition->getFieldStorageDefinition()->getCardinality();
 
             if(static::currentUserHasFieldPermission($fieldName)) // Only allow fields the user has access to
             {
@@ -65,23 +67,62 @@ trait ModelDeserializerMixin
                   break;
                 case 'file':
                 case 'image':
-                  if(isset($attributeValue->id) && isset($attributeValue->hash))
+                  $valueToSet = null;
+
+                  if($fieldCardinality === 1)
                   {
-                    $fileModel = File::forgeById($attributeValue->id);
-                    // We must be sure that the hash provided in the deserialization, matches the file entity in the database
-                    // That way no unauthorized file linking can occur
-                    if($fileModel->getHash() === $attributeValue->hash)
+                    if(isset($attributeValue->id) && isset($attributeValue->hash))
                     {
-                      $this->entity->$fieldName->target_id = $attributeValue->id;
+                      $fileModel = File::forgeById($attributeValue->id);
+                      // We must be sure that the hash provided in the deserialization, matches the file entity in the database
+                      // That way no unauthorized file linking can occur
+                      if($fileModel->getId() === $attributeValue->id && $fileModel->getHash() === $attributeValue->hash)
+                      {
+                        $valueToSet = $attributeValue->id;
+                      }
                     }
-                    else
-                    {
-                      $this->entity->$fieldName->target_id = null;
-                    }
+
+                    $this->entity->$fieldName->target_id = $valueToSet;
                   }
                   else
                   {
-                    $this->entity->$fieldName->target_id = null;
+                    $valueToSet = [];
+                    if(is_array($attributeValue))
+                    {
+                      $fileIds = [];
+                      foreach($attributeValue as $singleAttributeValue)
+                      {
+                        if(isset($singleAttributeValue->id))
+                        {
+                          $fileIds[] = $singleAttributeValue->id;
+                        }
+                      }
+
+                      if(!empty($fileIds))
+                      {
+                        $filesCollection = Collection::forgeByIds('\Drupal\spectrum\Models\File', $fileIds);
+
+                        if(!$filesCollection->isEmpty)
+                        {
+                          foreach($attributeValue as $singleAttributeValue)
+                          {
+                            if(isset($singleAttributeValue->id) && $filesCollection->containsKey($singleAttributeValue->id))
+                            {
+                              $fileModel = $filesCollection->getModel($singleAttributeValue->id);
+
+                              // We must be sure that the hash provided in the deserialization, matches the file entity in the database
+                              // That way no unauthorized file linking can occur
+                              if($fileModel->getId() === $singleAttributeValue->id && $fileModel->getHash() === $singleAttributeValue->hash)
+                              {
+                                $valueToSet[] = ['target_id' => $singleAttributeValue->id];
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+
+                    $this->entity->$fieldName = $valueToSet;
                   }
                   break;
                 case 'link':

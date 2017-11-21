@@ -26,6 +26,7 @@ trait ModelSerializerMixin
     $fieldDefinition = empty($fieldDefinition) ? static::getFieldDefinition($fieldName) : $fieldDefinition;
     $valueToSerialize = null;
     $fieldType = $fieldDefinition->getType();
+    $fieldCardinality = $fieldDefinition->getFieldStorageDefinition()->getCardinality();
 
     switch ($fieldType)
     {
@@ -95,7 +96,6 @@ trait ModelSerializerMixin
 
           // Lets also check the cardinality of the field (amount of references the field can contain)
           // If it is more than 1 item (or -1 in case of unlimited references), we must return an array
-          $fieldCardinality = $fieldDefinition->getFieldStorageDefinition()->getCardinality();
           if($fieldCardinality !== 1)
           {
             $relationshipDataNode->asArray(true);
@@ -179,31 +179,62 @@ trait ModelSerializerMixin
         $valueToSerialize = (int) $this->entity->get($fieldName)->value;
         break;
       case 'image':
-        if(!empty($this->entity->get($fieldName)->entity))
+        if($fieldCardinality !== 1)
         {
-          $imageModel = Image::forgeByEntity($this->entity->get($fieldName)->entity);
-          $jsonapinode = $imageModel->getJsonApiNode();
+          $valueToSerialize = [];
 
-          $attribute = new \stdClass();
-          $attribute->id = $jsonapinode->getId();
-          $attribute->filename = $jsonapinode->getAttribute('filename');
-          $attribute->url = $jsonapinode->getAttribute('url');
-          $attribute->filemime = $jsonapinode->getAttribute('filemime');
-          $attribute->filesize = $jsonapinode->getAttribute('filesize');
-          $attribute->hash = $jsonapinode->getAttribute('hash');
+          foreach($this->entity->get($fieldName) as $fieldValue)
+          {
+            if(!empty($fieldValue->entity))
+            {
+              $imageModel = Image::forgeByEntity($fieldValue->entity);
+              $jsonapinode = $imageModel->getJsonApiNode();
 
-          $attribute->width = $this->entity->get($fieldName)->width;
-          $attribute->height = $this->entity->get($fieldName)->height;
-          $attribute->alt = $this->entity->get($fieldName)->alt;
-          $attribute->title = $this->entity->get($fieldName)->title;
+              $attribute = new \stdClass();
+              $attribute->id = $jsonapinode->getId();
+              $attribute->filename = $jsonapinode->getAttribute('filename');
+              $attribute->url = $jsonapinode->getAttribute('url');
+              $attribute->filemime = $jsonapinode->getAttribute('filemime');
+              $attribute->filesize = $jsonapinode->getAttribute('filesize');
+              $attribute->hash = $jsonapinode->getAttribute('hash');
 
-          // TODO: add URL like image
-          $valueToSerialize = $attribute;
+              $attribute->width = $fieldValue->width;
+              $attribute->height = $fieldValue->height;
+              $attribute->alt = $fieldValue->alt;
+              $attribute->title = $fieldValue->title;
+
+              $valueToSerialize[] = $attribute;
+            }
+          }
         }
         else
         {
-          $valueToSerialize = null;
+          if(!empty($this->entity->get($fieldName)->entity))
+          {
+            $imageModel = Image::forgeByEntity($this->entity->get($fieldName)->entity);
+            $jsonapinode = $imageModel->getJsonApiNode();
+
+            $attribute = new \stdClass();
+            $attribute->id = $jsonapinode->getId();
+            $attribute->filename = $jsonapinode->getAttribute('filename');
+            $attribute->url = $jsonapinode->getAttribute('url');
+            $attribute->filemime = $jsonapinode->getAttribute('filemime');
+            $attribute->filesize = $jsonapinode->getAttribute('filesize');
+            $attribute->hash = $jsonapinode->getAttribute('hash');
+
+            $attribute->width = $this->entity->get($fieldName)->width;
+            $attribute->height = $this->entity->get($fieldName)->height;
+            $attribute->alt = $this->entity->get($fieldName)->alt;
+            $attribute->title = $this->entity->get($fieldName)->title;
+
+            $valueToSerialize = $attribute;
+          }
+          else
+          {
+            $valueToSerialize = null;
+          }
         }
+
         break;
       case 'link':
         $valueToSerialize = $this->entity->get($fieldName)->uri;
@@ -214,7 +245,6 @@ trait ModelSerializerMixin
         //$node->addAttribute('url', file_create_url($this->entity->get($fieldName)->value));
         break;
       default:
-        $fieldCardinality = $fieldDefinition->getFieldStorageDefinition()->getCardinality();
         $value;
 
         if($fieldCardinality !== 1)
@@ -394,7 +424,7 @@ trait ModelSerializerMixin
     return !empty($field);
   }
 
-  protected static function currentUserHasFieldPermission(string $field) : bool
+  public static function currentUserHasFieldPermission(string $field) : bool
   {
     $currentUser = \Drupal::currentUser();
     $permissionGranted = false;
