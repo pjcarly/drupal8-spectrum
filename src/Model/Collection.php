@@ -1,6 +1,7 @@
 <?php
 namespace Drupal\spectrum\Model;
 
+use Drupal\spectrum\Query\BundleQuery;
 use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Exceptions\InvalidTypeException;
 use Drupal\spectrum\Serializer\JsonApiRootNode;
@@ -286,9 +287,24 @@ class Collection implements \IteratorAggregate
 		}
 
 		return $fieldIds;
-	}
+  }
 
-	public static function forge($modelType, $models = array(), $entities = array(), $ids = array(), $modelQuery = null)
+  public static function forgeByIds($modelType, $ids)
+  {
+    return static::forge($modelType, [], [], $ids);
+  }
+
+  public static function forgeByModels($modelType, $models)
+  {
+    return static::forge($modelType, $models, [], []);
+  }
+
+  public static function forgeByEntities($modelType, $entities)
+  {
+    return static::forge($modelType, [], $entities, []);
+  }
+
+	public static function forge($modelType, $models = [], $entities = [], $ids = [], $modelQuery = null)
 	{
 		$collection = new static();
 		$collection->modelType = $modelType;
@@ -313,8 +329,7 @@ class Collection implements \IteratorAggregate
 
 	private static function fetchEntities($modelType, $ids)
 	{
-		$query = new Query($modelType::$entityType, $modelType::$bundle);
-		$entityInfo = entity_get_info($modelType::$entityType);
+		$query = new BundleQuery($modelType::$entityType, $modelType::$bundle);
 
 		$query->addCondition(new Condition($modelType::$idField, 'IN', $ids));
 		return $query->fetch();
