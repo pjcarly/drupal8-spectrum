@@ -1125,4 +1125,14 @@ class ModelApiHandler extends BaseApiHandler
 
     return $sortOrders;
   }
+
+  protected function getModelClassName() : string
+  {
+    return $this->modelClassName;
+  }
+
+  protected function setModelClassName(string $modelClassName)
+  {
+    $this->modelClassName = $modelClassName;
+  }
 }
