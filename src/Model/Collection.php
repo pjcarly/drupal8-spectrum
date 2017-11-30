@@ -126,6 +126,7 @@ class Collection implements \IteratorAggregate
 
 	public function fetch($relationshipName)
 	{
+    $returnValue = null;
 		$lastRelationshipNameIndex = strrpos($relationshipName, '.');
 
 		if(empty($lastRelationshipNameIndex)) // relationship name without extra relationships
@@ -187,7 +188,7 @@ class Collection implements \IteratorAggregate
               // we can finally forge a new model
               $referencedModel = $referencedModelType::forge($referencedEntity);
               // and put it in the collection created above
-              $referencedCollection->put($referencedModel, true);
+              $returnValue = $referencedCollection->put($referencedModel, true);
             }
 
             static::putReferencedCollectionOnReferencingCollection($relationship, $referencedRelationship, $this, $referencedCollection);
@@ -229,7 +230,7 @@ class Collection implements \IteratorAggregate
 
               // now that we have a model, lets put them one by one
               $referencingModel = $referencingModelType::forge($referencingEntity);
-              $referencingCollection->put($referencingModel, true);
+              $returnValue = $referencingCollection->put($referencingModel, true);
             }
           }
 
@@ -245,8 +246,10 @@ class Collection implements \IteratorAggregate
 			$secondToLastRelationshipName = substr($relationshipName, 0, $lastRelationshipNameIndex);
 			$resultCollection = $this->get($secondToLastRelationshipName);
 			$lastRelationshipName = substr($relationshipName, $lastRelationshipNameIndex+1);
-			$resultCollection->fetch($lastRelationshipName);
-		}
+			$returnValue = $resultCollection->fetch($lastRelationshipName);
+    }
+
+    return $returnValue;
 	}
 
 	public function getIds()
@@ -386,6 +389,8 @@ class Collection implements \IteratorAggregate
 
       $this->addModelToArrays($model, $includeInOriginalModels);
     }
+
+    return $this; // we need this to chain fetches, when we put something, we always return the value where the model is being put on, in case of a collection, it is always the collection itself
 	}
 
   public function putNew()

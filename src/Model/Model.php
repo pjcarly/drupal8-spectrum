@@ -223,6 +223,8 @@ abstract class Model
 
   public function fetch($relationshipName)
   {
+    $returnValue = null;
+
     $lastRelationshipNameIndex = strrpos($relationshipName, '.');
 
     if(empty($lastRelationshipNameIndex)) // relationship name without extra relationships
@@ -267,7 +269,7 @@ abstract class Model
 
                 // now that we have a model, lets put them one by one
                 $referencedModel = $referencedModelType::forge($referencedEntity);
-                $this->put($relationship, $referencedModel, true);
+                $returnValue = $this->put($relationship, $referencedModel, true);
               }
             }
           }
@@ -288,8 +290,7 @@ abstract class Model
 
               // now that we have a model, lets put them one by one
               $referencedModel = $referencedModelType::forge($referencedEntity);
-
-              $this->put($relationship, $referencedModel, true);
+              $returnValue = $this->put($relationship, $referencedModel, true);
             }
           }
         }
@@ -319,7 +320,7 @@ abstract class Model
 
               // now that we have a model, lets put them one by one
               $referencingModel = $referencingModelType::forge($referencingEntity);
-              $this->put($relationship, $referencingModel, true);
+              $returnValue = $this->put($relationship, $referencingModel, true);
               $referencingModel->put($relationship->fieldRelationship, $this, true);
             }
           }
@@ -333,9 +334,11 @@ abstract class Model
       if(!empty($resultCollection))
       {
         $lastRelationshipName = substr($relationshipName, $lastRelationshipNameIndex+1);
-        $resultCollection->fetch($lastRelationshipName);
+        $returnValue = $resultCollection->fetch($lastRelationshipName);
       }
     }
+
+    return $returnValue;
   }
 
   public function getModelName()
@@ -441,7 +444,7 @@ abstract class Model
     }
   }
 
-  private function createNewCollection($relationship)
+  private function createNewCollection($relationship) : Collection
   {
     if($relationship instanceof FieldRelationship)
     {
@@ -455,6 +458,8 @@ abstract class Model
         {
           $this->relatedViaFieldOnEntity[$relationship->relationshipName] = Collection::forge($relationship->modelType);
         }
+
+        return $this->relatedViaFieldOnEntity[$relationship->relationshipName];
       }
       else
       {
@@ -464,6 +469,7 @@ abstract class Model
     else if($relationship instanceof ReferencedRelationship)
     {
       $this->relatedViaFieldOnExternalEntity[$relationship->relationshipName] = Collection::forge($relationship->modelType);
+      return $this->relatedViaFieldOnExternalEntity[$relationship->relationshipName];
     }
   }
 
@@ -497,6 +503,8 @@ abstract class Model
 
   public function put($relationship, $objectToPut, $includeInOriginalModels = false)
   {
+    $returnValue = null; // we return the object where this object is being put ON (can be a Model, or a Collection)
+
     if($objectToPut != null && ($objectToPut instanceof Model || $objectToPut instanceof Collection))
     {
       if(is_string($relationship)) // we only have the relationship name
@@ -516,7 +524,7 @@ abstract class Model
           {
             foreach($objectToPut as $model)
             {
-              $this->put($relationshp, $model, $includeInOriginalModels);
+              $returnValue = $this->put($relationshp, $model, $includeInOriginalModels);
             }
           }
           else if($objectToPut instanceof Model)
@@ -529,7 +537,10 @@ abstract class Model
             }
 
             // we put the model on the collection
-            $this->relatedViaFieldOnEntity[$relationship->relationshipName]->put($objectToPut, $includeInOriginalModels);
+            $collection = $this->relatedViaFieldOnEntity[$relationship->relationshipName];
+            $collection->put($objectToPut, $includeInOriginalModels);
+            $returnValue = $collection;
+
             // and also append the entity field with the value (append because there can be multiple items)
             $objectToPutId = $objectToPut->getId();
             if(!empty($objectToPutId))
@@ -547,6 +558,7 @@ abstract class Model
           // things get much easier. Namely we just put the model in the related array
           // even if the relationship is polymorphic it doesn't matter.
           $this->relatedViaFieldOnEntity[$relationship->relationshipName] = $objectToPut;
+          $returnValue = $objectToPut;
           // we also set the new id on the current entity
           $objectToPutId = $objectToPut->getId();
           if(!empty($objectToPutId))
@@ -565,9 +577,13 @@ abstract class Model
           $this->createNewCollection($relationship);
         }
 
-        $this->relatedViaFieldOnExternalEntity[$relationship->relationshipName]->put($objectToPut, $includeInOriginalModels);
+        $collection = $this->relatedViaFieldOnExternalEntity[$relationship->relationshipName];
+        $collection->put($objectToPut, $includeInOriginalModels);
+        $returnValue = $collection;
       }
     }
+
+    return $returnValue;
   }
 
   public function putNew($relationship)
@@ -608,6 +624,13 @@ abstract class Model
 
       return $relationshipModel;
     }
+  }
+
+  public function getClonedEntity()
+  {
+    $entity = $this->entity;
+
+    return $entity->createDuplicate();
   }
 
   public function debugEntity()
