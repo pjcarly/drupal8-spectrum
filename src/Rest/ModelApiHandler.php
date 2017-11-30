@@ -568,8 +568,8 @@ class ModelApiHandler extends BaseApiHandler
     return new Response(isset($response) ? json_encode($response) : null, $responseCode, array());
   }
 
-  protected function beforePatchSave(Model $model){}
-  protected function afterPatchSave(Model $model){}
+  protected function beforePatchSave(Model $model, Model $originalModel){}
+  protected function afterPatchSave(Model $model, Model $originalModel){}
 
   public function patch(Request $request)
   {
@@ -609,6 +609,8 @@ class ModelApiHandler extends BaseApiHandler
       // Only if the model was found in the database can we continue
       if(!empty($model))
       {
+        // We make a copy before applying changes, because we might need the original values in the hooks later on
+        $originalModel = $modelClassName::forgeByEntity($model->getClonedEntity());
         // here we fill in the attributes on the new model from the json api document
         $model->applyChangesFromJsonAPIDocument($jsonapidocument);
         // we trigger the beforeValidate as we might need to trigger some functionalitity
@@ -776,7 +778,7 @@ class ModelApiHandler extends BaseApiHandler
         if($validation->hasSucceeded())
         {
           // We call our beforeSave hook, so we can potentially fetch some relationships for the before hooks of the model
-          $this->beforePatchSave($model);
+          $this->beforePatchSave($model, $originalModel);
 
           // No errors, we can save, and return the newly created model serialized
           $jsonapi = new JsonApiRootNode();
@@ -803,7 +805,7 @@ class ModelApiHandler extends BaseApiHandler
           }
 
           // We call our afterSave hook, so we can potentially do some actions based on the newly created model
-          $this->afterPatchSave($model);
+          $this->afterPatchSave($model, $originalModel);
 
           // we serialize the response
           $jsonapi->addNode($this->getJsonApiNodeForModelOrCollection($model));
