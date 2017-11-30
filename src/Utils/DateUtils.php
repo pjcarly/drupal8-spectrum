@@ -4,7 +4,12 @@ namespace Drupal\spectrum\Utils;
 
 class DateUtils
 {
-  static function generatePatternString(\DateTime $date, $pattern)
+  public static function getToday()
+  {
+    return strtotime('today midnight');
+  }
+
+  public static function generatePatternString(\DateTime $date, $pattern)
   {
     $value = $pattern;
     $value = str_replace('{{YYYY}}', $date->format('y'), $value);
@@ -15,12 +20,12 @@ class DateUtils
     return $value;
   }
 
-  static function getQuarter(\DateTime $date)
+  public static function getQuarter(\DateTime $date)
   {
     return ceil($date->format('n')/3);
   }
 
-  static function getMonthNumber($month)
+  public static function getMonthNumber($month)
   {
     $monthNumber = false;
     $month = strtoupper($month);
