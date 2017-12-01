@@ -415,6 +415,12 @@ abstract class Model
     return $this->entity->$idField->value;
   }
 
+  public function setId($id)
+  {
+    $idField = static::$idField;
+    $this->entity->$idField->value = $id;
+  }
+
   public function getFieldId($relationship)
   {
     if($relationship instanceof FieldRelationship)
@@ -626,11 +632,21 @@ abstract class Model
     }
   }
 
+  public function getClonedModel()
+  {
+    $clone = static::forgeByEntity($this->getClonedEntity());
+    return $clone;
+  }
+
   public function getClonedEntity()
   {
     $entity = $this->entity;
+    $clone = $entity->createDuplicate();
 
-    return $entity->createDuplicate();
+    $idField = static::$idField;
+    $clone->$idField->value = $this->getId();
+
+    return $clone;
   }
 
   public function debugEntity()

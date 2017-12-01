@@ -610,7 +610,7 @@ class ModelApiHandler extends BaseApiHandler
       if(!empty($model))
       {
         // We make a copy before applying changes, because we might need the original values in the hooks later on
-        $originalModel = $modelClassName::forgeByEntity($model->getClonedEntity());
+        $originalModel = $model->getClonedModel();
         // here we fill in the attributes on the new model from the json api document
         $model->applyChangesFromJsonAPIDocument($jsonapidocument);
         // we trigger the beforeValidate as we might need to trigger some functionalitity
@@ -711,8 +711,15 @@ class ModelApiHandler extends BaseApiHandler
             else if($includedRelationship instanceof ReferencedRelationship)
             {
               // Since this is a patch, we need to fetch the already related models we have in our DB
-              $model->fetch($includedRelationshipName);
-              $referencedCollection = $model->$includedRelationshipName;
+              $referencedCollection = $model->fetch($includedRelationshipName);
+              $relationshipModelType = $includedRelationship->modelType;
+
+              // We will loop over the original collection before changing anything, so we can copy the original models, in the originalModel for the hooks
+              foreach($referencedCollection as $originalRelationshipModel)
+              {
+                $copiedOriginalRelationshipModel = $originalRelationshipModel->getClonedModel();
+                $originalModel->put($includedRelationshipName, $copiedOriginalRelationshipModel);
+              }
 
               // Next we will loop every included model in the included relationship in the jsonapidocument
               // in order to create or update a child model, apply the attributes from the json api document, and validate each one
