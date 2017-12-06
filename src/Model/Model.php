@@ -588,6 +588,30 @@ abstract class Model
         $returnValue = $collection;
       }
     }
+    else if($objectToPut === null)
+    {
+      if(is_string($relationship)) // we only have the relationship name
+      {
+        $relationship = static::getRelationship($relationship);
+      }
+
+      if($relationship instanceof FieldRelationship)
+      {
+        $relationshipField = $relationship->getField();
+        $relationshipColumn = $relationship->getColumn();
+
+        if($relationship->isMultiple)
+        {
+          $this->entity->$relationshipField = [];
+        }
+        else if($relationship->isSingle)
+        {
+          $this->entity->$relationshipField->$relationshipColumn = null;
+        }
+
+        $returnValue = $objectToPut;
+      }
+    }
 
     return $returnValue;
   }
