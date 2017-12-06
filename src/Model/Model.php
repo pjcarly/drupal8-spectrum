@@ -184,7 +184,10 @@ abstract class Model
   {
     if(empty($relationshipName))
     {
-      return new Validation($this);
+      $validation = new Validation($this);
+      // next we do a workaround for entity reference fields, referencing entities that are deleted
+      $validation->processInvalidReferenceConstraints();
+      return $validation;
     }
     else
     {

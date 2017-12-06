@@ -2,6 +2,7 @@
 namespace Drupal\spectrum\Model;
 
 use Drupal\Component\Utility\Html;
+use Drupal\Core\Entity\Plugin\Validation\Constraint\ValidReferenceConstraint;
 
 class Validation
 {
@@ -116,6 +117,27 @@ class Validation
     foreach($this->violations as $violation)
     {
       dump($violation);
+    }
+  }
+
+  public function processInvalidReferenceConstraints()
+  {
+    // this method is a workaround for a failed validation, where a entity reference field is filled in with a reference to an entity that no longer exists
+    // because it has been deleted.
+    // In this method, we set all those values to null
+    foreach($this->violations as $violation)
+    {
+      $failingConstraint = $violation->getConstraint();
+
+      if($failingConstraint instanceof ValidReferenceConstraint)
+      {
+        if ($path = $violation->getPropertyPath())
+        {
+          $fieldName = $this->getFieldNameForPropertyPath($path);
+          $this->model->entity->$fieldName->target_id = null;
+          $this->addIgnore($fieldName, 'Drupal\Core\Entity\Plugin\Validation\Constraint\ValidReferenceConstraint');
+        }
+      }
     }
   }
 
