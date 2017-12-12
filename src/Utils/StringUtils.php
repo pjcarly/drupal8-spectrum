@@ -2,21 +2,23 @@
 
 namespace Drupal\spectrum\Utils;
 
+use Stringy\StaticStringy as Stringy;
+
 class StringUtils
 {
-  static function camelize($input, $separator = '_')
+  static function camelize($input)
   {
-    return str_replace($separator, '', lcfirst(ucwords($input, $separator)));
+    return Stringy::camelize($input);
   }
 
-  static function dasherize($input, $separator = '_')
+  static function dasherize($input)
   {
-    return strtr($input, $separator, '-');
+    return Stringy::dasherize($input);
   }
 
-  static function underscore($input, $separator = '-')
+  static function underscored($input)
   {
-    return strtr($input, $separator, '_');
+    return Stringy::dasherize($input);
   }
 
   static function hasSpaces($string)
