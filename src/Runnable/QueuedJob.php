@@ -25,6 +25,9 @@ class QueuedJob extends RunnableModel
     $this->entity->field_start_time->value = gmdate('Y-m-d\TH:i:s');
     $this->save();
 
+    // Check the user context we need to execute in, and switch to the provided user if necessary.
+    // If no provided user, execute as anonymous
+
     $this->accountSwitcher = \Drupal::service('account_switcher');
     if(empty($this->entity->field_run_as->target_id) || $this->entity->field_run_as->target_id === 0 || empty($this->entity->field_run_as->entity))
     {
@@ -43,13 +46,15 @@ class QueuedJob extends RunnableModel
 
   public final function postExecution()
   {
+    // Lets not forget to switch back to the original user context
     $this->accountSwitcher->switchBack();
 
+    // Lets put the job to completed
     $this->entity->field_job_status->value = 'Completed';
     $this->entity->field_end_time->value = gmdate('Y-m-d\TH:i:s');
     $this->save();
 
-    // We also check if we need to reschedule anything
+    // And check if we need to reschedule this job
     $rescheduleIn = $this->entity->field_reschedule_in->value;
     $rescheduleFrom = $this->entity->field_reschedule_from->value;
     if(!empty($rescheduleIn) && $rescheduleIn > 0 && !empty($rescheduleFrom))
@@ -93,6 +98,9 @@ class QueuedJob extends RunnableModel
 
   public final function failedExecution(\Exception $ex = null, $message = null)
   {
+    // Execution failed, set the status to failed
+    // Set a possible error message
+
     $this->entity->field_job_status->value = 'Failed';
     $this->entity->field_end_time->value = gmdate('Y-m-d\TH:i:s');
     if(!empty($ex))
@@ -104,25 +112,5 @@ class QueuedJob extends RunnableModel
       $this->entity->field_error_message->value = $message;
     }
     $this->save();
-  }
-
-  public function setTitle()
-  {
-    //$this->entity->title->value = empty($this->entity->field_first_name->value) ? $this->entity->field_last_name->value : $this->entity->field_first_name->value . ' ' . $this->entity->field_last_name->value;
-  }
-
-  public function beforeValidate()
-  {
-    $this->setTitle();
-  }
-
-  public function beforeInsert()
-  {
-    $this->setTitle();
-  }
-
-  public function beforeUpdate()
-  {
-    $this->setTitle();
   }
 }

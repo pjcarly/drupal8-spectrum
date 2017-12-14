@@ -8,10 +8,37 @@ use Drupal\spectrum\Query\Condition;
 function spectrum_drush_command()
 {
   $commands['spectrum-scheduler'] = [
-    'description' => 'Trigger the Spectrum scheduler.'
+    'description' => 'Trigger the Spectrum scheduler.',
+    'aliases' => ['sp-cron']
+  ];
+  $commands['spectrum-job'] = [
+    'description' => 'Execute a single Queued Job',
+    'aliases' => ['sp-job'],
+    'arguments' => [
+      'class' => 'The full name of the class to execute (eg \\Drupal\\spectrum\\Jobs\\MyCustomJob), make sure to escape backslashes with another backslash'
+    ]
   ];
 
   return $commands;
+}
+
+function drush_spectrum_job($class)
+{
+  $class = str_replace('\\\\', '\\', $class);
+
+  if(empty($class))
+  {
+    drush_print('No class provided, pass an argument (eg "drush sp-job \Drupal\spectrum\Jobs\MyCustomJob")');
+  }
+  else if(!class_exists($class))
+  {
+    drush_print('Class does not exist');
+  }
+  else
+  {
+    $job = $class::createNew();
+    $job->singleRun();
+  }
 }
 
 function drush_spectrum_scheduler()
