@@ -16,9 +16,9 @@ class StringUtils
     return Stringy::dasherize($input);
   }
 
-  static function underscored($input)
+  static function underscore($input)
   {
-    return Stringy::dasherize($input);
+    return Stringy::underscored($input);
   }
 
   static function hasSpaces($string)

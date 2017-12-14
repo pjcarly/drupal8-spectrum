@@ -659,6 +659,20 @@ abstract class Model
     }
   }
 
+  public function getCopiedModel()
+  {
+    $copy = static::forgeByEntity($this->getCopiedEntity());
+    return $copy;
+  }
+
+  public function getCopiedEntity()
+  {
+    $entity = $this->entity;
+    $copy = $entity->createDuplicate();
+
+    return $copy;
+  }
+
   public function getClonedModel()
   {
     $clone = static::forgeByEntity($this->getClonedEntity());
