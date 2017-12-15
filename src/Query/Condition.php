@@ -63,12 +63,12 @@ class Condition
     }
 	}
 
-  public static function isValidSingleModelOperator($operator)
+  public static function isValidSingleModelOperator($operator) : bool
   {
     return in_array(strtoupper($operator), Condition::$singleValueOperators);
   }
 
-  public static function isValidMultipleModelsOperator($operator)
+  public static function isValidMultipleModelsOperator($operator) : bool
   {
     return in_array(strtoupper($operator), Condition::$multipleValueOperators);
   }

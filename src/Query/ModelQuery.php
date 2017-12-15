@@ -2,6 +2,7 @@
 
 namespace Drupal\spectrum\Query;
 
+use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Model\Collection;
 
 class ModelQuery extends BundleQuery
@@ -14,13 +15,13 @@ class ModelQuery extends BundleQuery
 		$this->modelType = $modelType;
 	}
 
-	public function fetchCollection()
+	public function fetchCollection() : Collection
 	{
 		$entities = $this->fetch();
 		return Collection::forge($this->modelType, null, $entities);
 	}
 
-	public function fetchSingleModel()
+	public function fetchSingleModel() : ?Model
 	{
 		$entity = $this->fetchSingle();
 

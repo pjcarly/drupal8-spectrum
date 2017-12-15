@@ -15,7 +15,7 @@ abstract class Query
   public $conditionLogic;
   public $tag;
 
-  public function setTag($tag)
+  public function setTag(string $tag)
   {
     $this->tag = $tag;
   }
@@ -30,23 +30,23 @@ abstract class Query
     $this->conditions[] = $condition;
   }
 
-  public function setLimit($limit)
+  public function setLimit(int $limit)
   {
     $this->rangeStart = 0;
     $this->rangeLength = $limit;
   }
 
-  public function hasLimit()
+  public function hasLimit() : bool
   {
     return !empty($this->rangeLength);
   }
 
-  public function setConditionLogic($conditionLogic)
+  public function setConditionLogic(string $conditionLogic)
   {
     $this->conditionLogic = $conditionLogic;
   }
 
-  public function setRange($start, $length)
+  public function setRange(int $start, int $length)
   {
     $this->rangeStart = $start;
     $this->rangeLength = $length;
@@ -57,14 +57,14 @@ abstract class Query
     $this->sortOrders[$order->fieldName] = $order;
   }
 
-  public function hasSortOrderForField($fieldName)
+  public function hasSortOrderForField(string $fieldName)
   {
     return array_key_exists($fieldName, $this->sortOrders);
   }
 
   public function clearSortOrders()
   {
-    $this->sortOrders = array();
+    $this->sortOrders = [];
   }
 
   public function getQuery()
@@ -201,7 +201,7 @@ abstract class Query
     }
   }
 
-  public function fetchIds()
+  public function fetchIds() : array
   {
     $query = $this->getQuery();
     $result = $query->execute();
@@ -209,7 +209,7 @@ abstract class Query
     return empty($result) ? [] : $result;
   }
 
-  public function fetchId()
+  public function fetchId() : ?string
   {
     $ids = $this->fetchIds();
 
