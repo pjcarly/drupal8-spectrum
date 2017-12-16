@@ -36,6 +36,7 @@ abstract class Model
 
   public $entity;
   public $key;
+  public $selected = false; // No functional use, only here for the amount of times you need this
 
   public $relatedViaFieldOnEntity = [];
   public $relatedViaFieldOnExternalEntity = [];
