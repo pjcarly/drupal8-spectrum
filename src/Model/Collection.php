@@ -8,7 +8,7 @@ use Drupal\spectrum\Serializer\JsonApiRootNode;
 use Drupal\spectrum\Serializer\JsonApiBaseNode;
 use Drupal\spectrum\Serializer\JsonApiDataNode;
 
-class Collection implements \IteratorAggregate
+class Collection implements \IteratorAggregate, \Countable
 {
 	private static $newKeyIndex = 0;
 
@@ -21,6 +21,11 @@ class Collection implements \IteratorAggregate
 		$this->models = array();
 		$this->originalModels = array();
 	}
+
+  public function count()
+  {
+    return sizeof($this->models);
+  }
 
   public function getIterator()
   {
