@@ -76,9 +76,9 @@ class Collection implements \IteratorAggregate, \Countable
     @uasort($this->models, array($this->modelType, $sortingFunction));
   }
 
-  public function getModelsToDelete()
+  public function getModelsToDelete() : array
   {
-    $existingRemovedModels = array();
+    $existingRemovedModels = [];
     $removedModelKeys = array_diff(array_keys($this->originalModels), array_keys($this->models));
 
     foreach($removedModelKeys as $removedModelKey)
@@ -102,10 +102,10 @@ class Collection implements \IteratorAggregate, \Countable
 
   public function removeAll()
   {
-    $this->models = array();
+    $this->models = [];
   }
 
-  public function validate($relationshipName = NULL)
+  public function validate($relationshipName = NULL) : Validation
   {
     if(empty($relationshipName))
 		{
@@ -120,7 +120,8 @@ class Collection implements \IteratorAggregate, \Countable
         {
           $validation->merge($model->validate());
         }
-			}
+      }
+
       return $validation;
 		}
 		else
@@ -257,11 +258,11 @@ class Collection implements \IteratorAggregate, \Countable
     return $returnValue;
 	}
 
-	public function getIds()
+	public function getIds() : array
 	{
 		$models = $this->models;
 
-		$ids = array();
+		$ids = [];
 		foreach($models as $model)
 		{
 			$id = $model->getId();
@@ -274,9 +275,9 @@ class Collection implements \IteratorAggregate, \Countable
 		return $ids;
 	}
 
-	public function getFieldIds($relationship)
+	public function getFieldIds($relationship) : array
 	{
-		$fieldIds = array();
+		$fieldIds = [];
 
 		foreach($this->models as $model)
 		{
@@ -297,22 +298,57 @@ class Collection implements \IteratorAggregate, \Countable
 		return $fieldIds;
   }
 
-  public static function forgeByIds($modelType, $ids)
+  public function buildArrayByFieldName(string $fieldName) : array
+  {
+    $modelType = $this->modelType;
+    $fieldDefinition = $modelType::getFieldDefinition($fieldName);
+    $column = null;
+
+    switch($fieldDefinition->getType())
+    {
+      case 'address':
+      case 'geolocation':
+        throw new InvalidTypeException('You cant build an array by this field type');
+        break;
+      case 'entity_reference':
+      case 'file':
+      case 'image':
+        $column = 'target_id';
+        break;
+      case 'link':
+        $column = 'uri';
+        break;
+      default:
+        $column = 'value';
+        break;
+    }
+
+    $array = [];
+    foreach($this->models as $model)
+    {
+      $key = $model->entity->$fieldName->$column;
+      $array[$key] = $model;
+    }
+
+    return $array;
+  }
+
+  public static function forgeByIds(string $modelType, array $ids) : Collection
   {
     return static::forge($modelType, [], [], $ids);
   }
 
-  public static function forgeByModels($modelType, $models)
+  public static function forgeByModels(string $modelType, array $models) : Collection
   {
     return static::forge($modelType, $models, [], []);
   }
 
-  public static function forgeByEntities($modelType, $entities)
+  public static function forgeByEntities(string $modelType, array $entities) : Collection
   {
     return static::forge($modelType, [], $entities, []);
   }
 
-	public static function forge($modelType, $models = [], $entities = [], $ids = [], $modelQuery = null)
+	public static function forge(string $modelType, ?array $models = [], ?array $entities = [], ?array $ids = [], ModelQuery $modelQuery = null) : Collection
 	{
 		$collection = new static();
 		$collection->modelType = $modelType;
@@ -343,7 +379,7 @@ class Collection implements \IteratorAggregate, \Countable
 		return $query->fetch();
 	}
 
-  public function getEntities()
+  public function getEntities() : array
 	{
 		$entities = array();
 		foreach($this->models as $model)
@@ -357,7 +393,7 @@ class Collection implements \IteratorAggregate, \Countable
 		return $entities;
 	}
 
-	private static function getModels($modelType, $entities)
+	private static function getModels($modelType, $entities) : array
 	{
 		$models = array();
 		foreach($entities as $entity)
@@ -398,7 +434,7 @@ class Collection implements \IteratorAggregate, \Countable
     return $this; // we need this to chain fetches, when we put something, we always return the value where the model is being put on, in case of a collection, it is always the collection itself
 	}
 
-  public function putNew()
+  public function putNew() : Model
   {
     $modelType = $this->modelType;
     $newModel = $modelType::createNew();
@@ -419,22 +455,22 @@ class Collection implements \IteratorAggregate, \Countable
 		}
   }
 
-	public function size()
+	public function size() : int
 	{
 		return count($this->models);
 	}
 
-	public function isEmpty()
+	public function isEmpty() : bool
 	{
 		return empty($this->models);
 	}
 
-	public function containsKey($key)
+	public function containsKey(string $key) : bool
 	{
 		return array_key_exists($key, $this->models);
 	}
 
-	public function getModel($key)
+	public function getModel(string $key) : ?Model
 	{
 		if($this->containsKey($key))
 		{
@@ -446,7 +482,7 @@ class Collection implements \IteratorAggregate, \Countable
 		}
 	}
 
-	public function get($relationshipName)
+	public function get(string $relationshipName)
 	{
 		$resultCollection;
 		$modelType = $this->modelType;

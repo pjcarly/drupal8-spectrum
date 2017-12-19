@@ -56,7 +56,7 @@ abstract class Model
     }
   }
 
-  public function isNew()
+  public function isNew() : bool
   {
     return empty($this->getId());
   }
@@ -181,7 +181,7 @@ abstract class Model
     }
   }
 
-  public function validate($relationshipName = NULL)
+  public function validate($relationshipName = NULL) : Validation
   {
     if(empty($relationshipName))
     {
@@ -345,7 +345,7 @@ abstract class Model
     return $returnValue;
   }
 
-  public function getModelName()
+  public function getModelName() : string
   {
     return get_class($this);
   }
@@ -483,7 +483,7 @@ abstract class Model
     }
   }
 
-  public function isParentOf($model, $relationship)
+  public function isParentOf($model, $relationship) : bool
   {
     $fieldId = $model->getFieldId($relationship);
     $id = $this->getId();
@@ -660,7 +660,7 @@ abstract class Model
     }
   }
 
-  public function getCopiedModel()
+  public function getCopiedModel() : Model
   {
     $copy = static::forgeByEntity($this->getCopiedEntity());
     return $copy;
@@ -674,7 +674,7 @@ abstract class Model
     return $copy;
   }
 
-  public function getClonedModel()
+  public function getClonedModel() : Model
   {
     $clone = static::forgeByEntity($this->getClonedEntity());
     return $clone;
@@ -696,7 +696,7 @@ abstract class Model
     return $this->serialize();
   }
 
-  protected function isNewlyInserted()//: bool
+  protected function isNewlyInserted() : bool
   {
     return empty($this->entity->original);
   }
@@ -745,7 +745,7 @@ abstract class Model
     return $returnValue;
   }
 
-  public static function hasRelationship($relationshipName)//: bool
+  public static function hasRelationship($relationshipName) : bool
   {
     $sourceModelType = get_called_class();
     static::setRelationships($sourceModelType);
@@ -753,7 +753,7 @@ abstract class Model
   }
 
   // Identical to hasRelationship, but with the difference that we search for deep relationships via the '.'
-  public static function hasDeepRelationship($relationshipName)
+  public static function hasDeepRelationship($relationshipName) : bool
   {
     $sourceModelType = get_called_class();
     $firstRelationshipNamePosition = strpos($relationshipName, '.');
@@ -779,7 +779,7 @@ abstract class Model
     }
   }
 
-  public static function getDeepRelationship($relationshipName)
+  public static function getDeepRelationship(String $relationshipName) : Relationship
   {
     $sourceModelType = get_called_class();
     $firstRelationshipNamePosition = strpos($relationshipName, '.');
@@ -804,30 +804,31 @@ abstract class Model
       return 'PLH'.(static::$keyIndex++);
   }
 
-  public static function createNew()
+  public static function createNew() : Model
   {
-      if(!empty(static::$bundle))
-      {
-          $entity = entity_create(static::$entityType, array('type' => static::$bundle));
-      }
-      else
-      {
-          $entity = entity_create(static::$entityType);
-      }
-      return static::forge($entity);
+    if(!empty(static::$bundle))
+    {
+      $entity = entity_create(static::$entityType, array('type' => static::$bundle));
+    }
+    else
+    {
+      $entity = entity_create(static::$entityType);
+    }
+
+    return static::forge($entity);
   }
 
-  public static function forgeByEntity($entity)
+  public static function forgeByEntity($entity) : Model
   {
     return static::forge($entity);
   }
 
-  public static function forgeById($id)
+  public static function forgeById($id) : Model
   {
     return static::forge(null, $id);
   }
 
-  public static function forge($entity = null, $id = null)
+  public static function forge($entity = null, $id = null) : Model
   {
     if(!empty($id))
     {
@@ -860,22 +861,22 @@ abstract class Model
     }
   }
 
-  public static function getModelQuery()
+  public static function getModelQuery() : ModelQuery
   {
       return new ModelQuery(get_called_class());
   }
 
-  public static function getEntityQuery()
+  public static function getEntityQuery() : EntityQuery
   {
       return new EntityQuery(static::$entityType);
   }
 
-  public static function getBundleQuery()
+  public static function getBundleQuery() : BundleQuery
   {
       return new BundleQuery(static::$entityType, static::$bundle);
   }
 
-  public static function getReferencedRelationshipForFieldRelationship($fieldRelationship)
+  public static function getReferencedRelationshipForFieldRelationship(FieldRelationship $fieldRelationship)
   {
     $relationships = static::getRelationships();
     $referencedRelationship = null;
@@ -904,7 +905,7 @@ abstract class Model
     }
   }
 
-  public static function getRelationship($relationshipName)
+  public static function getRelationship(string $relationshipName) : Relationship
   {
     $sourceModelType = get_called_class();
     static::setRelationships($sourceModelType);
@@ -919,7 +920,7 @@ abstract class Model
     }
   }
 
-  public static function getRelationshipByFieldName($fieldName)
+  public static function getRelationshipByFieldName(string $fieldName)
   {
     $relationships = static::getRelationships();
     $foundRelationship = null;
@@ -1024,7 +1025,7 @@ abstract class Model
     return $fieldDefinition;
   }
 
-  public static function getLabel()
+  public static function getLabel() : string
   {
     $label = '';
     $bundleInfo = static::getBundleInfo();
@@ -1036,12 +1037,12 @@ abstract class Model
     return $label;
   }
 
-  public static function getPlural()
+  public static function getPlural() : string
   {
     return empty(static::$plural) ? '' : static::$plural; // todo, find a way to store this aside the label of the model
   }
 
-  public static function getBundleKey()
+  public static function getBundleKey() : string
   {
     return empty(static::$bundle) ? static::$entityType : static::$bundle;
   }
@@ -1052,13 +1053,13 @@ abstract class Model
     return $bundleInfo[static::getBundleKey()];
   }
 
-  public static function underScoredFieldExists($underscoredField)
+  public static function underScoredFieldExists($underscoredField) : bool
   {
     $prettyField = static::getPrettyFieldForUnderscoredField($underscoredField);
     return static::prettyFieldExists($prettyField);
   }
 
-  public static function getterExists(Model $model, string $property)
+  public static function getterExists(Model $model, string $property) : bool
   {
     $getterName = 'get'.$property;
     if(!empty($property) && is_callable(array($model, $getterName)))
@@ -1096,13 +1097,17 @@ abstract class Model
 		else if(array_key_exists($property, $this->relatedViaFieldOnExternalEntity)) // lets check for pseudo properties
 		{
 			return $this->relatedViaFieldOnExternalEntity[$property];
-		}
+    }
+    else if(static::hasRelationship($property))
+    {
+      return $this->get($property);
+    }
 	}
 
   public function __isset($property)
   {
     // Needed for twig to be able to access relationship via magic getter
-    return property_exists($this, $property) || array_key_exists($property, $this->relatedViaFieldOnEntity) || array_key_exists($property, $this->relatedViaFieldOnExternalEntity);
+    return property_exists($this, $property) || array_key_exists($property, $this->relatedViaFieldOnEntity) || array_key_exists($property, $this->relatedViaFieldOnExternalEntity) || static::hasRelationship($property);
   }
 
   public function beforeValidate(){}
