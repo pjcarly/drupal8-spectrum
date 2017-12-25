@@ -17,7 +17,7 @@ class PolymorphicCollection extends Collection
 		return parent::save();
 	}
 
-  public function validate($relationshipName = NULL)
+  public function validate($relationshipName = NULL) : Validation
   {
     if(!empty($relationshipName))
 		{
@@ -27,7 +27,7 @@ class PolymorphicCollection extends Collection
     return parent::validate();
   }
 
-	public function fetch($relationshipName)
+	public function fetch(string $relationshipName)
 	{
     throw new PolymorphicException('Fetch has no meaning for polymorphic collections');
 	}
@@ -61,12 +61,12 @@ class PolymorphicCollection extends Collection
     }
 	}
 
-  public function putNew()
+  public function putNew() : Model
   {
     throw new PolymorphicException('PutNew has no meaning for polymorphic collections, we can\'t know the type of model to create');
   }
 
-	public function get($relationshipName)
+	public function get(string $relationshipName)
 	{
 		throw new PolymorphicException('Get has no meaning for polymorphic collections');
 	}

@@ -130,7 +130,7 @@ class Collection implements \IteratorAggregate, \Countable
 		}
   }
 
-	public function fetch($relationshipName)
+	public function fetch(string $relationshipName)
 	{
     $returnValue = null;
 		$lastRelationshipNameIndex = strrpos($relationshipName, '.');
@@ -333,22 +333,22 @@ class Collection implements \IteratorAggregate, \Countable
     return $array;
   }
 
-  public static function forgeByIds(string $modelType, array $ids) : Collection
+  public static function forgeByIds(?string $modelType, array $ids) : Collection
   {
     return static::forge($modelType, [], [], $ids);
   }
 
-  public static function forgeByModels(string $modelType, array $models) : Collection
+  public static function forgeByModels(?string $modelType, array $models) : Collection
   {
     return static::forge($modelType, $models, [], []);
   }
 
-  public static function forgeByEntities(string $modelType, array $entities) : Collection
+  public static function forgeByEntities(?string $modelType, array $entities) : Collection
   {
     return static::forge($modelType, [], $entities, []);
   }
 
-	public static function forge(string $modelType, ?array $models = [], ?array $entities = [], ?array $ids = [], ModelQuery $modelQuery = null) : Collection
+	public static function forge(?string $modelType, ?array $models = [], ?array $entities = [], ?array $ids = [], ModelQuery $modelQuery = null) : Collection
 	{
 		$collection = new static();
 		$collection->modelType = $modelType;
