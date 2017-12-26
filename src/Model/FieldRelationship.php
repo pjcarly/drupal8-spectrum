@@ -5,24 +5,24 @@ use Drupal\spectrum\Query\Condition;
 
 class FieldRelationship extends Relationship
 {
-	public $relationshipField;
+  public $relationshipField;
   public $modelType;
   public $isPolymorphic = false;
 
   private $firstModelType;
   public $fieldCardinality; // cardinality is the maximum number of references allowed for the field.
 
-	public function __construct($relationshipName, $relationshipField)
-	{
-		parent::__construct($relationshipName);
-		$this->relationshipField = $relationshipField;
-	}
+  public function __construct($relationshipName, $relationshipField)
+  {
+    parent::__construct($relationshipName);
+    $this->relationshipField = $relationshipField;
+  }
 
-	public function getCondition()
-	{
-		$modelType = $this->firstModelType;
-		return new Condition($modelType::$idField, 'IN', null);
-	}
+  public function getCondition()
+  {
+    $modelType = $this->firstModelType;
+    return new Condition($modelType::$idField, 'IN', null);
+  }
 
   public function getRelationshipQuery()
   {
@@ -73,45 +73,45 @@ class FieldRelationship extends Relationship
     $this->fieldCardinality = $fieldDefinition->getFieldStorageDefinition()->getCardinality();
   }
 
-	public function getField()
-	{
-		$positionOfDot = strpos($this->relationshipField, '.');
-		return $positionOfDot ? substr($this->relationshipField, 0, $positionOfDot) : $this->relationshipField;
-	}
+  public function getField()
+  {
+    $positionOfDot = strpos($this->relationshipField, '.');
+    return $positionOfDot ? substr($this->relationshipField, 0, $positionOfDot) : $this->relationshipField;
+  }
 
-	public function getColumn()
-	{
-		$positionOfDot = strpos($this->relationshipField, '.');
-		return substr($this->relationshipField, $positionOfDot + 1); // exclude the "." so +1
-	}
+  public function getColumn()
+  {
+    $positionOfDot = strpos($this->relationshipField, '.');
+    return substr($this->relationshipField, $positionOfDot + 1); // exclude the "." so +1
+  }
 
   // lets define magic getters for ease of access
   public function __get($property)
-	{
-		if (property_exists($this, $property))
-		{
-			return $this->$property;
-		}
-		else // lets check for pseudo properties
-		{
-			switch($property)
-			{
-				case "column":
-					return $this->getColumn();
-				  break;
-				case "field":
-					return $this->getField();
-				  break;
-				case "isSingle":
-					return $this->fieldCardinality === 1;
+  {
+    if (property_exists($this, $property))
+    {
+      return $this->$property;
+    }
+    else // lets check for pseudo properties
+    {
+      switch($property)
+      {
+        case "column":
+          return $this->getColumn();
+          break;
+        case "field":
+          return $this->getField();
+          break;
+        case "isSingle":
+          return $this->fieldCardinality === 1;
           break;
         case "isMultiple":
           return $this->fieldCardinality !== 1;
           break;
         case "isUnlimited":
           return $this->fieldCardinality === -1;
-				  break;
-			}
-		}
-	}
+          break;
+      }
+    }
+  }
 }

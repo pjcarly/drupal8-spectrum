@@ -11,22 +11,22 @@ use Drupal\spectrum\Template\TwigRenderer;
 
 class EmailTemplate extends Model
 {
-	public static $entityType = 'template';
-	public static $bundle = 'email';
-	public static $idField = 'id';
+  public static $entityType = 'template';
+  public static $bundle = 'email';
+  public static $idField = 'id';
   public static $plural = 'Email Templates';
 
   private $scope = [];
   public $subject = '';
   public $html = '';
   public $text = '';
-	/* TRIGGERS */
+  /* TRIGGERS */
 
 
-	/* TRIGGER METHODS */
+  /* TRIGGER METHODS */
 
 
-	/* BUSINESS LOGIC */
+  /* BUSINESS LOGIC */
   public function addModelToScope($name, Model $model)
   {
     $this->scope[$name] = new SimpleModelWrapper($model);

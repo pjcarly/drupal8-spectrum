@@ -7,33 +7,33 @@ class PolymorphicCollection extends Collection
 {
   private $entityType;
 
-	public function save($relationshipName = NULL)
-	{
-		if(!empty($relationshipName))
-		{
+  public function save($relationshipName = NULL)
+  {
+    if(!empty($relationshipName))
+    {
       throw new PolymorphicException('Relationship path "'.$relationshipName.'" has no meaning for polymorphic collections');
     }
 
-		return parent::save();
-	}
+    return parent::save();
+  }
 
   public function validate($relationshipName = NULL) : Validation
   {
     if(!empty($relationshipName))
-		{
+    {
       throw new PolymorphicException('Relationship path "'.$relationshipName.'" has no meaning for polymorphic collections');
     }
 
     return parent::validate();
   }
 
-	public function fetch(string $relationshipName)
-	{
+  public function fetch(string $relationshipName)
+  {
     throw new PolymorphicException('Fetch has no meaning for polymorphic collections');
-	}
+  }
 
   public function put($objectToPut, $includeInOriginalModels = FALSE)
-	{
+  {
     if($objectToPut instanceof Collection)
     {
       foreach($objectToPut as $model)
@@ -59,15 +59,15 @@ class PolymorphicCollection extends Collection
       // so we can just use the parent addModelToArrays function, we won't have any conflicts there
       $this->addModelToArrays($model, $includeInOriginalModels);
     }
-	}
+  }
 
   public function putNew() : Model
   {
     throw new PolymorphicException('PutNew has no meaning for polymorphic collections, we can\'t know the type of model to create');
   }
 
-	public function get(string $relationshipName)
-	{
-		throw new PolymorphicException('Get has no meaning for polymorphic collections');
-	}
+  public function get(string $relationshipName)
+  {
+    throw new PolymorphicException('Get has no meaning for polymorphic collections');
+  }
 }

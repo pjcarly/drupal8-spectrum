@@ -9,7 +9,7 @@ class Image extends File
   public static $plural = 'Images';
 
   public static function relationships()
-	{
+  {
   }
 
   protected function getBaseApiPath()

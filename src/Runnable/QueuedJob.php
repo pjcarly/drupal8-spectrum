@@ -6,16 +6,16 @@ use Drupal\Core\Session\AccountSwitcher;
 
 class QueuedJob extends RunnableModel
 {
-	public static $entityType = 'runnable';
-	public static $bundle = 'queued_job';
-	public static $idField = 'id';
+  public static $entityType = 'runnable';
+  public static $bundle = 'queued_job';
+  public static $idField = 'id';
 
   public static $plural = 'Queued Jobs';
 
   private $accountSwitcher;
 
   public static function relationships()
-	{
+  {
 
   }
 

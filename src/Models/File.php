@@ -9,13 +9,13 @@ use Drupal\spectrum\Serializer\JsonApiBaseNode;
 
 class File extends Model
 {
-	public static $entityType = 'file';
-	public static $idField = 'fid';
+  public static $entityType = 'file';
+  public static $idField = 'fid';
 
   public static $plural = 'Files';
 
   public static function relationships()
-	{
+  {
   }
 
   protected function getBaseApiPath()

@@ -12,17 +12,17 @@ use Drupal\spectrum\Query\Order;
 
 class ListView extends Model
 {
-	public static $entityType = 'query';
-	public static $bundle = 'list_view';
-	public static $idField = 'id';
+  public static $entityType = 'query';
+  public static $bundle = 'list_view';
+  public static $idField = 'id';
 
   public static $plural = 'List Views';
 
   public static function relationships()
-	{
+  {
     static::addRelationship(new ReferencedRelationship('conditions', 'Drupal\spectrum\Analytics\Condition', 'parent'));
     static::addRelationship(new ReferencedRelationship('sort_orders', 'Drupal\spectrum\Analytics\Order', 'parent'));
-	}
+  }
 
   public function buildQuery()//: BundleQuery
   {

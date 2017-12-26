@@ -28,16 +28,16 @@ class Condition extends Model
     'NOT_IN' => 'NOT IN',
     'BETWEEN' => 'BETWEEN',
   ];
-	public static $entityType = 'query';
-	public static $bundle = 'condition';
-	public static $idField = 'id';
+  public static $entityType = 'query';
+  public static $bundle = 'condition';
+  public static $idField = 'id';
 
   public static $plural = 'Conditions';
 
   public static function relationships()
-	{
+  {
     static::addRelationship(new FieldRelationship('parent', 'field_parent.target_id'));
-	}
+  }
 
   public function buildQueryCondition()//: QueryCondition
   {

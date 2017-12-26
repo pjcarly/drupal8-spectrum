@@ -12,12 +12,12 @@ class Validation
   private $ignores = [];
   private $inlineValidations = [];
 
-	public function __construct($model)
-	{
-		$this->model = $model;
+  public function __construct($model)
+  {
+    $this->model = $model;
     $this->modelName = $model->getModelName();
     $this->violations = $model->entity->validate();
-	}
+  }
 
   public function getViolations()
   {

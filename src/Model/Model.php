@@ -1086,23 +1086,23 @@ abstract class Model
 
   public function __get($property)
   {
-		if (property_exists($this, $property))
-		{
-			return $this->$property;
-		}
-		else if(array_key_exists($property, $this->relatedViaFieldOnEntity)) // lets check for pseudo properties
-		{
-			return $this->relatedViaFieldOnEntity[$property];
-		}
-		else if(array_key_exists($property, $this->relatedViaFieldOnExternalEntity)) // lets check for pseudo properties
-		{
-			return $this->relatedViaFieldOnExternalEntity[$property];
+    if (property_exists($this, $property))
+    {
+      return $this->$property;
+    }
+    else if(array_key_exists($property, $this->relatedViaFieldOnEntity)) // lets check for pseudo properties
+    {
+      return $this->relatedViaFieldOnEntity[$property];
+    }
+    else if(array_key_exists($property, $this->relatedViaFieldOnExternalEntity)) // lets check for pseudo properties
+    {
+      return $this->relatedViaFieldOnExternalEntity[$property];
     }
     else if(static::hasRelationship($property))
     {
       return $this->get($property);
     }
-	}
+  }
 
   public function __isset($property)
   {
@@ -1118,32 +1118,32 @@ abstract class Model
   //public function beforeDelete(){} // no hook in drupal
   public function afterDelete(){}
 
-	public function doCascadingDeletes()
-	{
-		$relationships = static::getRelationships();
+  public function doCascadingDeletes()
+  {
+    $relationships = static::getRelationships();
     foreach($relationships as $relationship)
     {
       if($relationship instanceof ReferencedRelationship && $relationship->cascadingDelete)
       {
         $this->fetch($relationship->relationshipName);
-				$referencedRelationship = $this->get($relationship->relationshipName);
+        $referencedRelationship = $this->get($relationship->relationshipName);
         if(!empty($referencedRelationship))
         {
-					if($referencedRelationship instanceof Collection)
-					{
-						foreach($referencedRelationship as $model)
-						{
-							$model->entity->delete();
-						}
-					}
-					else if($referencedRelationship instanceof Model)
-					{
-						$referencedRelationship->entity->delete();
-					}
+          if($referencedRelationship instanceof Collection)
+          {
+            foreach($referencedRelationship as $model)
+            {
+              $model->entity->delete();
+            }
+          }
+          else if($referencedRelationship instanceof Model)
+          {
+            $referencedRelationship->entity->delete();
+          }
         }
       }
     }
-	}
+  }
 
   public static function hasModelClassForEntityAndBundle($entity, $bundle)
   {
