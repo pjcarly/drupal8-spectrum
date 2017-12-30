@@ -4,6 +4,12 @@ namespace Drupal\spectrum\Utils;
 
 class DateUtils
 {
+  public static function getHourMinuteStringForGmtOffset(float $gmtOffset)
+  {
+    $returnValue = sprintf('%02d:%02d', (int) $gmtOffset, fmod($gmtOffset, 1) * 60);
+    return $returnValue;
+  }
+
   public static function getToday()
   {
     return strtotime('today midnight');
