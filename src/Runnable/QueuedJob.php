@@ -16,7 +16,7 @@ class QueuedJob extends RunnableModel
 
   public static function relationships()
   {
-
+    parent::relationships();
   }
 
   public final function preExecution()

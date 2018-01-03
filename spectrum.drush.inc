@@ -1,5 +1,6 @@
 <?php
 use Drupal\spectrum\Runnable\QueuedJob;
+use Drupal\spectrum\Runnable\RegisteredJob;
 use Drupal\spectrum\Query\Condition;
 
 /**
@@ -22,21 +23,27 @@ function spectrum_drush_command()
   return $commands;
 }
 
-function drush_spectrum_job($class)
+function drush_spectrum_job($jobName = null)
 {
-  $class = str_replace('\\\\', '\\', $class);
-
-  if(empty($class))
+  if(empty($jobName))
   {
-    drush_print('No class provided, pass an argument (eg "drush sp-job \Drupal\spectrum\Jobs\MyCustomJob")');
+    drush_print('No class provided, pass an registered job by name (eg "drush sp-job MyCustomJob")');
   }
-  else if(!class_exists($class))
+
+  $jobQuery = RegisteredJob::getModelQuery();
+  $jobQuery->addCondition(new Condition('title', '=', $jobName));
+  $job = $jobQuery->fetchSingleModel();
+
+  if(empty($job))
   {
-    drush_print('Class does not exist');
+    drush_print('Job not found');
+  }
+  else if(!$job->entity->field_active->value)
+  {
+    drush_print('Job is not active, activate it before you can run it');
   }
   else
   {
-    $job = $class::createNew();
     $job->singleRun();
   }
 }
@@ -97,7 +104,8 @@ function drush_spectrum_scheduler()
 
     if($shouldStartNextJob && !empty($earliestQueuedJob))
     {
-      $class = $earliestQueuedJob->entity->field_class->value;
+      $job = $earliestQueuedJob->fetch('job');
+      $class = $job->entity->field_class->value;
       if(empty($class))
       {
         $earliestQueuedJob->failedExecution(null, 'No class provided');
