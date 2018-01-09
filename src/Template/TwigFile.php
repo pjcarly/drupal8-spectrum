@@ -7,6 +7,7 @@ use Drupal\spectrum\Query\ModelQuery;
 use Drupal\spectrum\Query\Condition;
 
 use Drupal\spectrum\Model\SimpleModelWrapper;
+use Drupal\spectrum\Model\SimpleConfigWrapper;
 use Drupal\spectrum\Template\TwigRenderer;
 
 class TwigFile
@@ -27,6 +28,11 @@ class TwigFile
     $rootUrl = $request->getSchemeAndHttpHost() . base_path();
 
     $this->addObjectToScope('rootUrl', $rootUrl);
+  }
+
+  public function addConfigToScope($name, $config)
+  {
+    $this->scope[$name] = new SimpleConfigWrapper($config);
   }
 
   public function addModelToScope($name, Model $model)
