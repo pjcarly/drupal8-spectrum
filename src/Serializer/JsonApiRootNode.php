@@ -62,7 +62,10 @@ class JsonApiRootNode extends JsonApiDataNode
     if($this->asArray && !is_array($node->data))
     {
       $this->data = array();
-      $this->data[] = $node->data;
+      if(!empty($node->data))
+      {
+        $this->data[] = $node->data;
+      }
     }
     else
     {

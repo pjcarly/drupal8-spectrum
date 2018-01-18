@@ -39,7 +39,7 @@ class JsonApiDataNode extends JsonApiBaseNode
     $this->asArray = $asArray;
   }
 
-  public function serialize()
+  public function serialize() : \stdClass
   {
     $serialized = new \stdClass();
 
