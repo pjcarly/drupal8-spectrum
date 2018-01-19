@@ -654,7 +654,8 @@ abstract class Model
         $relationshipModel->entity->$relationshipField->$relationshipColumn = $id;
       }
 
-      $this->put($relationship, $relationshipModel);
+      // We put it on the inverse, that way the ->putInverse() is triggered and put on $this as well
+      $relationshipModel->put($relationship->fieldRelationship, $this);
 
       return $relationshipModel;
     }
