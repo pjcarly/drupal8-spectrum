@@ -3,40 +3,63 @@
 namespace Drupal\spectrum\Utils;
 
 use Stringy\StaticStringy as Stringy;
+use Drupal\Component\Transliteration\PhpTransliteration;
 
 class StringUtils
 {
-  static function camelize(string $input) : string
+  public static function pnrSafeString(string $input) : string
+  {
+    return static::upperCase(static::keepAlphaCharactersAndSpaces(static::transliterate($input)));
+  }
+
+  public static function upperCase(string $input) : string
+  {
+    return strtoupper($input);
+  }
+
+  public static function keepAlphaCharactersAndSpaces(string $input) : string
+  {
+    return preg_replace("/[^A-Za-z ]/", '', $input);
+  }
+
+  public static function transliterate(string $input) : string
+  {
+    $transliterator = new PhpTransliteration();
+    $response = $transliterator->transliterate($input);
+    return $response;
+  }
+
+  public static function camelize(string $input) : string
   {
     return Stringy::camelize($input);
   }
 
-  static function dasherize(string $input) : string
+  public static function dasherize(string $input) : string
   {
     return Stringy::dasherize($input);
   }
 
-  static function underscore(string $input) : string
+  public static function underscore(string $input) : string
   {
     return Stringy::underscored($input);
   }
 
-  static function hasSpaces(string $string) : bool
+  public static function hasSpaces(string $string) : bool
   {
     return preg_match('/\s/', $string);
   }
 
-  static function contains(string $haystack, string $needle) : bool
+  public static function contains(string $haystack, string $needle) : bool
   {
     return strpos($haystack, $needle) !== false;
   }
 
-  static function isAlphaNumericWithoutSpaces(string $string) : bool
+  public static function isAlphaNumericWithoutSpaces(string $string) : bool
   {
     return preg_match('/^[a-z0-9 .\-]+$/i', $string);
   }
 
-  static function generateUUID() : string
+  public static function generateUUID() : string
   {
     return sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
         mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ),
@@ -57,7 +80,7 @@ class StringUtils
    * @param string $needle
    * @return array or false
    */
-  static function positionsOfSubstring(string $haystack, string $needle)
+  public static function positionsOfSubstring(string $haystack, string $needle)
   {
     $s = 0;
     $i = 0;
