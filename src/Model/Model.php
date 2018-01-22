@@ -1216,7 +1216,7 @@ abstract class Model
 
   public static function getKeyForEntityAndBundle($entity, $bundle)
   {
-    return empty($bundle) ? $entity : $entity.'.'.$bundle;
+    return empty($bundle) ? $entity.'.'.$entity : $entity.'.'.$bundle;
   }
 
   // Currently not supported, due to bug in Core where currentuser doesnt return custom permissions
