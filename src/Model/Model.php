@@ -1116,7 +1116,7 @@ abstract class Model
   public function afterInsert(){}
   public function beforeUpdate(){}
   public function afterUpdate(){}
-  //public function beforeDelete(){} // no hook in drupal
+  public function beforeDelete(){}
   public function afterDelete(){}
 
   public function doCascadingDeletes()

@@ -35,6 +35,9 @@ class ModelTrigger
           case 'update':
             $model->afterUpdate();
           break;
+          case 'predelete':
+            $model->beforeDelete();
+          break;
           case 'delete':
             $model->afterDelete();
             $model->doCascadingDeletes();
