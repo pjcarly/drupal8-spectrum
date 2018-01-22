@@ -59,6 +59,7 @@ class ModelApiHandler extends BaseApiHandler
     $baseUrl = $request->getSchemeAndHttpHost() . $request->getPathInfo(); // this might not work with a different port than 80, check later
 
     // Get requests can either be a list of models, or an individual model, so we must check the slug
+    $responseCode = 200;
     if(empty($this->slug))
     {
       // when we don't have a slug, we are expected to always return an array response,
@@ -344,11 +345,12 @@ class ModelApiHandler extends BaseApiHandler
       }
       else
       {
-        // we musn't do anything, json api provides an empty node out of the box
+        // We dont have to set the content, jsonapi responds with an empty result out of the box
+        $responseCode = 404;
       }
     }
 
-    return new Response(json_encode($jsonapi->serialize()), 200, array());
+    return new Response(json_encode($jsonapi->serialize()), $responseCode, array());
   }
 
   protected function beforePostSave(Model $model){}
