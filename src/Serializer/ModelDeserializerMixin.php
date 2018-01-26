@@ -37,7 +37,7 @@ trait ModelDeserializerMixin
               switch($fieldDefinition->getType())
               {
                 case 'boolean':
-                  $this->entity->$fieldName->value = empty($attributeValue) ? '0' : '1';
+                  $this->entity->$fieldName->value = $attributeValue ? '1' : '0'; // cannot be stricly typed, drupal uses true/false as '1' and '0' interchangeably
                   break;
                 case 'geolocation':
                   $this->entity->$fieldName->lat = $attributeValue->lat;

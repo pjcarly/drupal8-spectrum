@@ -51,7 +51,7 @@ trait ModelSerializerMixin
         $valueToSerialize = (int) $this->entity->get($fieldName)->value;
         break;
       case 'boolean':
-        $valueToSerialize = ($this->entity->get($fieldName)->value === '1');
+        $valueToSerialize = ($this->entity->get($fieldName)->value == true); // must be none-stricly typed, as drupal sometimes uses true or false, and sometimes '1' and '0'
         break;
       case 'changed':
       case 'created':
