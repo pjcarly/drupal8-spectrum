@@ -353,6 +353,7 @@ class ModelApiHandler extends BaseApiHandler
     return new Response(json_encode($jsonapi->serialize()), $responseCode, array());
   }
 
+  protected function beforePostValidate(Model $model){}
   protected function beforePostSave(Model $model){}
   protected function afterPostSave(Model $model){}
 
@@ -380,7 +381,9 @@ class ModelApiHandler extends BaseApiHandler
       // we trigger the beforeValidate as we might need to trigger some functionalitity
       // before doing the validation and potentially sending back incorrect errors
       $model->beforeValidate();
+      $this->beforePostValidate($model);
       // next we do the validation, in the return object we get a potential error document
+      $model->constraints();
       $validation = $model->validate();
 
       // Next we'll check for included relationships
@@ -441,6 +444,7 @@ class ModelApiHandler extends BaseApiHandler
 
                 // now we validate the model
                 $includedModel->beforeValidate();
+                $includedModel->constraints();
                 $fieldRelationshipValidation = $includedModel->validate();
 
                 // we musn't forget, that both the parens and the children aren't persisted in the database yet
@@ -481,6 +485,7 @@ class ModelApiHandler extends BaseApiHandler
 
               // and lets validate it as well
               $childModel->beforeValidate();
+              $childModel->constraints();
               $childValidation = $childModel->validate();
               // we musn't forget, that both the parents and the children aren't persisted in the database yet
               // because of models and collections, the structure is kept for saving, but it is impossible to validate a potential required parent for a child
@@ -570,6 +575,7 @@ class ModelApiHandler extends BaseApiHandler
     return new Response(isset($response) ? json_encode($response) : null, $responseCode, array());
   }
 
+  protected function beforePatchValidate(Model $model){}
   protected function beforePatchSave(Model $model, Model $originalModel){}
   protected function afterPatchSave(Model $model, Model $originalModel){}
 
@@ -618,7 +624,9 @@ class ModelApiHandler extends BaseApiHandler
         // we trigger the beforeValidate as we might need to trigger some functionalitity
         // before doing the validation and potentially sending back incorrect errors
         $model->beforeValidate();
+        $this->beforePatchValidate($model);
         // next we do the validation, in the return object we get a potential error document
+        $model->constraints();
         $validation = $model->validate();
 
         // Next we'll check for included relationships
@@ -685,6 +693,7 @@ class ModelApiHandler extends BaseApiHandler
 
                   // now we validate the model
                   $includedModel->beforeValidate();
+                  $includedModel->constraints();
                   $fieldRelationshipValidation = $includedModel->validate();
 
                   // we musn't forget, that both the parens and the children aren't persisted in the database yet
@@ -761,6 +770,7 @@ class ModelApiHandler extends BaseApiHandler
 
                 // and lets validate it as well
                 $childModel->beforeValidate();
+                $childModel->constraints();
                 $childValidation = $childModel->validate();
                 // we musn't forget, that both the parents and the children aren't persisted in the database yet
                 // because of models and collections, the structure is kept for saving, but it is impossible to validate a potential required parent for a child
