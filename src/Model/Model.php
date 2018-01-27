@@ -1124,22 +1124,21 @@ abstract class Model
     $relationships = static::getRelationships();
     foreach($relationships as $relationship)
     {
-      if($relationship instanceof ReferencedRelationship && $relationship->cascadingDelete)
+      if($relationship->cascadingDelete)
       {
-        $this->fetch($relationship->relationshipName);
-        $referencedRelationship = $this->get($relationship->relationshipName);
-        if(!empty($referencedRelationship))
+        $fetchedRelationship = $this->fetch($relationship->relationshipName);
+        if(!empty($fetchedRelationship))
         {
-          if($referencedRelationship instanceof Collection)
+          if($fetchedRelationship instanceof Collection)
           {
-            foreach($referencedRelationship as $model)
+            foreach($fetchedRelationship as $model)
             {
-              $model->entity->delete();
+              $model->delete();
             }
           }
-          else if($referencedRelationship instanceof Model)
+          else if($fetchedRelationship instanceof Model)
           {
-            $referencedRelationship->entity->delete();
+            $fetchedRelationship->delete();
           }
         }
       }

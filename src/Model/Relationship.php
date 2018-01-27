@@ -5,12 +5,24 @@ use Drupal\spectrum\Exceptions\InvalidEntityException;
 
 abstract class Relationship
 {
+  public static $NO_CASCADE = 0;
+  public static $CASCADE_ON_DELETE = 1;
+
   public $relationshipName;
   protected $relationshipSource; // the model where this relationship is defined
 
-  public function __construct($relationshipName)
+  public $cascadingDelete = false;
+
+  public function __construct($relationshipName, $cascade = 0)
   {
     $this->relationshipName = $relationshipName;
+    $this->setCascadingDelete($cascade === 1);
+  }
+
+  public function setCascadingDelete($cascadingDelete)
+  {
+    $this->cascadingDelete = $cascadingDelete;
+    return $this; // to enable
   }
 
   public function setRelationshipSource($source = null)
@@ -22,6 +34,8 @@ abstract class Relationship
 
     $this->relationshipSource = $source;
     $this->setRelationshipMetaData();
+
+    return $this;
   }
 
   public function getSourceModelType()

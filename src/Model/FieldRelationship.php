@@ -12,9 +12,9 @@ class FieldRelationship extends Relationship
   private $firstModelType;
   public $fieldCardinality; // cardinality is the maximum number of references allowed for the field.
 
-  public function __construct($relationshipName, $relationshipField)
+  public function __construct($relationshipName, $relationshipField, $cascade = 0)
   {
-    parent::__construct($relationshipName);
+    parent::__construct($relationshipName, $cascade);
     $this->relationshipField = $relationshipField;
   }
 
