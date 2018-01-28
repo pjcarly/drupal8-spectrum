@@ -353,7 +353,11 @@ class ModelApiHandler extends BaseApiHandler
     return new Response(json_encode($jsonapi->serialize()), $responseCode, array());
   }
 
-  protected function beforePostValidate(Model $model){}
+  protected function beforePostValidate(Model $model) : Model
+  {
+    return $model;
+  }
+
   protected function beforePostSave(Model $model){}
   protected function afterPostSave(Model $model){}
 
@@ -381,7 +385,7 @@ class ModelApiHandler extends BaseApiHandler
       // we trigger the beforeValidate as we might need to trigger some functionalitity
       // before doing the validation and potentially sending back incorrect errors
       $model->beforeValidate();
-      $this->beforePostValidate($model);
+      $model = $this->beforePostValidate($model);
       // next we do the validation, in the return object we get a potential error document
       $model->constraints();
       $validation = $model->validate();
@@ -575,7 +579,11 @@ class ModelApiHandler extends BaseApiHandler
     return new Response(isset($response) ? json_encode($response) : null, $responseCode, array());
   }
 
-  protected function beforePatchValidate(Model $model){}
+  protected function beforePatchValidate(Model $model) : Model
+  {
+    return $model;
+  }
+
   protected function beforePatchSave(Model $model, Model $originalModel){}
   protected function afterPatchSave(Model $model, Model $originalModel){}
 
@@ -624,7 +632,7 @@ class ModelApiHandler extends BaseApiHandler
         // we trigger the beforeValidate as we might need to trigger some functionalitity
         // before doing the validation and potentially sending back incorrect errors
         $model->beforeValidate();
-        $this->beforePatchValidate($model);
+        $model = $this->beforePatchValidate($model);
         // next we do the validation, in the return object we get a potential error document
         $model->constraints();
         $validation = $model->validate();
