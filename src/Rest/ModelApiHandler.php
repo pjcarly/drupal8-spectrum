@@ -36,6 +36,11 @@ class ModelApiHandler extends BaseApiHandler
     $this->defaultHeaders['Content-Type'] = 'application/vnd.api+json';
   }
 
+  protected final function addBaseCondition(Condition $condition)
+  {
+    $this->baseConditions[] = $condition;
+  }
+
   protected function getJsonApiNodeForModelOrCollection($object) : JsonApiBaseNode
   {
     return $object->getJsonApiNode();
