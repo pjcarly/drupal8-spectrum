@@ -209,6 +209,11 @@ class SimpleModelWrapper
         \Drupal::logger('Spectrum')->error('Property '.$property.' does not exist on modelclass '.get_called_class());
       }
     }
+    else if(property_exists($model, $property))
+    {
+      $returnValue = $model->{$property};
+      return $returnValue;
+    }
     else if(Model::getterExists($model, $property))
     {
       return $model->callGetter($property);
@@ -219,6 +224,7 @@ class SimpleModelWrapper
   {
     $model = $this->model;
     // Needed for twig to be able to access relationship via magic getter
-    return array_key_exists($property, $model->relatedViaFieldOnEntity) || array_key_exists($property, $model->relatedViaFieldOnExternalEntity) || $model::underScoredFieldExists($property) || Model::getterExists($model, $property);
+    $isSet = array_key_exists($property, $model->relatedViaFieldOnEntity) || array_key_exists($property, $model->relatedViaFieldOnExternalEntity) || $model::underScoredFieldExists($property) || property_exists($model, $property) || Model::getterExists($model, $property);
+    return $isSet;
   }
 }

@@ -4,6 +4,7 @@ namespace Drupal\spectrum\Template;
 use Drupal\spectrum\Models\Image;
 use Drupal\spectrum\Models\File;
 use Drupal\spectrum\Utils\DateUtils;
+use Drupal\spectrum\Utils\StringUtils;
 
 use CommerceGuys\Addressing\Formatter\PostalLabelFormatter;
 
@@ -22,6 +23,7 @@ class TwigFilters extends \Twig_Extension
       new \Twig_SimpleFilter('price', array($this, 'price')),
       new \Twig_SimpleFilter('autonumber_format', array($this, 'autonumberFormat')),
       new \Twig_SimpleFilter('pad_left', array($this, 'padLeft')),
+      new \Twig_SimpleFilter('pnr_safe_name', array($this, 'pnrSafeName')),
     ];
   }
 
@@ -77,5 +79,10 @@ class TwigFilters extends \Twig_Extension
     $formatted = DateUtils::generatePatternString($date, $format);
     $formatted =  str_replace('{{VALUE}}', $value, $formatted);
     return $formatted;
+  }
+
+  public static function pnrSafeName($value)
+  {
+    return StringUtils::pnrSafeString($value);
   }
 }
