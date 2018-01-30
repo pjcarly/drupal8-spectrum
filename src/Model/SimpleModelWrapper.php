@@ -98,10 +98,11 @@ class SimpleModelWrapper
             $value->address_line1,
             $value->address_line2);
 
-            $container = \Drupal::getContainer();
-            $formatter = new PostalLabelFormatter($container->get('address.address_format_repository'), $container->get('address.country_repository'), $container->get('address.subdivision_repository'), 'EN', 'en');
+            // $container = \Drupal::getContainer();
+            // $formatter = new PostalLabelFormatter($container->get('address.address_format_repository'), $container->get('address.country_repository'), $container->get('address.subdivision_repository'), 'EN', 'en');
 
-            $returnValue = $formatter->format($address);
+            // $returnValue = $formatter->format($address);
+            $returnValue = $address;
           }
           break;
         case 'list_string':

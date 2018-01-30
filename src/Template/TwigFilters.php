@@ -19,7 +19,7 @@ class TwigFilters extends \Twig_Extension
       new \Twig_SimpleFilter('src', array($this, 'src')),
       new \Twig_SimpleFilter('file_src', array($this, 'fileSrc')),
       new \Twig_SimpleFilter('base64src', array($this, 'base64src')),
-      new \Twig_SimpleFilter('address', array($this, 'address')),
+      new \Twig_SimpleFilter('address_format', array($this, 'addressFormat')),
       new \Twig_SimpleFilter('price', array($this, 'price')),
       new \Twig_SimpleFilter('autonumber_format', array($this, 'autonumberFormat')),
       new \Twig_SimpleFilter('pad_left', array($this, 'padLeft')),
@@ -56,8 +56,13 @@ class TwigFilters extends \Twig_Extension
     return $image->getBase64SRC($imagestyle);
   }
 
-  public static function address($address)
+  public static function addressFormat($address)
   {
+    if(empty($address))
+    {
+      return '';
+    }
+
     $container = \Drupal::getContainer();
     $formatter = new PostalLabelFormatter($container->get('address.address_format_repository'), $container->get('address.country_repository'), $container->get('address.subdivision_repository'), 'EN', 'en');
 

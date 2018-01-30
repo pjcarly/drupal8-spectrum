@@ -174,6 +174,9 @@ abstract class Model
     if($relationship instanceof FieldRelationship)
     {
       unset($this->relatedViaFieldOnEntity[$relationshipName]);
+      $field = $relationship->getField();
+      $column = $relationship->getColumn();
+      $this->entity->{$field}->{$column} = null;
     }
     else if($relationship instanceof ReferencedRelationship)
     {
