@@ -43,5 +43,10 @@ abstract class JsonApiBaseNode
     return $serializedLinks;
   }
 
+  public function getMeta() : array
+  {
+    return empty($this->meta) ? [] : $this->meta;
+  }
+
   public abstract function serialize();
 }

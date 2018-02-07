@@ -73,6 +73,14 @@ class JsonApiRootNode extends JsonApiDataNode
     }
   }
 
+  public function setMeta(JsonApiDataNode $node)
+  {
+    foreach($node->getMeta() as $key => $value)
+    {
+      $this->addMeta($key, $value);
+    }
+  }
+
   public static function getNoneDefaultDataKeys($jsonapidocument)
   {
     $noneDefaultKeys = [];
