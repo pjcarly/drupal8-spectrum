@@ -666,7 +666,7 @@ abstract class Model
 
   public function constraints(){}
 
-  public function addConstraint(string $fieldName, string $constraintName, array $options = [])
+  public function addFieldConstraint(string $fieldName, string $constraintName, array $options = [])
   {
     $this->entity->getFieldDefinition($fieldName)->addConstraint($constraintName, $options);
   }
