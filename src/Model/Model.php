@@ -56,6 +56,11 @@ abstract class Model
     }
   }
 
+  public static function getGenericApiHandlerKey() : string
+  {
+    return '';
+  }
+
   public function isNew() : bool
   {
     return empty($this->getId());

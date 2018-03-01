@@ -235,6 +235,9 @@ trait ModelSerializerMixin
         }
 
         break;
+      case 'json':
+        $valueToSerialize = json_decode($this->entity->get($fieldName)->value);
+      break;
       case 'link':
         $valueToSerialize = $this->entity->get($fieldName)->uri;
         break;
