@@ -125,6 +125,9 @@ trait ModelDeserializerMixin
                     $this->entity->$fieldName = $valueToSet;
                   }
                   break;
+                case 'json':
+                  $this->entity->$fieldName->value = json_encode($attributeValue);
+                  break;
                 case 'link':
                   $this->entity->$fieldName->uri = $attributeValue;
                   break;
@@ -167,7 +170,24 @@ trait ModelDeserializerMixin
                   // Do nothing, internal fields
                   break;
                 default:
-                  $this->entity->$fieldName->value = $attributeValue;
+                  if($fieldCardinality !== 1)
+                  {
+                    // More than 1 value allowed in the field
+                    if(is_array($attributeValue))
+                    {
+                      $this->entity->$fieldName = [];
+                      foreach($attributeValue as $singleAttributeValue)
+                      {
+                        $this->entity->$fieldName[] = $singleAttributeValue;
+                      }
+                    }
+
+                  }
+                  else
+                  {
+                    $this->entity->$fieldName->value = $attributeValue;
+                  }
+
                   break;
               }
             }
