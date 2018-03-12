@@ -40,7 +40,7 @@ class JsonApiRootNode extends JsonApiDataNode
     }
   }
 
-  public function serialize()
+  public function serialize() : \stdClass
   {
     $serialized = parent::serialize();
 
