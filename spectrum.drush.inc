@@ -2,6 +2,9 @@
 use Drupal\spectrum\Runnable\QueuedJob;
 use Drupal\spectrum\Runnable\RegisteredJob;
 use Drupal\spectrum\Query\Condition;
+use Drupal\spectrum\Query\Order;
+use React\EventLoop\Factory;
+
 
 /**
  * Implements hook_drush_command().
@@ -9,8 +12,12 @@ use Drupal\spectrum\Query\Condition;
 function spectrum_drush_command()
 {
   $commands['spectrum-scheduler'] = [
-    'description' => 'Trigger the Spectrum scheduler.',
+    'description' => 'Trigger the Spectrum scheduler (this should be done on system cron every X minutes)',
     'aliases' => ['sp-cron']
+  ];
+  $commands['spectrum-scheduler-react'] = [
+    'description' => 'Run the Spectrum scheduler via ReactPHP (this should only be run once, but triggered every time the server restarts)',
+    'aliases' => ['sp-cronr']
   ];
   $commands['spectrum-job'] = [
     'description' => 'Execute a single Queued Job',
@@ -46,6 +53,53 @@ function drush_spectrum_job($jobName = null)
   {
     $job->singleRun();
   }
+}
+
+function drush_spectrum_scheduler_react()
+{
+  $loop = Factory::create();
+
+  $loop->addPeriodicTimer(1/40, function(){
+
+    $currentTime = gmdate("Y-m-d\TH:i:s");
+    $query = QueuedJob::getModelQuery();
+    $query->addCondition(new Condition('field_job_status', 'IN', ['Queued', 'Running']));
+    $query->addCondition(new Condition('field_scheduled_time', '<=', $currentTime));
+    $query->addSortOrder(new Order('field_scheduled_time'));
+    $query->setLimit(1);
+
+    $earliestQueuedJob = $query->fetchSingleModel();
+    if(!empty($earliestQueuedJob))
+    {
+      $job = $earliestQueuedJob->fetch('job');
+      $class = $job->entity->field_class->value;
+      if(empty($class))
+      {
+        $earliestQueuedJob->failedExecution(null, 'No class provided');
+      }
+      else if(!class_exists($class))
+      {
+        $earliestQueuedJob->failedExecution(null, 'Class does not exist');
+      }
+      else
+      {
+        $job = $class::forgeByEntity($earliestQueuedJob->entity);
+        $job->run();
+      }
+    }
+
+    // $activeSecond = gmdate('s');
+    // $GLOBALS['count']++;
+
+    // if($GLOBALS['lastSecond'] !== $activeSecond)
+    // {
+    //   $GLOBALS['lastSecond'] = $activeSecond;
+    //   drush_print('Loops per Second: '.$GLOBALS['count']);
+    //   $GLOBALS['count'] = 0;
+    // }
+  });
+
+  $loop->run();
 }
 
 function drush_spectrum_scheduler()

@@ -21,8 +21,11 @@ class QueuedJob extends RunnableModel
 
   public final function preExecution()
   {
+    $currentTime = gmdate('Y-m-d\TH:i:s');
+    $this->print('Job with ID: '.$this->getId().' STARTED at '.$currentTime . ' ('.$this->entity->title->value.')');
+
     $this->entity->field_job_status->value = 'Running';
-    $this->entity->field_start_time->value = gmdate('Y-m-d\TH:i:s');
+    $this->entity->field_start_time->value = $currentTime;
     $this->save();
 
     // Check the user context we need to execute in, and switch to the provided user if necessary.
@@ -50,8 +53,11 @@ class QueuedJob extends RunnableModel
     $this->accountSwitcher->switchBack();
 
     // Lets put the job to completed
+    $currentTime = gmdate('Y-m-d\TH:i:s');
+    $this->print('Job with ID: '.$this->getId().' FINISHED at '.$currentTime . ' ('.$this->entity->title->value.')');
+
     $this->entity->field_job_status->value = 'Completed';
-    $this->entity->field_end_time->value = gmdate('Y-m-d\TH:i:s');
+    $this->entity->field_end_time->value = $currentTime;
     $this->save();
 
     // And check if we need to reschedule this job
@@ -93,6 +99,8 @@ class QueuedJob extends RunnableModel
       $copiedJob->entity->field_job_status->value = 'Queued';
       $copiedJob->entity->field_scheduled_time->value = $newScheduledTime->format('Y-m-d\TH:i:s');
       $copiedJob->save();
+
+      $this->print('Job with ID: '.$copiedJob->getId().' RESCHEDULED at '.$newScheduledTime->format('Y-m-d\TH:i:s') . ' ('.$copiedJob->entity->title->value.')');
     }
   }
 
@@ -101,8 +109,11 @@ class QueuedJob extends RunnableModel
     // Execution failed, set the status to failed
     // Set a possible error message
 
+    $currentTime = gmdate('Y-m-d\TH:i:s');
+    $this->print('Job with ID: '.$this->getId().' FAILED at '.$currentTime . ' ('.$this->entity->title->value.')');
+
     $this->entity->field_job_status->value = 'Failed';
-    $this->entity->field_end_time->value = gmdate('Y-m-d\TH:i:s');
+    $this->entity->field_end_time->value = $currentTime;
     if(!empty($ex))
     {
       $this->entity->field_error_message->value = $ex->getMessage();

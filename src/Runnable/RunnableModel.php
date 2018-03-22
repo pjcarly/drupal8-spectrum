@@ -16,6 +16,7 @@ abstract class RunnableModel extends Model
 
   public final function run()
   {
+    $currentTime = gmdate('Y-m-d\TH:i:s');
     try
     {
       $job = $this->fetch('job');
@@ -26,9 +27,8 @@ abstract class RunnableModel extends Model
     }
     catch(\Exception $ex)
     {
-      $message = 'Runnable execution failed ('.$job->entity->field_class->value.'): '.$ex->getMessage();
-      drush_print($message);
-      \Drupal::logger('spectrum_cron')->error($message);
+      $this->failedExecution($ex);
+      \Drupal::logger('spectrum_cron')->error($ex->getMessage());
     }
   }
 

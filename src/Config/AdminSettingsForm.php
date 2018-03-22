@@ -29,6 +29,13 @@ class AdminSettingsForm extends ConfigFormBase
       '#description' => t('The location of the wkhtmltopdf executable.')
     );
 
+    $form['default_base_path'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Default Base Path'),
+      '#default_value' => $config->get('default_base_path'),
+      '#description' => t('The default base path, in case logic is done via the CLI and a base_path is needed, make sure this is the URL your website is accessible on.')
+    );
+
     $form['email_provider'] = [
       '#type' => 'select',
       '#title' => $this->t('Preferred Email Provider'),
@@ -80,6 +87,7 @@ class AdminSettingsForm extends ConfigFormBase
   {
     $config = $this->config('spectrum.settings');
     $config->set('wkhtmltopdf_executable', $form_state->getValue('wkhtmltopdf_executable'));
+    $config->set('default_base_path', $form_state->getValue('default_base_path'));
     $config->set('email_provider', $form_state->getValue('email_provider'));
     $config->set('sendgrid_api_key', $form_state->getValue('sendgrid_api_key'));
     $config->set('aws_ses_api_key', $form_state->getValue('aws_ses_api_key'));

@@ -2,6 +2,7 @@
 namespace Drupal\spectrum\Runnable;
 
 use Drupal\spectrum\Model\Model;
+use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Model\ReferencedRelationship;
 
 class RegisteredJob extends Model
@@ -59,5 +60,14 @@ class RegisteredJob extends Model
   public function setCliContext($cliContext)
   {
     $this->cliContext = $cliContext;
+  }
+
+  public static function getByKey(string $key)
+  {
+    $query = static::getModelQuery();
+    $query->addCondition(new Condition('title', '=', $key));
+    $query->setLimit(1);
+
+    return $query->fetchSingleModel();
   }
 }

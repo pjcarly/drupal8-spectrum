@@ -9,6 +9,7 @@ use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Model\SimpleModelWrapper;
 use Drupal\spectrum\Model\SimpleConfigWrapper;
 use Drupal\spectrum\Template\TwigRenderer;
+use Drupal\spectrum\Utils\UrlUtils;
 
 class TwigFile
 {
@@ -24,10 +25,7 @@ class TwigFile
       $this->fileContent = $fileContent;
     }
 
-    $request = \Drupal::request();
-    $rootUrl = $request->getSchemeAndHttpHost() . base_path();
-
-    $this->addObjectToScope('rootUrl', $rootUrl);
+    $this->addObjectToScope('rootUrl', UrlUtils::getBaseURL());
   }
 
   public function addConfigToScope($name, $config)
