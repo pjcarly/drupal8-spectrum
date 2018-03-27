@@ -1,0 +1,24 @@
+[Unit]
+Description=Spectrum websitename - Queued Job Service
+Requires=mysql.service nginx.service php7.2-fpm.service
+After=mysql.service nginx.service php7.2-fpm.service
+
+[Service]
+User=cronbot
+Type=simple
+TimeoutSec=0
+PIDFile=/var/run/spectrum-websitename.pid
+WorkingDirectory=/var/www/html/websitename/web
+ExecStart=/home/cronbot/.config/composer/vendor/bin/drush sp-cronr
+#ExecStop=/bin/kill -HUP $MAINPID
+#ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+
+Restart=on-failure
+RestartSec=42s
+
+StandardOutput=null
+StandardError=null
+#StandardError=file:/var/log/spectrum-service.log
+[Install]
+WantedBy=multi-user.target
