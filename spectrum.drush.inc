@@ -59,7 +59,7 @@ function drush_spectrum_scheduler_react()
 {
   $loop = Factory::create();
 
-  $loop->addPeriodicTimer(1/40, function(){
+  $loop->addPeriodicTimer(1/4, function(){
 
     $currentTime = gmdate("Y-m-d\TH:i:s");
     $query = QueuedJob::getModelQuery();
