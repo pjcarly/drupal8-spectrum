@@ -1,6 +1,6 @@
 1. Install Spectrum System Service
 
-`mv spectrum.service.default spectrum-websitename.service`
+`mv spectrum.service.default /etc/systemd/system/spectrum-websitename.service`
 
 2. Edit Service
 
