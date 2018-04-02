@@ -1,6 +1,8 @@
 <?php
 namespace Drupal\spectrum\Template;
 
+use Drupal\spectrum\Model\SimpleModelWrapper;
+use Drupal\spectrum\Model\SimpleCollectionWrapper;
 use Drupal\spectrum\Models\Image;
 use Drupal\spectrum\Models\File;
 use Drupal\spectrum\Utils\DateUtils;
@@ -24,6 +26,8 @@ class TwigFilters extends \Twig_Extension
       new \Twig_SimpleFilter('autonumber_format', array($this, 'autonumberFormat')),
       new \Twig_SimpleFilter('pad_left', array($this, 'padLeft')),
       new \Twig_SimpleFilter('pnr_safe_name', array($this, 'pnrSafeName')),
+      new \Twig_SimpleFilter('target_id', array($this, 'targetId')),
+      new \Twig_SimpleFilter('collection_sort', array($this, 'collectionSort'))
     ];
   }
 
@@ -89,5 +93,18 @@ class TwigFilters extends \Twig_Extension
   public static function pnrSafeName($value)
   {
     return StringUtils::pnrSafeString($value);
+  }
+
+  public static function targetId(SimpleModelWrapper $simpleModel, string $field)
+  {
+    return $simpleModel->getModel()->entity->$field->target_id;
+  }
+
+  public static function collectionSort(SimpleCollectionWrapper $simpleCollection, string $sortingFunction)
+  {
+    $collection = $simpleCollection->getCollection();
+    $collection->sort($sortingFunction);
+
+    return $simpleCollection;
   }
 }

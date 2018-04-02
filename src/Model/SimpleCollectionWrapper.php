@@ -18,6 +18,11 @@ class SimpleCollectionWrapper implements \IteratorAggregate
     $this->collection = $collection;
   }
 
+  public function getCollection() : Collection
+  {
+    return $this->collection;
+  }
+
   public function getIterator()
   {
     // This function makes it possible to loop over a collection, we are just passing the $models as the loopable array
