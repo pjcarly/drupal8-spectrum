@@ -7,6 +7,7 @@ use Drupal\spectrum\Models\Image;
 use Drupal\spectrum\Models\File;
 use Drupal\spectrum\Utils\DateUtils;
 use Drupal\spectrum\Utils\StringUtils;
+use Drupal\spectrum\Utils\LanguageUtils;
 
 use CommerceGuys\Addressing\Formatter\PostalLabelFormatter;
 
@@ -27,7 +28,8 @@ class TwigFilters extends \Twig_Extension
       new \Twig_SimpleFilter('pad_left', array($this, 'padLeft')),
       new \Twig_SimpleFilter('pnr_safe_name', array($this, 'pnrSafeName')),
       new \Twig_SimpleFilter('target_id', array($this, 'targetId')),
-      new \Twig_SimpleFilter('collection_sort', array($this, 'collectionSort'))
+      new \Twig_SimpleFilter('collection_sort', array($this, 'collectionSort')),
+      new \Twig_SimpleFilter('tt', array($this, 'translate'))
     ];
   }
 
@@ -106,5 +108,10 @@ class TwigFilters extends \Twig_Extension
     $collection->sort($sortingFunction);
 
     return $simpleCollection;
+  }
+
+  public static function translate($value)
+  {
+    return LanguageUtils::translate($value);
   }
 }
