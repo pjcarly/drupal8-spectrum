@@ -110,8 +110,8 @@ class TwigFilters extends \Twig_Extension
     return $simpleCollection;
   }
 
-  public static function translate($value)
+  public static function translate($value, $variables = [])
   {
-    return LanguageUtils::translate($value);
+    return LanguageUtils::translate($value, $variables);
   }
 }

@@ -11,7 +11,7 @@ class LanguageUtils
     static::$forcedLanguage = $language;
   }
 
-  public static function translate(string $value)
+  public static function translate(string $value, $variables = [])
   {
     $language = static::$forcedLanguage;
 
@@ -20,6 +20,6 @@ class LanguageUtils
       $language = \Drupal::languageManager()->getCurrentLanguage()->getId();
     }
 
-    return t($value, [],  ['langcode' => $language]);
+    return t($value, $variables,  ['langcode' => $language]);
   }
 }
