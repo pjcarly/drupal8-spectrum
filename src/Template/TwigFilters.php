@@ -8,8 +8,7 @@ use Drupal\spectrum\Models\File;
 use Drupal\spectrum\Utils\DateUtils;
 use Drupal\spectrum\Utils\StringUtils;
 use Drupal\spectrum\Utils\LanguageUtils;
-
-use CommerceGuys\Addressing\Formatter\PostalLabelFormatter;
+use Drupal\spectrum\Utils\AddressUtils;
 
 class TwigFilters extends \Twig_Extension
 {
@@ -64,15 +63,7 @@ class TwigFilters extends \Twig_Extension
 
   public static function addressFormat($address)
   {
-    if(empty($address))
-    {
-      return '';
-    }
-
-    $container = \Drupal::getContainer();
-    $formatter = new PostalLabelFormatter($container->get('address.address_format_repository'), $container->get('address.country_repository'), $container->get('address.subdivision_repository'), 'EN', 'en');
-
-    return $formatter->format($address);
+    return AddressUtils::format($address);
   }
 
   public static function price($price, $currency = null)

@@ -9,8 +9,7 @@ use Drupal\spectrum\Model\SimpleCollectionWrapper;
 use Drupal\spectrum\Models\Image;
 use Drupal\spectrum\Models\File;
 
-use CommerceGuys\Addressing\Address;
-use CommerceGuys\Addressing\Formatter\PostalLabelFormatter;
+use Drupal\spectrum\Utils\AddressUtils;
 
 class SimpleModelWrapper
 {
@@ -92,23 +91,7 @@ class SimpleModelWrapper
         case 'address':
           $value = $model->entity->get($fieldName);
 
-          if(!empty($value->country_code))
-          {
-            $address = new Address($value->country_code,
-            $value->administrative_area,
-            $value->locality,
-            $value->dependent_locality,
-            $value->postal_code,
-            $value->sorting_code,
-            $value->address_line1,
-            $value->address_line2);
-
-            // $container = \Drupal::getContainer();
-            // $formatter = new PostalLabelFormatter($container->get('address.address_format_repository'), $container->get('address.country_repository'), $container->get('address.subdivision_repository'), 'EN', 'en');
-
-            // $returnValue = $formatter->format($address);
-            $returnValue = $address;
-          }
+          $returnValue = AddressUtils::formatField($value);
           break;
         case 'list_string':
           $alloweValues = $fieldDefinition->getFieldStorageDefinition()->getSetting('allowed_values');

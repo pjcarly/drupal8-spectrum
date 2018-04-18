@@ -54,12 +54,12 @@ trait ModelDeserializerMixin
                     if($fieldSettingsDatetimeType === 'date')
                     {
                       $dateValue = new \DateTime($attributeValue);
-                      $dateValue = $dateValue->format('Y-m-d');
+                      $dateValue = $dateValue->format(DATETIME_DATE_STORAGE_FORMAT);
                     }
                     else if($fieldSettingsDatetimeType === 'datetime')
                     {
                       $dateValue = new \DateTime($attributeValue);
-                      $dateValue = $dateValue->format('Y-m-d').'T'.$dateValue->format('H:i:s');
+                      $dateValue = $dateValue->format(DATETIME_DATETIME_STORAGE_FORMAT);
                     }
                   }
 
