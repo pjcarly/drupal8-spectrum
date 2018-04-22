@@ -91,7 +91,7 @@ class SimpleModelWrapper
         case 'address':
           $value = $model->entity->get($fieldName);
 
-          $returnValue = AddressUtils::formatField($value);
+          $returnValue = AddressUtils::getAddress($value);
           break;
         case 'list_string':
           $alloweValues = $fieldDefinition->getFieldStorageDefinition()->getSetting('allowed_values');

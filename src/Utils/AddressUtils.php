@@ -8,7 +8,7 @@ use CommerceGuys\Addressing\Formatter\PostalLabelFormatter;
 
 class AddressUtils
 {
-  public static function formatField(FieldItemList $addressField) : ?string
+  public static function getAddress(FieldItemList $addressField) : ?Address
   {
     $address = null;
 
@@ -24,6 +24,12 @@ class AddressUtils
       $addressField->address_line2);
     }
 
+    return $address;
+  }
+
+  public static function formatField(FieldItemList $addressField) : ?string
+  {
+    $address = static::getAddress($addressField);
     return static::format($address);
   }
 
