@@ -3,6 +3,7 @@ use Drupal\spectrum\Runnable\QueuedJob;
 use Drupal\spectrum\Runnable\RegisteredJob;
 use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Query\Order;
+use Drupal\spectrum\Model\Model;
 use React\EventLoop\Factory;
 
 
@@ -26,8 +27,36 @@ function spectrum_drush_command()
       'class' => 'The full name of the class to execute (eg \\Drupal\\spectrum\\Jobs\\MyCustomJob), make sure to escape backslashes with another backslash'
     ]
   ];
+  $commands['spectrum-view-sql'] = [
+    'description' => 'Generate views for easy querying',
+    'aliases' => ['sp-vsql']
+  ];
 
   return $commands;
+}
+
+function drush_spectrum_view_sql($entityType = null)
+{
+  if(empty($entityType))
+  {
+    drush_print('you must provide an entity type as an argument to this query');
+  }
+
+  $modelClasses = Model::getModelClasses();
+  foreach($modelClasses as $modelClass)
+  {
+    if($modelClass::$entityType === $entityType)
+    {
+      $query = $modelClass::getViewSelectQuery();
+
+      if(!empty($query))
+      {
+        $viewName = empty($modelClass::$bundle) ? $modelClass::$entityType : $modelClass::$bundle;
+        $query = 'CREATE VIEW `view_'.$viewName.'` AS '.$query;
+        db_query($query);
+      }
+    }
+  }
 }
 
 function drush_spectrum_job($jobName = null)

@@ -21,6 +21,7 @@ abstract class Model
 {
   use \Drupal\spectrum\Serializer\ModelSerializerMixin;
   use \Drupal\spectrum\Serializer\ModelDeserializerMixin;
+  use \Drupal\spectrum\Serializer\ModelSQLHelperMixin;
 
   public static $entityType;
   public static $bundle;
