@@ -30,7 +30,7 @@ trait ModelSQLHelperMixin
       return $columns;
     }
 
-    $columnBase = $alias.'.'.$fieldName.'_';
+    $columnBase = '`'.$alias.'`.'.$fieldName.'_';
 
     switch ($fieldType)
     {
@@ -53,7 +53,7 @@ trait ModelSQLHelperMixin
       case 'entity_reference':
       case 'file':
       case 'image':
-        $columns[] = $columnBase.'target_id AS '.$alias;
+        $columns[] = $columnBase.'target_id AS `'.$alias.'`';
         break;
       case 'geolocation':
         $columns[] = $columnBase.'lat AS '.$alias.'_lat';
@@ -64,10 +64,10 @@ trait ModelSQLHelperMixin
 
       break;
       case 'link':
-        $columns[] = $columnBase.'uri AS '.$alias;
+        $columns[] = $columnBase.'uri AS `'.$alias.'`';
         break;
       default:
-        $columns[] = $columnBase.'value AS '.$alias;
+        $columns[] = $columnBase.'value AS `'.$alias.'`';
         break;
     }
 
@@ -113,7 +113,7 @@ trait ModelSQLHelperMixin
         }
         else
         {
-          $columns[] = static::$entityType.'.'.$fieldName.' AS '.$fieldNamePretty;
+          $columns[] = static::$entityType.'.'.$fieldName.' AS `'.$fieldNamePretty.'`';
         }
       }
     }
@@ -158,7 +158,7 @@ trait ModelSQLHelperMixin
 
         if($type === 'field_')
         {
-          $joins[] = 'LEFT JOIN '.static::$entityType.'__'.$fieldName. ' AS '.$fieldNamePretty.' ON '.$fieldNamePretty.'.entity_id = '.static::$entityType.'.'.static::$idField;
+          $joins[] = 'LEFT JOIN '.static::$entityType.'__'.$fieldName. ' AS `'.$fieldNamePretty.'` ON `'.$fieldNamePretty.'`.entity_id = `'.static::$entityType.'`.'.static::$idField;
         }
         else if($fieldName === 'user_picture')
         {
