@@ -52,6 +52,8 @@ function drush_spectrum_view_sql($entityType = null)
       if(!empty($query))
       {
         $viewName = empty($modelClass::$bundle) ? $modelClass::$entityType : $modelClass::$bundle;
+        db_query('DROP VIEW IF EXISTS `view_'.$viewName.'`');
+
         $query = 'CREATE VIEW `view_'.$viewName.'` AS '.$query;
         db_query($query);
       }
