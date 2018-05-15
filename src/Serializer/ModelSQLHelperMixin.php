@@ -24,7 +24,7 @@ trait ModelSQLHelperMixin
 
     $columns = [];
 
-    if($fieldCardinality > 1)
+    if($fieldCardinality != 1)
     {
       // Higher field cardinality not supported
       return $columns;
@@ -145,9 +145,11 @@ trait ModelSQLHelperMixin
     {
       $fieldNamePretty = $fieldToPrettyMapping[$fieldName];
       $fieldNamePretty = StringUtils::underscore($fieldNamePretty);
+      $fieldCardinality = $fieldDefinition->getFieldStorageDefinition()->getCardinality();
 
-      if($fieldName === 'type')
+      if($fieldName === 'type' || $fieldCardinality != 1)
       {
+        // Only fields with 1 value supported
         continue;
       }
 
