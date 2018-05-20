@@ -19,7 +19,7 @@ class StringUtils
 
   public static function keepAlphaCharactersAndSpaces(string $input) : string
   {
-    return preg_replace("/[^A-Za-z ]/", '', $input);
+    return preg_replace('/[^A-Za-z ]/', '', $input);
   }
 
   public static function transliterate(string $input) : string
@@ -52,6 +52,11 @@ class StringUtils
   public static function contains(string $haystack, string $needle) : bool
   {
     return strpos($haystack, $needle) !== false;
+  }
+
+  public static function hasNumber(string $text) : bool
+  {
+    return preg_match('/\d/', $text) > 0;
   }
 
   public static function isAlphaNumericWithoutSpaces(string $string) : bool
