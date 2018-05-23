@@ -7,6 +7,11 @@ class JsonApiDataNode extends JsonApiBaseNode
   protected $data;
   protected $asArray = false;
 
+  public function clearData() : void
+  {
+    unset($this->data);
+  }
+
   public function addNode(JsonApiNode $node)
   {
     if(empty($this->data) && !$this->asArray)

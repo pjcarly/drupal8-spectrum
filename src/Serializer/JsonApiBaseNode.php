@@ -7,6 +7,11 @@ abstract class JsonApiBaseNode
   protected $links;
   protected $meta;
 
+  public function clearMeta() : void
+  {
+    unset($this->meta);
+  }
+
   public function addMeta($key, $value)
   {
     if($this->meta === null)

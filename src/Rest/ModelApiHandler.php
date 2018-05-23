@@ -355,7 +355,12 @@ class ModelApiHandler extends BaseApiHandler
       }
     }
 
-    return new Response(json_encode($jsonapi->serialize()), $responseCode, array());
+    return new Response(json_encode($this->serialize($jsonapi)), $responseCode, array());
+  }
+
+  protected function serialize(JsonApiRootNode $jsonapi) : \stdClass
+  {
+    return $jsonapi->serialize();
   }
 
   protected function beforePostValidate(Model $model) : Model
@@ -564,12 +569,12 @@ class ModelApiHandler extends BaseApiHandler
         }
 
         // and finally we can serialize and set the code
-        $response = $jsonapi->serialize();
+        $response = $this->serialize($jsonapi);
         $responseCode = 200;
       }
       else
       {
-        // Unfortunatly we have some errors, let's serialize the error object, and set the proper response code
+        // Unfortunatly we have some erros, let's serialize the error object, and set the proper response code
         $response = $validation->serialize();
         $responseCode = 422;
       }
@@ -865,12 +870,12 @@ class ModelApiHandler extends BaseApiHandler
           }
 
           // and finally we can serialize and set the code
-          $response = $jsonapi->serialize();
+          $response = $this->serialize($jsonapi);
           $responseCode = 200;
         }
         else
         {
-          // Unfortunatly we have some errors, let's serialize the error object, and set the proper response code
+          // Unfortunatly we have some erros, let's serialize the error object, and set the proper response code
           $response = $validation->serialize();
           $responseCode = 422;
         }
