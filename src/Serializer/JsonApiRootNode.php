@@ -46,7 +46,7 @@ class JsonApiRootNode extends JsonApiDataNode
 
     if(!empty($this->included))
     {
-      $serializedIncluded = array();
+      $serializedIncluded = [];
       foreach($this->included as $includedMember)
       {
         $serializedIncluded[] = $includedMember->serialize();
