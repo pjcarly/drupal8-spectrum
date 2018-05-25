@@ -41,8 +41,8 @@ class AddressUtils
     }
 
     $container = \Drupal::getContainer();
-    $formatter = new PostalLabelFormatter($container->get('address.address_format_repository'), $container->get('address.country_repository'), $container->get('address.subdivision_repository'), 'EN', 'en');
+    $formatter = new PostalLabelFormatter($container->get('address.address_format_repository'), $container->get('address.country_repository'), $container->get('address.subdivision_repository'));
 
-    return $formatter->format($address);
+    return $formatter->format($address, ['origin_country' => 'BE']);
   }
 }
