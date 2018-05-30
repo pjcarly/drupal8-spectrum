@@ -175,7 +175,17 @@ trait ModelSerializerMixin
         $valueToSerialize = $attribute;
         break;
       case 'integer':
-        $valueToSerialize = (int) $this->entity->get($fieldName)->value;
+        $fieldValue = $this->entity->get($fieldName)->value;
+
+        if($fieldValue === NULL)
+        {
+          $valueToSerialize = NULL;
+        }
+        else
+        {
+          $valueToSerialize = (int) $fieldValue;
+        }
+
         break;
       case 'image':
         if($fieldCardinality !== 1)

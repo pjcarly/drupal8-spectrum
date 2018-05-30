@@ -3,6 +3,7 @@ namespace Drupal\spectrum\Runnable;
 
 use Drupal\Core\Session\AnonymousUserSession;
 use Drupal\Core\Session\AccountSwitcher;
+use Drupal\spectrum\Runnable\RegisteredJob;
 
 class QueuedJob extends RunnableModel
 {
@@ -47,6 +48,43 @@ class QueuedJob extends RunnableModel
 
   }
 
+  public static function scheduleNext(string $jobName, string $variable = '')
+  {
+    $registeredJob = RegisteredJob::getByKey($jobName);
+
+    if(empty($registeredJob))
+    {
+      throw new \Exception('Regisered Job ('.$jobName.') not found');
+    }
+
+    $utc = new \DateTimeZone('UTC');
+    $now = new \DateTime();
+    $now->setTimezone($utc);
+
+    $queuedJob = $registeredJob->createJobInstance();
+    $queuedJob->entity->title->value = $jobName;
+
+    if(!empty($variable))
+    {
+      $queuedJob->entity->field_variable->value = $variable;
+    }
+
+    $queuedJob->entity->field_minutes_to_failure->value = 10;
+    $queuedJob->entity->field_scheduled_time->value = $now->format('Y-m-d\TH:i:s');
+    $queuedJob->put('job', $registeredJob);
+    $queuedJob->save();
+  }
+
+  public final function setFailed(string $message)
+  {
+    $this->entity->field_job_status->value = 'Failed';
+
+    if(!empty($message))
+    {
+      $this->entity->field_error_message->value = $message;
+    }
+  }
+
   public final function postExecution()
   {
     // Lets not forget to switch back to the original user context
@@ -56,7 +94,11 @@ class QueuedJob extends RunnableModel
     $currentTime = gmdate('Y-m-d\TH:i:s');
     $this->print('Job with ID: '.$this->getId().' FINISHED at '.$currentTime . ' ('.$this->entity->title->value.')');
 
-    $this->entity->field_job_status->value = 'Completed';
+    if($this->entity->field_job_status->value === 'Running')
+    {
+      $this->entity->field_job_status->value = 'Completed';
+    }
+
     $this->entity->field_end_time->value = $currentTime;
     $this->save();
 

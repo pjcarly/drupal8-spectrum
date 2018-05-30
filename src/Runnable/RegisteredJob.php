@@ -23,17 +23,9 @@ class RegisteredJob extends Model
 
   public final function singleRun()
   {
-    $class = $this->entity->field_class->value;
-
-    if(!class_exists($class))
-    {
-      $this->print('Class does not exist');
-      return;
-    }
-
     try
     {
-      $job = $class::createNew();
+      $job = $this->createJobInstance();
       $job->setCliContext($this->cliContext);
       $job->execute();
     }
@@ -43,6 +35,18 @@ class RegisteredJob extends Model
       $this->print($message);
       \Drupal::logger('spectrum_cron')->error($message);
     }
+  }
+
+  public final function createJobInstance() : RunnableModel
+  {
+    $class = $this->entity->field_class->value;
+
+    if(!class_exists($class))
+    {
+      throw new \Exception('Class does not exist');
+    }
+
+    return $class::createNew();
   }
 
   public function print($message)
