@@ -878,6 +878,42 @@ abstract class Model
     }
   }
 
+  /**
+   * This function will clear the static entity cache drupal stores in memory for the remainder of the transaction
+   * Any entities that are present in the cache will not be loaded from the database again, instead the php object in the cache will be returned
+   * After calling this function, the cache of the entire ENTITY (so all including bundles) will be cleared, and any queries for the entity will
+   * be fetched from the database again
+   *
+   * @return void
+   */
+  public static function clearDrupalStaticEntityCache() : void
+  {
+    $entityType = static::$entityType;
+
+    $store = \Drupal::entityManager()->getStorage($entityType);
+    $store->resetCache();
+  }
+
+
+  /**
+   * This function will clear all the entity caches for every model class in the application (see Model::clearDrupalStaticEntityCache() for more details)
+   *
+   * @return void
+   */
+  public static function clearAllDrupalStaticEntityCaches() : void
+  {
+    $clearedEntitytypes = [];
+
+    foreach(static::getModelClasses() as $modelClass)
+    {
+      if(!in_array($modelClass::$entityType, $clearedEntitytypes))
+      {
+        $modelClass::clearDrupalStaticEntityCache();
+        $clearedEntitytypes[] = $modelClass::$entityType;
+      }
+    }
+  }
+
   public static function getModelQuery() : ModelQuery
   {
       return new ModelQuery(get_called_class());

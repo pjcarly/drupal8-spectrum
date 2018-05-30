@@ -117,6 +117,9 @@ function drush_spectrum_scheduler_react()
         $job = $class::forgeByEntity($earliestQueuedJob->entity);
         $job->run();
       }
+
+      // This will clear all the entity caches, and free entities from memory
+      Model::clearAllDrupalStaticEntityCaches();
     }
 
     // $activeSecond = gmdate('s');
