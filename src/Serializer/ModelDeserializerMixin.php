@@ -217,13 +217,29 @@ trait ModelDeserializerMixin
                     $relationshipField = $relationship->getField();
                     $relationshipColumn = $relationship->getColumn();
 
-                    if(empty($relationshipValue->data))
+                    if($relationship->fieldCardinality !== 1)
                     {
-                      $this->entity->$relationshipField->$relationshipColumn = null;
+                      // This is a multi-reference field
+                      $this->entity->$relationshipField = [];
+
+                      if(!empty($relationshipValue->data) && is_array($relationshipValue->data))
+                      {
+                        foreach($relationshipValue->data as $singleRelationshipValue)
+                        {
+                          $this->entity->$relationshipField[] = [$relationshipColumn => $singleRelationshipValue->id];
+                        }
+                      }
                     }
                     else
                     {
-                      $this->entity->$relationshipField->$relationshipColumn = $relationshipValue->data->id;
+                      if(empty($relationshipValue->data))
+                      {
+                        $this->entity->$relationshipField->$relationshipColumn = null;
+                      }
+                      else
+                      {
+                        $this->entity->$relationshipField->$relationshipColumn = $relationshipValue->data->id;
+                      }
                     }
                   }
                   else if ($relationship instanceof ReferencedRelationship)
