@@ -220,6 +220,7 @@ trait ModelDeserializerMixin
                     if($relationship->fieldCardinality !== 1)
                     {
                       // This is a multi-reference field
+                      // We need to set an array, instead of a single field column
                       $this->entity->$relationshipField = [];
 
                       if(!empty($relationshipValue->data) && is_array($relationshipValue->data))
