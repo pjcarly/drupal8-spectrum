@@ -29,6 +29,7 @@ abstract class RunnableModel extends Model
     {
       $this->failedExecution($ex);
       \Drupal::logger('spectrum_cron')->error($ex->getMessage());
+      \Drupal::logger('spectrum_cron')->error($ex->getTraceAsString());
     }
   }
 
