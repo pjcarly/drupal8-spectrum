@@ -173,15 +173,14 @@ trait ModelDeserializerMixin
                   if($fieldCardinality !== 1)
                   {
                     // More than 1 value allowed in the field
+                    $this->entity->$fieldName = [];
                     if(is_array($attributeValue))
                     {
-                      $this->entity->$fieldName = [];
                       foreach($attributeValue as $singleAttributeValue)
                       {
                         $this->entity->$fieldName[] = $singleAttributeValue;
                       }
                     }
-
                   }
                   else
                   {
