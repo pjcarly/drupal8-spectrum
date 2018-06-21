@@ -32,7 +32,7 @@ class ModelApiHandler extends BaseApiHandler
   public function __construct($modelClassName, $slug = null)
   {
     parent::__construct($slug);
-    $this->modelClassName = $modelClassName;
+    $this->modelClassName = Model::getModelClassForEntityAndBundle($modelClassName::$entityType, $modelClassName::$bundle);
     $this->defaultHeaders['Content-Type'] = 'application/vnd.api+json';
   }
 
