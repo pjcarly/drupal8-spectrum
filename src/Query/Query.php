@@ -2,38 +2,48 @@
 
 namespace Drupal\spectrum\Query;
 
-use Drupal\spectrum\Utils\ParenthesisParser;
-use Drupal\spectrum\Exceptions\InvalidQueryException;
+use Drupal\Core\Entity\Query\QueryInterface;
 
 abstract class Query
 {
   protected $baseConditions = [];
   public $conditions = [];
+  public $conditionGroups = [];
   public $sortOrders = [];
   public $rangeStart;
   public $rangeLength;
   public $conditionLogic;
   public $tag;
 
-  public function setTag(string $tag)
+  public function setTag(string $tag) : Query
   {
     $this->tag = $tag;
+    return $this;
   }
 
-  public function addBaseCondition(Condition $condition)
+  public function addBaseCondition(Condition $condition) : Query
   {
     $this->baseConditions[] = $condition;
+    return $this;
   }
 
-  public function addCondition(Condition $condition)
+  public function addCondition(Condition $condition) : Query
   {
     $this->conditions[] = $condition;
+    return $this;
   }
 
-  public function setLimit(int $limit)
+  public function addConditionGroup(ConditionGroup $conditionGroup) : Query
+  {
+    $this->conditionGroups[] = $conditionGroup;
+    return $this;
+  }
+
+  public function setLimit(int $limit) : Query
   {
     $this->rangeStart = 0;
     $this->rangeLength = $limit;
+    return $this;
   }
 
   public function hasLimit() : bool
@@ -41,33 +51,37 @@ abstract class Query
     return !empty($this->rangeLength);
   }
 
-  public function setConditionLogic(string $conditionLogic)
+  public function setConditionLogic(string $conditionLogic) : Query
   {
     $this->conditionLogic = $conditionLogic;
+    return $this;
   }
 
-  public function setRange(int $start, int $length)
+  public function setRange(int $start, int $length) : Query
   {
     $this->rangeStart = $start;
     $this->rangeLength = $length;
+    return $this;
   }
 
-  public function addSortOrder(Order $order)
+  public function addSortOrder(Order $order) : Query
   {
     $this->sortOrders[$order->fieldName] = $order;
+    return $this;
   }
 
-  public function hasSortOrderForField(string $fieldName)
+  public function hasSortOrderForField(string $fieldName) : bool
   {
     return array_key_exists($fieldName, $this->sortOrders);
   }
 
-  public function clearSortOrders()
+  public function clearSortOrders() : Query
   {
     $this->sortOrders = [];
+    return $this;
   }
 
-  public function getQuery()
+  public function getQuery() : QueryInterface
   {
     $query = $this->getBaseQuery();
 
@@ -80,14 +94,14 @@ abstract class Query
     return $query;
   }
 
-  public function getTotalCountQuery()
+  public function getTotalCountQuery() : QueryInterface
   {
     $query = $this->getBaseQuery();
     $query->count();
     return $query;
   }
 
-  private function getBaseQuery()
+  private function getBaseQuery() : QueryInterface
   {
     // We abstracted the getQuery and getTotalCountQuery functions in this function, to avoid duplicate code
     $query = \Drupal::entityQuery($this->entityType);
@@ -110,9 +124,21 @@ abstract class Query
     }
     else
     {
-      $parser = new ParenthesisParser();
-      $structure = $parser->parse($this->conditionLogic);
-      $this->setConditionsOnBase($query, $structure, $query);
+      $conditionGroup = new ConditionGroup();
+      $conditionGroup->setLogic($this->conditionLogic);
+
+      foreach($this->conditions as $condition)
+      {
+        $conditionGroup->addCondition($condition);
+      }
+
+      $conditionGroup->applyConditionsOnQuery($query);
+    }
+
+    // Next the possible added condition groups
+    foreach($this->conditionGroups as $conditionGroup)
+    {
+      $conditionGroup->applyConditionsOnQuery($query);
     }
 
     // and finally apply an order if needed
@@ -129,63 +155,7 @@ abstract class Query
     return $query;
   }
 
-  private function setConditionsOnBase($base, $logic, $query)
-  {
-    $conditionGroup;
-    foreach($logic as $key => $value)
-    {
-      if(is_array($value))
-      {
-        if(empty($conditionGroup))
-        {
-          // we dont need to do anything recursive, we"ve reached the end, lets apply the conditions to the base
-          throw new InvalidQueryException();
-        }
-        else
-        {
-          $this->setConditionsOnBase($conditionGroup, $value, $query);
-        }
-      }
-      else if(strtoupper($value) === 'OR')
-      {
-        if(!empty($conditionGroup))
-        {
-          $base->condition($conditionGroup);
-        }
-
-        $conditionGroup = $query->orConditionGroup();
-      }
-      else if(strtoupper($value) === 'AND')
-      {
-        if(!empty($conditionGroup))
-        {
-          $base->condition($conditionGroup);
-        }
-
-        $conditionGroup = $query->andConditionGroup();
-      }
-      else if(is_numeric($value))
-      {
-        // check for condition in list
-        if(array_key_exists($value-1, $this->conditions))
-        {
-          $condition = $this->conditions[$value-1];
-          $condition->addQueryCondition($base);
-        }
-        else
-        {
-          // Condition doesnt exist, ignore it
-        }
-      }
-    }
-
-    if(!empty($conditionGroup))
-    {
-      $base->condition($conditionGroup);
-    }
-  }
-
-  public function fetch()
+  public function fetch() : array
   {
     $ids = $this->fetchIds();
 
@@ -232,7 +202,7 @@ abstract class Query
     }
   }
 
-  public function fetchTotalCount()
+  public function fetchTotalCount() : int
   {
     $query = $this->getTotalCountQuery();
     $result = $query->execute();

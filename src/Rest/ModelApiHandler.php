@@ -6,6 +6,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 use Drupal\spectrum\Query\Condition;
+use Drupal\spectrum\Query\ConditionGroup;
 use Drupal\spectrum\Query\Order;
 use Drupal\spectrum\Model\Collection;
 use Drupal\spectrum\Model\FieldRelationship;
@@ -28,12 +29,18 @@ class ModelApiHandler extends BaseApiHandler
   protected $maxLimit = 200;
   protected $listView;
   protected $baseConditions = [];
+  protected $conditionGroups = [];
 
   public function __construct($modelClassName, $slug = null)
   {
     parent::__construct($slug);
     $this->modelClassName = Model::getModelClassForEntityAndBundle($modelClassName::$entityType, $modelClassName::$bundle);
     $this->defaultHeaders['Content-Type'] = 'application/vnd.api+json';
+  }
+
+  protected final function addConditionGroup(ConditionGroup $conditionGroup)
+  {
+    $this->conditionGroups[] = $conditionGroup;
   }
 
   protected final function addBaseCondition(Condition $condition)
@@ -120,6 +127,15 @@ class ModelApiHandler extends BaseApiHandler
         foreach($this->baseConditions as $condition)
         {
           $query->addBaseCondition($condition);
+        }
+      }
+
+      // Next we also do the same for the condition groups
+      if(sizeof($this->conditionGroups) > 0)
+      {
+        foreach($this->conditionGroups as $conditionGroup)
+        {
+          $query->addConditionGroup($conditionGroup);
         }
       }
 
@@ -314,6 +330,15 @@ class ModelApiHandler extends BaseApiHandler
         foreach($this->baseConditions as $condition)
         {
           $query->addBaseCondition($condition);
+        }
+      }
+
+      // Next we also do the same for the condition groups
+      if(sizeof($this->conditionGroups) > 0)
+      {
+        foreach($this->conditionGroups as $conditionGroup)
+        {
+          $query->addConditionGroup($conditionGroup);
         }
       }
 
@@ -630,6 +655,15 @@ class ModelApiHandler extends BaseApiHandler
         }
       }
 
+      // Next we also do the same for the condition groups
+      if(sizeof($this->conditionGroups) > 0)
+      {
+        foreach($this->conditionGroups as $conditionGroup)
+        {
+          $query->addConditionGroup($conditionGroup);
+        }
+      }
+
       $model = $query->fetchSingleModel();
 
       // Only if the model was found in the database can we continue
@@ -920,6 +954,15 @@ class ModelApiHandler extends BaseApiHandler
       foreach($this->baseConditions as $condition)
       {
         $query->addBaseCondition($condition);
+      }
+    }
+
+    // Next we also do the same for the condition groups
+    if(sizeof($this->conditionGroups) > 0)
+    {
+      foreach($this->conditionGroups as $conditionGroup)
+      {
+        $query->addConditionGroup($conditionGroup);
       }
     }
 
