@@ -103,9 +103,9 @@ class JsonApiNode extends JsonApiBaseNode
 
   public function getRelationship($name)
   {
-    if(!empty($name) && array_key_exists($name, $this->relationship))
+    if(!empty($name) && array_key_exists($name, $this->relationships))
     {
-      return $this->relationship[$name];
+      return $this->relationships[$name];
     }
   }
 
