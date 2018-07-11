@@ -305,7 +305,7 @@ trait ModelSerializerMixin
       }
 
       // Now we'll check the other fields
-      if(!in_array($fieldName, $ignoreFields) && static::currentUserHasFieldPermission($fieldName))
+      if(!in_array($fieldName, $ignoreFields) && static::currentUserHasFieldPermission($fieldName, 'view'))
       {
         $fieldNamePretty = $fieldToPrettyMapping[$fieldName];
         $fieldType = $fieldDefinition->getType();
@@ -436,7 +436,7 @@ trait ModelSerializerMixin
     return !empty($field);
   }
 
-  public static function currentUserHasFieldPermission(string $field) : bool
+  public static function currentUserHasFieldPermission(string $field, string $access) : bool
   {
     $currentUser = \Drupal::currentUser();
     $permissionGranted = false;
@@ -451,7 +451,7 @@ trait ModelSerializerMixin
 
       foreach($userRoles as $userRole)
       {
-        if($permissionChecker::roleHasFieldPermission($userRole, $entity, $field))
+        if($permissionChecker::roleHasFieldPermission($userRole, $entity, $field, $access))
         {
           $permissionGranted = true;
           break;
