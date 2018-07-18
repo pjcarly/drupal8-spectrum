@@ -76,6 +76,24 @@ class BaseApiController implements ContainerAwareInterface
     return $permissionExists;
   }
 
+  protected function apiActionPermissionExists(string $route, string $api)
+  {
+    $permissionExists = false;
+
+    // Workaround because of custom permission bug in Drupal
+    if(function_exists('get_permission_checker'))
+    {
+      $permissionChecker = get_permission_checker();
+      $permissionExists = $permissionChecker::apiActionPermissionExists($route, $api);
+    }
+    else
+    {
+      $permissionExists = false;
+    }
+
+    return $permissionExists;
+  }
+
   protected function userHasApiPermission(Request $request, string $route, string $api) : bool
   {
     $access = $this->getAccessForRequestMethod($request);
@@ -106,27 +124,81 @@ class BaseApiController implements ContainerAwareInterface
     return $permissionGranted;
   }
 
+  protected function userHasApiActionPermission(string $route, string $api, string $action) : bool
+  {
+    $currentUser = \Drupal::currentUser();
+    $permissionGranted = false;
+
+    // Workaround because of custom permission bug in Drupal
+    if(function_exists('get_permission_checker'))
+    {
+      $permissionChecker = get_permission_checker();
+
+      $userRoles = $currentUser->getRoles();
+      foreach($userRoles as $userRole)
+      {
+        if($permissionChecker::roleHasApiActionPermission($userRole, $route, $api, $action))
+        {
+          $permissionGranted = true;
+          break;
+        }
+      }
+    }
+    else
+    {
+      $permissionGranted = false;
+    }
+
+    return $permissionGranted;
+  }
+
   public function handle(RouteMatchInterface $routeMatch, Request $request, $api = NULL, $slug = NULL, $action = NULL)
   {
     $response = new Response(null, 500, array());
 
-    if($this->apiPermissionExists($routeMatch->getRouteName(), $api))
+    // Permissions are different with or without an action
+    if(empty($action))
     {
-      if($this->userHasApiPermission($request, $routeMatch->getRouteName(), $api))
+      if($this->apiPermissionExists($routeMatch->getRouteName(), $api))
       {
-        $response->setStatusCode(204); // OK, no content
-        $response->setContent = null;
+        if($this->userHasApiPermission($request, $routeMatch->getRouteName(), $api))
+        {
+          $response->setStatusCode(204); // OK, no content
+          $response->setContent(null);
+        }
+        else
+        {
+          $response->setStatusCode(423); // Failed Locked
+          $response->setContent(null);
+        }
       }
       else
       {
-        $response->setStatusCode(423); // Failed Locked
+        $response->setStatusCode(404); // Failed not found
         $response->setContent(null);
       }
     }
     else
     {
-      $response->setStatusCode(404); // Failed not found
-      $response->setContent(null);
+      // The request is to an Action
+      if($this->apiActionPermissionExists($routeMatch->getRouteName(), $api))
+      {
+        if($this->userHasApiActionPermission($routeMatch->getRouteName(), $api, $action))
+        {
+          $response->setStatusCode(204); // OK, no content
+          $response->setContent(null);
+        }
+        else
+        {
+          $response->setStatusCode(423); // Failed Locked
+          $response->setContent(null);
+        }
+      }
+      else
+      {
+        $response->setStatusCode(404); // Failed not found
+        $response->setContent(null);
+      }
     }
 
     $this->addCorsHeaders($routeMatch, $request, $response);
