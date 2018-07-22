@@ -48,7 +48,7 @@ class QueuedJob extends RunnableModel
 
   }
 
-  public static function scheduleNext(string $jobName, string $variable = '')
+  public static function schedule(string $jobName, string $variable = '', \DateTime $date)
   {
     $registeredJob = RegisteredJob::getByKey($jobName);
 
@@ -57,9 +57,12 @@ class QueuedJob extends RunnableModel
       throw new \Exception('Regisered Job ('.$jobName.') not found');
     }
 
-    $utc = new \DateTimeZone('UTC');
-    $now = new \DateTime();
-    $now->setTimezone($utc);
+    if(empty($date))
+    {
+      $utc = new \DateTimeZone('UTC');
+      $date = new \DateTime();
+      $date->setTimezone($utc);
+    }
 
     $queuedJob = $registeredJob->createJobInstance();
     $queuedJob->entity->title->value = $jobName;
@@ -70,7 +73,7 @@ class QueuedJob extends RunnableModel
     }
 
     $queuedJob->entity->field_minutes_to_failure->value = 10;
-    $queuedJob->entity->field_scheduled_time->value = $now->format('Y-m-d\TH:i:s');
+    $queuedJob->entity->field_scheduled_time->value = $date->format('Y-m-d\TH:i:s');
     $queuedJob->put('job', $registeredJob);
     $queuedJob->save();
   }
