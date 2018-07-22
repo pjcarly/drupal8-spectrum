@@ -48,7 +48,7 @@ class QueuedJob extends RunnableModel
 
   }
 
-  public static function schedule(string $jobName, string $variable = '', \DateTime $date)
+  public static function schedule(string $jobName, string $variable = '', \DateTime $date = null)
   {
     $registeredJob = RegisteredJob::getByKey($jobName);
 
