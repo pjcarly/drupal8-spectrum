@@ -85,7 +85,8 @@ trait ModelSerializerMixin
         $valueToSerialize = $dateValue;
         break;
       case 'decimal':
-        $valueToSerialize = (double) $this->entity->get($fieldName)->value;
+        $valueToSerialize = $this->entity->get($fieldName)->value;
+        $valueToSerialize = $valueToSerialize === NULL ? NULL : (double) $valueToSerialize;
         break;
       case 'entity_reference':
         // TODO: this is really hacky, we must consider finding a more performant solution than the one with the target_ids now
