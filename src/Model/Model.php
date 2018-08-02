@@ -835,17 +835,17 @@ abstract class Model
     return static::forge($entity);
   }
 
-  public static function forgeByEntity($entity) : Model
+  public static function forgeByEntity($entity) : ?Model
   {
     return static::forge($entity);
   }
 
-  public static function forgeById($id) : Model
+  public static function forgeById($id) : ?Model
   {
     return static::forge(null, $id);
   }
 
-  public static function forge($entity = null, $id = null) : Model
+  public static function forge($entity = null, $id = null) : ?Model
   {
     if(!empty($id))
     {
@@ -876,6 +876,8 @@ abstract class Model
     {
       return new static($entity);
     }
+
+    return null;
   }
 
   /**
