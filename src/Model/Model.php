@@ -22,9 +22,11 @@ use Drupal\spectrum\Models\User;
 
 /**
  * A Model is a wrapper around a Drupal Entity, which provides extra functionality. and an easy way of fetching and saving it to the database.
- * It also provides functionality to correctly fetch related records (which are linked through an EntityReference) and correctly insert, update and delete
- * entities by respecting the UnitOfWork design pattern
+ * It also provides functionality to correctly fetch related records, defined by Relationships (which are linked through an EntityReference)
+ * and correctly insert, update, delete and validate
+ * entities by respecting the UnitOfWork design pattern.
  *
+ * Together with Collection and Relationship, this is the Core of the Spectrum framework
  * This functionality is loosly based on BookshelfJS (http://bookshelfjs.org/)
  */
 abstract class Model

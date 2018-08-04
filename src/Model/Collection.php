@@ -8,6 +8,14 @@ use Drupal\spectrum\Serializer\JsonApiRootNode;
 use Drupal\spectrum\Serializer\JsonApiBaseNode;
 use Drupal\spectrum\Serializer\JsonApiDataNode;
 
+/**
+ * A collection holds multiple models. It also tracks models that were removed from the collection between the initialization and save.
+ * So deletes can be done for models that were removed.
+ * It can be used to fetch, validate and save related records defined by Relationships on Models
+ *
+ * A collection respects the UnitOfWork design pattern. Together with Model and Relationship, this is the Core of the Spectrum framework
+ * This functionality is loosly based on BookshelfJS (http://bookshelfjs.org/)
+ */
 class Collection implements \IteratorAggregate, \Countable
 {
   private static $newKeyIndex = 0;
