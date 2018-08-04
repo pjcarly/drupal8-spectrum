@@ -33,7 +33,7 @@ class ReferencedRelationship extends Relationship
   }
 
   /**
-   * Because modeltypes can be exteded in each application, we load the modelType based on the one available in the get_registered_model_classes function
+   * Because modeltypes can be exteded in each application, we load the modelType based on the one available in the model service
    */
   public static function getModelType(string $modelType) : string
   {

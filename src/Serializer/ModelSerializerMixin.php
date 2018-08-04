@@ -12,6 +12,7 @@ Use Drupal\spectrum\Utils\StringUtils;
 
 use Drupal\spectrum\Models\File;
 use Drupal\spectrum\Models\Image;
+use Drupal\spectrum\Models\User;
 
 trait ModelSerializerMixin
 {
@@ -431,39 +432,22 @@ trait ModelSerializerMixin
     return $field;
   }
 
-  public static function prettyFieldExists($prettyField)
+  public static function prettyFieldExists($prettyField) : bool
   {
     $field = static::getFieldForPrettyField($prettyField);
     return !empty($field);
   }
 
+  /**
+   * Checks whether the logged in user has access to a certain field on this Model
+   *
+   * @param string $field The field on the model (for example "field_body")
+   * @param string $access What type of access ("view" or "edit")
+   * @return boolean
+   */
   public static function currentUserHasFieldPermission(string $field, string $access) : bool
   {
-    $currentUser = \Drupal::currentUser();
-    $permissionGranted = false;
-
-    // Workaround because of custom permission bug in Drupal
-    if(function_exists('get_permission_checker'))
-    {
-      $permissionChecker = get_permission_checker();
-
-      $userRoles = $currentUser->getRoles();
-      $entity = static::getBasePermissionKey();
-
-      foreach($userRoles as $userRole)
-      {
-        if($permissionChecker::roleHasFieldPermission($userRole, $entity, $field, $access))
-        {
-          $permissionGranted = true;
-          break;
-        }
-      }
-    }
-    else
-    {
-      $permissionGranted = false;
-    }
-
-    return $permissionGranted;
+    $user = User::loggedInUser();
+    return $user->hasFieldPermission(get_called_class(), $field, $access);
   }
 }

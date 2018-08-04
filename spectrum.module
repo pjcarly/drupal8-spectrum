@@ -1,1 +1,27 @@
 <?php
+use Drupal\spectrum\Triggers\ModelTrigger;
+
+function spectrum_entity_presave($entity)
+{
+  ModelTrigger::handle($entity, 'presave');
+}
+
+function spectrum_entity_insert($entity)
+{
+  ModelTrigger::handle($entity, 'insert');
+}
+
+function spectrum_entity_update($entity)
+{
+  ModelTrigger::handle($entity, 'update');
+}
+
+function spectrum_entity_predelete($entity)
+{
+  ModelTrigger::handle($entity, 'predelete');
+}
+
+function spectrum_entity_delete($entity)
+{
+  ModelTrigger::handle($entity, 'delete');
+}

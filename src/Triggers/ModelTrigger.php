@@ -15,7 +15,7 @@ class ModelTrigger
       if(Model::hasModelClassForEntityAndBundle($entityType, $bundle))
       {
         $modelClass = Model::getModelClassForEntityAndBundle($entityType, $bundle);
-        $model = new $modelClass($entity);
+        $model = $modelClass::forgeByEntity($entity);
 
         switch($trigger)
         {

@@ -15,7 +15,9 @@ use Drupal\spectrum\Exceptions\RelationshipNotDefinedException;
 use Drupal\spectrum\Exceptions\PolymorphicException;
 use Drupal\spectrum\Exceptions\InvalidFieldException;
 
-Use Drupal\spectrum\Utils\StringUtils;
+use Drupal\spectrum\Utils\StringUtils;
+use Drupal\spectrum\Permissions\PermissionServiceInterface;
+use Drupal\spectrum\Models\User;
 
 abstract class Model
 {
@@ -1216,18 +1218,30 @@ abstract class Model
     }
     else
     {
-      throw new ModelClassNotDefinedException('no model class for entity '.$entity.' and bundle '.$bundle.' has been defined');
+      throw new ModelClassNotDefinedException('No model class for entity '.$entity.' and bundle '.$bundle.' has been defined');
     }
   }
 
-  public static function getModelClasses()
+  public static function getModelService() : ModelServiceInterface
   {
-    if(!function_exists('get_registered_model_classes'))
+    if(!\Drupal::hasService('spectrum.model'))
     {
-      throw new NotImplementedException('function get_registered_model_classes() hasn\'t been implemented yet, you must define a custom module with the function present, which returns a list of namespaced modelclasses');
+      throw new NotImplementedException('No model service found in the Container, please create a custom module, register a service and implement \Drupal\spectrum\Model\ModelServiceInterface');
     }
 
-    return get_registered_model_classes();
+    $modelService = \Drupal::service('spectrum.model');
+    if(!($modelService instanceof ModelServiceInterface))
+    {
+      throw new NotImplementedException('Model service must implement \Drupal\spectrum\Model\ModelServiceInterface');
+    }
+
+    return $modelService;
+  }
+
+  public static function getModelClasses() : array
+  {
+    $modelService = static::getModelService();
+    return $modelService->getRegisteredModelClasses();
   }
 
   public static function getModelClassByBundle($bundle)
@@ -1272,8 +1286,12 @@ abstract class Model
     return empty($bundle) ? $entity.'.'.$entity : $entity.'.'.$bundle;
   }
 
-  // Currently not supported, due to bug in Core where currentuser doesnt return custom permissions
-  public static function getBasePermissionKey()
+  /**
+   * Returns the base permission key in the form of "entity_bundle" (for example node_article) this is used for the permission checker
+   *
+   * @return string
+   */
+  public static function getBasePermissionKey() : string
   {
     $inheritPermissionsFrom = static::$inheritPermissions;
     if(empty($inheritPermissionsFrom))
@@ -1286,83 +1304,99 @@ abstract class Model
     }
   }
 
-  public static function getReadPermissionKey()
+  public static function getReadPermissionKey() : string
   {
     $permissionKey = static::getBasePermissionKey();
     return 'spectrum api ' . $permissionKey.' read';
   }
 
-  public static function getCreatePermissionKey()
+  public static function getCreatePermissionKey() : string
   {
     $permissionKey = static::getBasePermissionKey();
     return 'spectrum api ' . $permissionKey.' create';
   }
 
-  public static function getDeletePermissionKey()
+  public static function getDeletePermissionKey() : string
   {
     $permissionKey = static::getBasePermissionKey();
     return 'spectrum api ' . $permissionKey.' delete';
   }
 
-  public static function getEditPermissionKey()
+  public static function getEditPermissionKey() : string
   {
     $permissionKey = static::getBasePermissionKey();
     return 'spectrum api ' . $permissionKey.' edit';
   }
 
-  private static function currentUserHasPermission($access)
+  /**
+   * Returns the Registered Permission Service in the Container
+   *
+   * @return PermissionServiceInterface
+   */
+  public static function getPermissionsService() : PermissionServiceInterface
   {
-    $currentUser = \Drupal::currentUser();
-
-    if($currentUser->id() == 1)
+    if(!\Drupal::hasService('spectrum.permissions'))
     {
-      //Admin always has access
-      //return true;
+      throw new NotImplementedException('No permissions service found in the Container, please create a custom module, register the service "spectrum.permissions" and implement \Drupal\spectrum\Permissions\PermissionServiceInterface');
     }
 
-    $permissionGranted = false;
-
-    // Workaround because of custom permission bug in Drupal
-    if(function_exists('get_permission_checker'))
+    $permissionService = \Drupal::service('spectrum.permissions');
+    if(!($permissionService instanceof PermissionServiceInterface))
     {
-      $permissionChecker = get_permission_checker();
-      $permission = static::getBasePermissionKey();
-
-      $userRoles = $currentUser->getRoles();
-      foreach($userRoles as $userRole)
-      {
-        if($permissionChecker::roleHasModelPermission($userRole, $permission, $access))
-        {
-          $permissionGranted = true;
-          break;
-        }
-      }
-    }
-    else
-    {
-      $permissionGranted = false;
+      throw new NotImplementedException('Permissions service must implement \Drupal\spectrum\Permissions\PermissionServiceInterface');
     }
 
-
-    return $permissionGranted;
+    return $permissionService;
   }
 
-  public static function userHasReadPermission()
+  /**
+   * Check if the current logged in user has permission for this model
+   *
+   * @param string $access (either C, R, U or D)
+   * @return boolean
+   */
+  private static function currentUserHasPermission(string $access) : bool
+  {
+    $currentUser = User::loggedInUser();
+    return $currentUser->hasModelPermission(get_called_class(), $access);
+  }
+
+  /**
+   * Checks whether the current logged in user has the Read permission on this Model
+   *
+   * @return boolean
+   */
+  public static function userHasReadPermission() : bool
   {
     return static::currentUserHasPermission('R');
   }
 
-  public static function userHasCreatePermission()
+  /**
+   * Checks whether the current logged in user has the Create permission on this Model
+   *
+   * @return boolean
+   */
+  public static function userHasCreatePermission() : bool
   {
     return static::currentUserHasPermission('C');
   }
 
-  public static function userHasEditPermission()
+  /**
+   * Checks whether the current logged in user has the Edit/Update permission on this Model
+   *
+   * @return boolean
+   */
+  public static function userHasEditPermission() : bool
   {
     return static::currentUserHasPermission('U');
   }
 
-  public static function userHasDeletePermission()
+  /**
+   * Checks whether the current logged in user has the Delete permission on this Model
+   *
+   * @return boolean
+   */
+  public static function userHasDeletePermission() : bool
   {
     return static::currentUserHasPermission('D');
   }

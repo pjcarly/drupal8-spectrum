@@ -11,12 +11,21 @@ use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Path\PathMatcher;
 use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
 use Drupal\cors\EventSubscriber\CorsResponseEventSubscriber;
-
+use Drupal\spectrum\Model\Model;
+use Drupal\spectrum\Models\User;
 
 class BaseApiController implements ContainerAwareInterface
 {
   use ContainerAwareTrait;
 
+  /**
+   * This function adds the CORS headers to the Response
+   *
+   * @param RouteMatchInterface $routeMatch
+   * @param Request $request
+   * @param Response $response
+   * @return void
+   */
   protected function addCorsHeaders(RouteMatchInterface $routeMatch, Request $request, Response $response)
   {
     // We let the request pass through Drupal's internals, so other modules can apply correct headers
@@ -31,11 +40,12 @@ class BaseApiController implements ContainerAwareInterface
     $cors->addCorsHeaders($event);
   }
 
-  // Returns string representing
-  // C = POST
-  // R = GET
-  // U = PATCH
-  // D = DELETE
+  /**
+   * Returns string representing the Access for the Permission check based on the REST Method
+   *
+   * @param Request $request
+   * @return string C, R, U or D (C = POST, R = GET,  U = PATCH, D = DELETE)
+   */
   private function getAccessForRequestMethod(Request $request) : string
   {
     $access = '';
@@ -58,110 +68,19 @@ class BaseApiController implements ContainerAwareInterface
     return $access;
   }
 
-  protected function apiPermissionExists(string $route, string $api)
-  {
-    $permissionExists = false;
-
-    // Workaround because of custom permission bug in Drupal
-    if(function_exists('get_permission_checker'))
-    {
-      $permissionChecker = get_permission_checker();
-      $permissionExists = $permissionChecker::apiPermissionExists($route, $api);
-    }
-    else
-    {
-      $permissionExists = false;
-    }
-
-    return $permissionExists;
-  }
-
-  protected function apiActionPermissionExists(string $route, string $api)
-  {
-    $permissionExists = false;
-
-    // Workaround because of custom permission bug in Drupal
-    if(function_exists('get_permission_checker'))
-    {
-      $permissionChecker = get_permission_checker();
-      $permissionExists = $permissionChecker::apiActionPermissionExists($route, $api);
-    }
-    else
-    {
-      $permissionExists = false;
-    }
-
-    return $permissionExists;
-  }
-
-  protected function userHasApiPermission(Request $request, string $route, string $api) : bool
-  {
-    $access = $this->getAccessForRequestMethod($request);
-
-    $currentUser = \Drupal::currentUser();
-    $permissionGranted = false;
-
-    // Workaround because of custom permission bug in Drupal
-    if(function_exists('get_permission_checker'))
-    {
-      $permissionChecker = get_permission_checker();
-
-      $userRoles = $currentUser->getRoles();
-      foreach($userRoles as $userRole)
-      {
-        if($permissionChecker::roleHasApiPermission($userRole, $route, $api, $access))
-        {
-          $permissionGranted = true;
-          break;
-        }
-      }
-    }
-    else
-    {
-      $permissionGranted = false;
-    }
-
-    return $permissionGranted;
-  }
-
-  protected function userHasApiActionPermission(string $route, string $api, string $action) : bool
-  {
-    $currentUser = \Drupal::currentUser();
-    $permissionGranted = false;
-
-    // Workaround because of custom permission bug in Drupal
-    if(function_exists('get_permission_checker'))
-    {
-      $permissionChecker = get_permission_checker();
-
-      $userRoles = $currentUser->getRoles();
-      foreach($userRoles as $userRole)
-      {
-        if($permissionChecker::roleHasApiActionPermission($userRole, $route, $api, $action))
-        {
-          $permissionGranted = true;
-          break;
-        }
-      }
-    }
-    else
-    {
-      $permissionGranted = false;
-    }
-
-    return $permissionGranted;
-  }
-
   public function handle(RouteMatchInterface $routeMatch, Request $request, $api = NULL, $slug = NULL, $action = NULL)
   {
     $response = new Response(null, 500, array());
+    $permissionService = Model::getPermissionsService();
 
     // Permissions are different with or without an action
     if(empty($action))
     {
-      if($this->apiPermissionExists($routeMatch->getRouteName(), $api))
+      if($permissionService->apiPermissionExists($routeMatch->getRouteName(), $api))
       {
-        if($this->userHasApiPermission($request, $routeMatch->getRouteName(), $api))
+        $user = User::loggedInUser();
+        $access = $this->getAccessForRequestMethod($request);
+        if($user->hasApiPermission($routeMatch->getRouteName(), $api, $access))
         {
           $response->setStatusCode(204); // OK, no content
           $response->setContent(null);
@@ -181,9 +100,10 @@ class BaseApiController implements ContainerAwareInterface
     else
     {
       // The request is to an Action
-      if($this->apiActionPermissionExists($routeMatch->getRouteName(), $api))
+      if($permissionService->apiActionPermissionExists($routeMatch->getRouteName(), $api))
       {
-        if($this->userHasApiActionPermission($routeMatch->getRouteName(), $api, $action))
+        $user = User::loggedInUser();
+        if($user->hasApiActionPermission($routeMatch->getRouteName(), $api, $action))
         {
           $response->setStatusCode(204); // OK, no content
           $response->setContent(null);
