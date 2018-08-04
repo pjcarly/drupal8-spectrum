@@ -2,6 +2,7 @@
 
 namespace Drupal\spectrum\Model;
 
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\spectrum\Query\EntityQuery;
 use Drupal\spectrum\Query\BundleQuery;
 use Drupal\spectrum\Query\ModelQuery;
@@ -19,32 +20,112 @@ use Drupal\spectrum\Utils\StringUtils;
 use Drupal\spectrum\Permissions\PermissionServiceInterface;
 use Drupal\spectrum\Models\User;
 
+/**
+ * A Model is a wrapper around a Drupal Entity, which provides extra functionality. and an easy way of fetching and saving it to the database.
+ * It also provides functionality to correctly fetch related records (which are linked through an EntityReference) and correctly insert, update and delete
+ * entities by respecting the UnitOfWork design pattern
+ *
+ * This functionality is loosly based on BookshelfJS (http://bookshelfjs.org/)
+ */
 abstract class Model
 {
   use \Drupal\spectrum\Serializer\ModelSerializerMixin;
   use \Drupal\spectrum\Serializer\ModelDeserializerMixin;
   use \Drupal\spectrum\Serializer\ModelSQLHelperMixin;
 
+  /**
+   * The entity type of this model (for example "node"), this should be defined in every subclass
+   *
+   * @var string
+   */
   public static $entityType;
+
+  /**
+   * The bundle of this model (for example "article"), this should be defined in every subclass
+   *
+   * @var string
+   */
   public static $bundle;
+
+  /**
+   * The name of the id field of the entity (for example "nid"), this should be defined in eery subclass
+   *
+   * @var string
+   */
   public static $idField;
 
+  /**
+   * Here are the model class mapping stored, with the entitytype/bundle as key, and the fully qualified model classname as value
+   * This is to get around the shared scope of multiple Models on the abstract superclass Model
+   *
+   * @var array
+   */
   public static $modelClassMapping = null;
+
+  /**
+   * This array will hold the defined relationships with as key the fully qualified classname of the model, and as value the different defined relationships
+   *
+   * @var array
+   */
   public static $relationships = [];
+
+  /**
+   * This is a incrementing helper variable to assign temporary keys to models that havent been inserted yet
+   *
+   * @var integer
+   */
   public static $keyIndex = 1;
 
-  protected static $permissions = [];
-  protected static $inheritPermissions = null;
+  /**
+   * Here the serialization type aliases will be stored in a shared scope safe way
+   *
+   * @var array
+   */
   protected static $serializationTypeAliases = [];
 
+  /**
+   * The entity that was wrapped by this Model
+   *
+   * @var EntityInterface
+   */
   public $entity;
-  public $key;
-  public $selected = false; // No functional use, only here for the amount of times you need this
 
+  /**
+   * The unique key for this model used by Collections, normally this is the Entity ID, in case no id exists (new records) use a temp key
+   *
+   * @var string|int|null
+   */
+  public $key;
+
+  /**
+   * This var has no functional use. however, in practice this is often used in different scenarios to select a model in a list for example
+   *
+   * @var boolean
+   */
+  public $selected = false;
+
+  /**
+   * An array containing all the FieldRelationships to this Entity, with as Key the relationship name
+   * The value will most likely be a Model, but can also be a Collection in case of a entity reference field with multiple values (fieldCardinality > 0)
+   *
+   * @var array
+   */
   public $relatedViaFieldOnEntity = [];
+
+  /**
+   * An array containing all the ReferencedRelationships to this Entity, with as Key the relationship name
+   * The value will always be a collection
+   *
+   * @var array
+   */
   public $relatedViaFieldOnExternalEntity = [];
 
-  public function __construct($entity)
+  /**
+   * In the constructor for the Model, an drupal entity must be provided
+   *
+   * @param EntityInterface $entity
+   */
+  public function __construct(EntityInterface $entity)
   {
     $this->entity = $entity;
     $id = $this->getId();
@@ -59,17 +140,34 @@ abstract class Model
     }
   }
 
+  /**
+   * Returns a string that can be used in a BaseApiController to switch on and create a ModelApiHandler
+   * This should be overridden in every ModelClass you want to define a Generic ModelApiHandler for with the key you want the BaseApiController to discover the Model with
+   *
+   * @return string
+   */
   public static function getGenericApiHandlerKey() : string
   {
     return '';
   }
 
+  /**
+   * Check whether the Model is new (not yet persisted to the DB)
+   *
+   * @return boolean
+   */
   public function isNew() : bool
   {
     return empty($this->getId());
   }
 
-  public function save($relationshipName = NULL)
+  /**
+   * Save the model, or if a relationshipName was passed, get the relationship and save it
+   *
+   * @param string $relationshipName
+   * @return Model
+   */
+  public function save(string $relationshipName = NULL) : Model
   {
     if(empty($relationshipName))
     {
@@ -86,17 +184,33 @@ abstract class Model
     {
       $this->get($relationshipName)->save();
     }
+
+    return $this;
   }
 
-  public function delete()
+  /**
+   * Delete the Model from the database. This should only be used when this model doesnt exists in a Collection (whether it is a relationship or not)
+   * Else delete it via the Collection, so the UnitOfWork can do its job
+   *
+   * @return Model
+   */
+  public function delete() : Model
   {
     if(!$this->isNew())
     {
       $this->entity->delete();
     }
+
+    return $this;
   }
 
-  private function updateKeys()
+  /**
+   * Update the Key of this Model with the ID, and update the key in every Relationship (and inverse) where this Model was already put
+   * This is used when a temporary Key is generated, the Model is saved, and the Key is updated to the ID of the model
+   *
+   * @return Model
+   */
+  private function updateKeys() : Model
   {
     // we start of by reputting our keys
     $oldKey = $this->key;
@@ -170,14 +284,18 @@ abstract class Model
         }
       }
     }
+
+    return $this;
   }
 
-  public function clear($relationshipName)
+  /**
+   * Clear the relationship from this Model
+   *
+   * @param string $relationshipName
+   * @return void
+   */
+  public function clear(string $relationshipName)
   {
-    if(empty($relationshipName))
-    {
-      throw new InvalidTypeException('Clear only works with relationship names');
-    }
     $relationship = static::getRelationship($relationshipName);
     if($relationship instanceof FieldRelationship)
     {
@@ -192,7 +310,13 @@ abstract class Model
     }
   }
 
-  public function validate($relationshipName = NULL) : Validation
+  /**
+   * Validate the Model, or if a relationshipName was provided, the relationship
+   *
+   * @param string $relationshipName
+   * @return Validation
+   */
+  public function validate(string $relationshipName = NULL) : Validation
   {
     if(empty($relationshipName))
     {
@@ -207,11 +331,16 @@ abstract class Model
     }
   }
 
-  private function setFieldForReferencedRelationships()
+  /**
+   * This is the UnitOfWork Design Pattern in practice
+   * This method sets the field with the newly created ID upon inserting a new record
+   * This is important for when you have multiple related models in memory who haven't been inserted
+   * and are just related in memory, by setting the ID we know how to relate them in the DB
+   *
+   * @return Model
+   */
+  private function setFieldForReferencedRelationships() : Model
   {
-    // This method sets the field with newly created ID upon inserting a new record
-    // This is important for when you have multiple related models in memory who haven't been inserted
-    // and just have are just related in memory, by setting the ID we know how to relate them in the DB
     $relationships = static::getRelationships();
     foreach($relationships as $relationship)
     {
@@ -234,9 +363,17 @@ abstract class Model
         }
       }
     }
+
+    return $this;
   }
 
-  public function fetch($relationshipName)
+  /**
+   * Fetch the relationship from the Database
+   *
+   * @param string $relationshipName
+   * @return Model|Collection|null
+   */
+  public function fetch(string $relationshipName)
   {
     $returnValue = null;
 
@@ -356,11 +493,22 @@ abstract class Model
     return $returnValue;
   }
 
+  /**
+   * Returns the ModelClass name
+   *
+   * @return string
+   */
   public function getModelName() : string
   {
     return get_class($this);
   }
 
+  /**
+   * Returns the provided relationship on this Model
+   *
+   * @param string|Relationship $relationship
+   * @return Model|Collection|null
+   */
   public function get($relationship)
   {
     $firstRelationshipNameIndex = null;
@@ -424,48 +572,65 @@ abstract class Model
     return null;
   }
 
+  /**
+   * Returns the Id of the Model, this correctly handles the different id-fieldnames
+   *
+   * @return void
+   */
   public function getId()
   {
     $idField = static::$idField;
     return $this->entity->$idField->value;
   }
 
+  /**
+   * Set the ID of the Model
+   *
+   * @param int|string|null $id
+   * @return void
+   */
   public function setId($id)
   {
     $idField = static::$idField;
     $this->entity->$idField->value = $id;
   }
 
-  public function getFieldId($relationship)
+  /**
+   * Returns the id of the provided Relationship
+   *
+   * @param FieldRelationship $relationship
+   * @return int|string|null
+   */
+  public function getFieldId(FieldRelationship $relationship)
   {
-    if($relationship instanceof FieldRelationship)
+    $entity = $this->entity;
+    $field = $relationship->getField();
+    $column = $relationship->getColumn();
+
+    if($relationship->isSingle) // meaning the field can only contain 1 reference
     {
-      $entity = $this->entity;
-      $field = $relationship->getField();
-      $column = $relationship->getColumn();
-
-      if($relationship->isSingle) // meaning the field can only contain 1 reference
-      {
-        return empty($entity->$field->$column) ? null : $entity->$field->$column;
-      }
-      else
-      {
-        $returnValue = array();
-        foreach($entity->$field->getValue() as $fieldValue)
-        {
-          $returnValue[] = $fieldValue[$column];
-        }
-
-        return $returnValue;
-      }
+      return empty($entity->$field->$column) ? null : $entity->$field->$column;
     }
     else
     {
-      throw new InvalidRelationshipTypeException('Only Field relationships allowed');
+      $returnValue = array();
+      foreach($entity->$field->getValue() as $fieldValue)
+      {
+        $returnValue[] = $fieldValue[$column];
+      }
+
+      return $returnValue;
     }
   }
 
-  private function createNewCollection($relationship) : Collection
+  /**
+   * Create a Collection for a Relationship. Mind you this can be both Field and ReferencedRelationships, ReferencedRelationships will always be a Collection
+   * FieldRelationships will only be a Collection if Multiple values can be filled in (fieldCardinality > 1)
+   *
+   * @param Relationship $relationship
+   * @return Collection
+   */
+  private function createNewCollection(Relationship $relationship) : Collection
   {
     if($relationship instanceof FieldRelationship)
     {
@@ -494,17 +659,14 @@ abstract class Model
     }
   }
 
-  public function isParentOf($model, $relationship) : bool
-  {
-    $fieldId = $model->getFieldId($relationship);
-    $id = $this->getId();
-
-    // we must consider the 2 cases where either a field Id can be an array (in case of multiple references per field)
-    // or a single id, in case only 1 reference per field allowed
-    return !empty($fieldId) && !empty($id) && (is_array($fieldId) && in_array($id, $fieldId) || !is_array($fieldId) && $fieldId === $id);
-  }
-
-  private function putInverse(Relationship $relationship, Model $referencedModel)
+  /**
+   * Set the Inverse values of this Model on the provided Relationship
+   *
+   * @param Relationship $relationship
+   * @param Model $referencedModel
+   * @return Model
+   */
+  private function putInverse(Relationship $relationship, Model $referencedModel) : Model
   {
     // if the relationship is polymorphic we can get multiple bundles, so we must define the modeltype based on the bundle and entity of the current looping entity
     // or if the related modeltype isn't set yet, we must set it once
@@ -520,8 +682,18 @@ abstract class Model
     {
       $referencedModel->put($referencedRelationship, $this, true);
     }
+
+    return $this;
   }
 
+  /**
+   * Put the provided object on the provided relationship
+   *
+   * @param Relationship|string $relationship
+   * @param Model|Collection $objectToPut
+   * @param boolean $includeInOriginalModels
+   * @return void
+   */
   public function put($relationship, $objectToPut, $includeInOriginalModels = false)
   {
     $returnValue = null; // we return the object where this object is being put ON (can be a Model, or a Collection)
@@ -631,7 +803,13 @@ abstract class Model
     return $returnValue;
   }
 
-  public function putNew($relationship)
+  /**
+   * Put a new Model on the provided Relationship
+   *
+   * @param string|FieldRelationship|ReferencedRelationship $relationship
+   * @return Model
+   */
+  public function putNew($relationship) : Model
   {
     if(is_string($relationship)) // we only have the relationship name
     {
@@ -672,19 +850,43 @@ abstract class Model
     }
   }
 
+  /**
+   * This method is used to add FieldConstraints at runtime to the Model
+   *
+   * @return void
+   */
   public function constraints(){}
 
-  public function addFieldConstraint(string $fieldName, string $constraintName, array $options = [])
+  /**
+   * Add a FieldConstraint to the Drupal Entity at Runtime
+   *
+   * @param string $fieldName
+   * @param string $constraintName
+   * @param array $options
+   * @return Model
+   */
+  public function addFieldConstraint(string $fieldName, string $constraintName, array $options = []) : Model
   {
     $this->entity->getFieldDefinition($fieldName)->addConstraint($constraintName, $options);
+    return $this;
   }
 
+  /**
+   * Create a Copy of this entity and wrap it in a Model, the IDs will be blank, and all the field values will be filled in.
+   *
+   * @return Model
+   */
   public function getCopiedModel() : Model
   {
     $copy = static::forgeByEntity($this->getCopiedEntity());
     return $copy;
   }
 
+  /**
+   * Create a Copy of this entity, the IDs will be blank, and all the field values will be filled in.
+   *
+   * @return Entity
+   */
   public function getCopiedEntity()
   {
     $entity = $this->entity;
@@ -693,12 +895,22 @@ abstract class Model
     return $copy;
   }
 
+  /**
+   * Create a Clone of the Entity, and wrap it in a Model, with all the fields including the IDs filled in.
+   *
+   * @return Model
+   */
   public function getClonedModel() : Model
   {
     $clone = static::forgeByEntity($this->getClonedEntity());
     return $clone;
   }
 
+  /**
+   * Create a Clone of this Entity, with all the fields including the IDs filled in.
+   *
+   * @return Entity
+   */
   public function getClonedEntity()
   {
     $entity = $this->entity;
@@ -710,16 +922,23 @@ abstract class Model
     return $clone;
   }
 
-  public function debugEntity()
-  {
-    return $this->serialize();
-  }
-
+  /**
+   * Helper function for trigger methods, this way we can check if the Model being inserted is new or not (we cant use the ID as this will be filled in)
+   *
+   * @return boolean
+   */
   protected function isNewlyInserted() : bool
   {
     return empty($this->entity->original);
   }
 
+  /**
+   * Helper function for trigger methods. Returns true if the value of the field changed compared to the value stored in the database
+   * This can be used to only execute certain code when a field changes. (For Example when setting the Title of a User based on the first and lastname, only execute the method when the first of the lastname changes)
+   *
+   * @param string $fieldName
+   * @return boolean
+   */
   protected function fieldChanged(string $fieldName) : bool
   {
     $returnValue = $this->isNewlyInserted();
@@ -764,15 +983,26 @@ abstract class Model
     return $returnValue;
   }
 
-  public static function hasRelationship($relationshipName) : bool
+  /**
+   * Checks if the Relationshipname exists
+   *
+   * @param string $relationshipName
+   * @return boolean
+   */
+  public static function hasRelationship(string $relationshipName) : bool
   {
     $sourceModelType = get_called_class();
     static::setRelationships($sourceModelType);
     return array_key_exists($sourceModelType, static::$relationships) && array_key_exists($relationshipName, static::$relationships[$sourceModelType]);
   }
 
-  // Identical to hasRelationship, but with the difference that we search for deep relationships via the '.'
-  public static function hasDeepRelationship($relationshipName) : bool
+  /**
+   * Identical to hasRelationship, but with the difference that we search for deep relationships via the '.'
+   *
+   * @param string $relationshipName
+   * @return boolean
+   */
+  public static function hasDeepRelationship(string $relationshipName) : bool
   {
     $sourceModelType = get_called_class();
     $firstRelationshipNamePosition = strpos($relationshipName, '.');
@@ -798,7 +1028,13 @@ abstract class Model
     }
   }
 
-  public static function getDeepRelationship(String $relationshipName) : Relationship
+  /**
+   * Returns a Relationship based on the relationshipName, this will also look for relationships when a "." so can be used to search multiple levels deep
+   *
+   * @param string $relationshipName
+   * @return Relationship
+   */
+  public static function getDeepRelationship(string $relationshipName) : Relationship
   {
     $sourceModelType = get_called_class();
     $firstRelationshipNamePosition = strpos($relationshipName, '.');
@@ -818,11 +1054,21 @@ abstract class Model
     }
   }
 
-  public static function getNextKey()
+  /**
+   * Generate a new Key in memory, used to generate a temporary key for a model that doesnt exists in the db yet, and the ID cant be used
+   *
+   * @return string
+   */
+  public static function getNextKey() : string
   {
       return 'PLH'.(static::$keyIndex++);
   }
 
+  /**
+   * Create a new entity and wrap it in this Model
+   *
+   * @return Model
+   */
   public static function createNew() : Model
   {
     if(!empty(static::$bundle))
@@ -837,17 +1083,37 @@ abstract class Model
     return static::forge($entity);
   }
 
-  public static function forgeByEntity($entity) : ?Model
+  /**
+   * Forge a Model by a Drupal Entity (no queries will be done)
+   *
+   * @param EntityInterface $entity
+   * @return Model|null
+   */
+  public static function forgeByEntity(EntityInterface $entity) : ?Model
   {
     return static::forge($entity);
   }
 
+  /**
+   * Forge a Model by the provided ID, a query will be done to the database
+   *
+   * @param int|string $id
+   * @return Model|null
+   */
   public static function forgeById($id) : ?Model
   {
     return static::forge(null, $id);
   }
 
-  public static function forge($entity = null, $id = null) : ?Model
+  /**
+   * @deprecated
+   * Forge a new Model with either an Drupal Entity or an ID. For ease of use and readability use the methods "forgeById" or "forgeByEntity"
+   *
+   * @param EntityInterface $entity
+   * @param string|int $id
+   * @return Model|null will return the Model, or null if the model wasnt found
+   */
+  public static function forge(EntityInterface $entity = null, $id = null) : ?Model
   {
     if(!empty($id))
     {
@@ -918,22 +1184,43 @@ abstract class Model
     }
   }
 
+  /**
+   * Return a ModelQuery for the current Model (with the correct entity and bundle filled in as Conditions)
+   *
+   * @return ModelQuery
+   */
   public static function getModelQuery() : ModelQuery
   {
       return new ModelQuery(get_called_class());
   }
 
+  /**
+   * Return an EntityQuery, (with the correct entity filled in as a Condition)
+   *
+   * @return EntityQuery
+   */
   public static function getEntityQuery() : EntityQuery
   {
       return new EntityQuery(static::$entityType);
   }
 
+  /**
+   * Return a BundleQuery with the entityType and bundle filled in as Conditions
+   *
+   * @return BundleQuery
+   */
   public static function getBundleQuery() : BundleQuery
   {
       return new BundleQuery(static::$entityType, static::$bundle);
   }
 
-  public static function getReferencedRelationshipForFieldRelationship(FieldRelationship $fieldRelationship)
+  /**
+   * Return the ReferencedRelationship for a FieldRelationship (the inverse on the other Model), can be null if the ReferencedRelationship isnt defined
+   *
+   * @param FieldRelationship $fieldRelationship
+   * @return ReferencedRelationship|null
+   */
+  public static function getReferencedRelationshipForFieldRelationship(FieldRelationship $fieldRelationship) : ?ReferencedRelationship
   {
     $relationships = static::getRelationships();
     $referencedRelationship = null;
@@ -952,7 +1239,19 @@ abstract class Model
     return $referencedRelationship;
   }
 
+  /**
+   * This method is used to add relationships on every implementation of a Model
+   *
+   * @return void
+   */
   public static function relationships(){}
+
+  /**
+   * This Method sets the relationship arrays (and takes care of the sharing of the scope of Model by multiple Models)
+   *
+   * @param [type] $modelType
+   * @return void
+   */
   public static function setRelationships($modelType)
   {
     if(!array_key_exists($modelType, static::$relationships))
@@ -962,6 +1261,12 @@ abstract class Model
     }
   }
 
+  /**
+   * Get a Relationship by Name
+   *
+   * @param string $relationshipName
+   * @return Relationship
+   */
   public static function getRelationship(string $relationshipName) : Relationship
   {
     $sourceModelType = get_called_class();
@@ -977,6 +1282,12 @@ abstract class Model
     }
   }
 
+  /**
+   * Get a relationship by the fieldname on the drupal entity (used for deserializing)
+   *
+   * @param string $fieldName
+   * @return void
+   */
   public static function getRelationshipByFieldName(string $fieldName)
   {
     $relationships = static::getRelationships();
@@ -995,7 +1306,13 @@ abstract class Model
     return $foundRelationship;
   }
 
-  public static function getSerializationType()
+  /**
+   * Return a jsonapi.org compliant Serialization type (will dasherize types), normally the drupal entity type/bundle will be used, but it is possible to set an alias at runtime
+   * See Model::setSerializationTypeAlias()
+   *
+   * @return string
+   */
+  public static function getSerializationType() : string
   {
     $returnValue = '';
     $key = static::getKeyForEntityAndBundle(static::$entityType, static::$bundle);
@@ -1020,13 +1337,24 @@ abstract class Model
     return StringUtils::dasherize($returnValue);
   }
 
-  public static function setSerializationTypeAlias($type)
+  /**
+   * This hacky method sets a different serialization type at runtime than the Drupal type. (it is used to give an Entity a different name in a different scenario upon serialization and deserialization)
+   *
+   * @param string $type
+   * @return void
+   */
+  public static function setSerializationTypeAlias(string $type) : void
   {
     $key = static::getKeyForEntityAndBundle(static::$entityType, static::$bundle);
     static::$serializationTypeAliases[$key] = $type;
   }
 
-  public static function getRelationships()
+  /**
+   * Returns an array with all the relationships of the current Model
+   *
+   * @return array
+   */
+  public static function getRelationships() : array
   {
     $sourceModelType = get_called_class();
     static::setRelationships($sourceModelType);
@@ -1034,6 +1362,12 @@ abstract class Model
     return static::$relationships[$sourceModelType];
   }
 
+  /**
+   * Add a relationship to the Model, this function should be used in the relationships() function on every implementation of Model
+   *
+   * @param Relationship $relationship
+   * @return void
+   */
   public static function addRelationship(Relationship $relationship)
   {
     // first we need to namespace the relationships, as the relationship array is staticly defined;
@@ -1049,6 +1383,11 @@ abstract class Model
     static::$relationships[$sourceModelType][$relationship->getRelationshipKey()] = $relationship;
   }
 
+  /**
+   * Returns the drupal field definitions for the entity of this Model
+   *
+   * @return array
+   */
   public static function getFieldDefinitions()
   {
     if(empty(static::$bundle))
@@ -1061,17 +1400,13 @@ abstract class Model
     }
   }
 
-  public static function deleteById($id)
-  {
-    if(isset($id))
-    {
-      $entityType = static::$entityType;
-      $entity = \Drupal::entityTypeManager()->getStorage($entityType)->load($id);
-      $entity->delete();
-    }
-  }
-
-  public static function getFieldDefinition($fieldName)
+  /**
+   * Returns the drupal FieldDefinition for the provided fieldName
+   *
+   * @param string $fieldName
+   * @return \Drupal\Core\Field\FieldDefinitionInterface|null
+   */
+  public static function getFieldDefinition(string $fieldName) : ?\Drupal\Core\Field\FieldDefinitionInterface
   {
     $fieldDefinition = null;
     $fieldDefinitions = static::getFieldDefinitions();
@@ -1082,6 +1417,11 @@ abstract class Model
     return $fieldDefinition;
   }
 
+  /**
+   * Returns the Label based on the Drupal BundleInfo
+   *
+   * @return string
+   */
   public static function getLabel() : string
   {
     $label = '';
@@ -1094,28 +1434,56 @@ abstract class Model
     return $label;
   }
 
+  /**
+   * Get the Plural Label of this Model
+   *
+   * @return string
+   */
   public static function getPlural() : string
   {
     return empty(static::$plural) ? '' : static::$plural; // todo, find a way to store this aside the label of the model
   }
 
+  /**
+   * Returns the BundleKey, this is either the entityType when no bundle is provided (for example with user) or bundle in all other cases
+   *
+   * @return string
+   */
   public static function getBundleKey() : string
   {
     return empty(static::$bundle) ? static::$entityType : static::$bundle;
   }
 
+  /**
+   * Returns the Drupal BundleInfo of the entityType
+   *
+   */
   public static function getBundleInfo()
   {
     $bundleInfo = \Drupal::service("entity_type.bundle.info")->getBundleInfo(static::$entityType);
     return $bundleInfo[static::getBundleKey()];
   }
 
-  public static function underScoredFieldExists($underscoredField) : bool
+  /**
+   * Checks whether an underscored field exists on this model, this is to correctly translate a field like first_name back to field_first_name
+   *
+   * @param string $underscoredField
+   * @return boolean
+   */
+  public static function underScoredFieldExists(string $underscoredField) : bool
   {
     $prettyField = static::getPrettyFieldForUnderscoredField($underscoredField);
     return static::prettyFieldExists($prettyField);
   }
 
+  /**
+   * Safe check to see if a getterMethod exists on the model. This shields any platform functions and only checks for functions on the lowest level of abstraccion
+   * This is used by SimpleModelWrapper
+   *
+   * @param Model $model
+   * @param string $property
+   * @return boolean
+   */
   public static function getterExists(Model $model, string $property) : bool
   {
     $getterName = 'get'.$property;
@@ -1130,17 +1498,34 @@ abstract class Model
     return false;
   }
 
-  public function callGetter($property)
+  /**
+   * Call a getter function on the model. This is used by SimpleModelWrapper, in combination with getterExists to safely call getters on the lowest level of abstraction (the most child method)
+   *
+   * @param string $property
+   */
+  public function callGetter(string $property)
   {
     $getterName = 'get'.$property;
     return $this->$getterName();
   }
 
-  public static function getPrettyFieldForUnderscoredField($underscoredField)
+  /**
+   * Get the Pretty Field for an Underscored Field (for example translates first_name to first-name)
+   *
+   * @param string $underscoredField
+   * @return void
+   */
+  public static function getPrettyFieldForUnderscoredField(string $underscoredField)
   {
     return str_replace('_', '-', $underscoredField);;
   }
 
+  /**
+   * Magic getter implementation of Model, this checks whether the property exists or the relationship,
+   *
+   * @param [type] $property
+   * @return void
+   */
   public function __get($property)
   {
     if (property_exists($this, $property))
@@ -1161,20 +1546,74 @@ abstract class Model
     }
   }
 
+  /**
+   * used in combination with the magic getter to get values dynamically by twig templates
+   *
+   * @param [type] $property
+   * @return boolean
+   */
   public function __isset($property)
   {
     // Needed for twig to be able to access relationship via magic getter
     return property_exists($this, $property) || array_key_exists($property, $this->relatedViaFieldOnEntity) || array_key_exists($property, $this->relatedViaFieldOnExternalEntity) || static::hasRelationship($property);
   }
 
+  /**
+   * This method is executed by ModelApiHandlers before validation takes place. (this gives you the opportunity to fill in required fields before validation)
+   *
+   * @return void
+   */
   public function beforeValidate(){}
+
+  /**
+   * This trigger is executed by the Drupal platform before the insertion of the entity takes place.
+   * this gives you the opportunity to change values on the entity before being persisted to the database
+   *
+   * @return void
+   */
   public function beforeInsert(){}
+
+  /**
+   * This trigger is executed by the Drupal platform after the insertion of the entity to the database has been done
+   *
+   * @return void
+   */
   public function afterInsert(){}
+
+  /**
+   * This trigger is executed by the Drupal platform before the update of the entity takes place.
+   * this gives you the opportunity to change values on the entity before being persisted to the database
+   *
+   * @return void
+   */
   public function beforeUpdate(){}
+
+  /**
+   * This trigger is executed by the Drupal platform after the entity has been updated in the database
+   *
+   * @return void
+   */
   public function afterUpdate(){}
+
+  /**
+   * This trigger is executed by the Drupal platform before the entity will be deleted, giving you the opportunity to stop the deletion
+   *
+   * @return void
+   */
   public function beforeDelete(){}
+
+  /**
+   * This trigger is executed by the Drupal platform after the entity has been deleted, giving you the opportunity to clean up related records
+   *
+   * @return void
+   */
   public function afterDelete(){}
 
+  /**
+   * This method will automatically do cascading deletes for relationships (both Field and ReferencedRelationships) that have the cascading defined in the Relationship
+   *
+   * @return void
+   */
   public function doCascadingDeletes()
   {
     $relationships = static::getRelationships();
@@ -1201,7 +1640,14 @@ abstract class Model
     }
   }
 
-  public static function hasModelClassForEntityAndBundle($entity, $bundle)
+  /**
+   * Checks if there is a Model Class defined for the Entity / Bundle
+   *
+   * @param string $entity
+   * @param string|null $bundle
+   * @return boolean
+   */
+  public static function hasModelClassForEntityAndBundle(string $entity, ?string $bundle) : bool
   {
     static::setModelClassMappings();
 
@@ -1209,7 +1655,15 @@ abstract class Model
     return array_key_exists($key, static::$modelClassMapping);
   }
 
-  public static function getModelClassForEntityAndBundle($entity, $bundle)
+
+  /**
+   * Returns the fully qualified classname for the provided entity/bundle
+   *
+   * @param string $entity
+   * @param string|null $bundle
+   * @return string
+   */
+  public static function getModelClassForEntityAndBundle(string $entity, ?string $bundle) : string
   {
     if(static::hasModelClassForEntityAndBundle($entity, $bundle))
     {
@@ -1222,6 +1676,12 @@ abstract class Model
     }
   }
 
+  /**
+   * Returns the ModelService that is responsible for the registration of Model Classes in the system
+   * This should be implemented by every drupal installation using Spectrum (see ModelServiceInterface for documentation)
+   *
+   * @return ModelServiceInterface
+   */
   public static function getModelService() : ModelServiceInterface
   {
     if(!\Drupal::hasService('spectrum.model'))
@@ -1238,13 +1698,24 @@ abstract class Model
     return $modelService;
   }
 
+  /**
+   * Returns an Array of all registered Model Classes in the system. (see ModelServiceInterface for documentation)
+   *
+   * @return array
+   */
   public static function getModelClasses() : array
   {
     $modelService = static::getModelService();
     return $modelService->getRegisteredModelClasses();
   }
 
-  public static function getModelClassByBundle($bundle)
+  /**
+   * Find a modelclass by its bundle
+   *
+   * @param string $bundle
+   * @return string|null
+   */
+  public static function getModelClassByBundle(string $bundle) : ?string
   {
     $foundModelClass = null;
     foreach(static::getModelClasses() as $modelClass)
@@ -1258,6 +1729,11 @@ abstract class Model
     return $foundModelClass;
   }
 
+  /**
+   * This method will set an array on the abstract Model object, with all the registered models in.
+   *
+   * @return void
+   */
   private static function setModelClassMappings()
   {
     if(static::$modelClassMapping === null)
@@ -1281,7 +1757,14 @@ abstract class Model
     }
   }
 
-  public static function getKeyForEntityAndBundle($entity, $bundle)
+  /**
+   * Get a unique key for this model class
+   *
+   * @param string $entity
+   * @param string|null $bundle
+   * @return string
+   */
+  public static function getKeyForEntityAndBundle(string $entity, ?string $bundle) : string
   {
     return empty($bundle) ? $entity.'.'.$entity : $entity.'.'.$bundle;
   }
@@ -1293,15 +1776,7 @@ abstract class Model
    */
   public static function getBasePermissionKey() : string
   {
-    $inheritPermissionsFrom = static::$inheritPermissions;
-    if(empty($inheritPermissionsFrom))
-    {
-      return str_replace('.', '_', static::getKeyForEntityAndBundle(static::$entityType, static::$bundle));
-    }
-    else
-    {
-      return str_replace('.', '_', $inheritPermissionsFrom::getKeyForEntityAndBundle($inheritPermissionsFrom::$entityType, $inheritPermissionsFrom::$bundle));
-    }
+    return str_replace('.', '_', static::getKeyForEntityAndBundle(static::$entityType, static::$bundle));
   }
 
   public static function getReadPermissionKey() : string

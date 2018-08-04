@@ -19,13 +19,13 @@ abstract class Relationship
     $this->setCascadingDelete($cascade === 1);
   }
 
-  public function setCascadingDelete($cascadingDelete)
+  public function setCascadingDelete($cascadingDelete) : Relationship
   {
     $this->cascadingDelete = $cascadingDelete;
     return $this; // to enable
   }
 
-  public function setRelationshipSource($source = null)
+  public function setRelationshipSource($source = null) : Relationship
   {
     if(empty($source))
     {

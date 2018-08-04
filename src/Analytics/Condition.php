@@ -11,7 +11,6 @@ use Drupal\spectrum\Query\Condition as QueryCondition;
 class Condition extends Model
 {
   public static $userLiterals = ['MYSELF'];
-  public static $dateLiterals = ['TODAY'];
 
   public static $operationMapping = [
     'EQUALS' => '=',
@@ -39,7 +38,12 @@ class Condition extends Model
     static::addRelationship(new FieldRelationship('parent', 'field_parent.target_id'));
   }
 
-  public function buildQueryCondition()//: QueryCondition
+  /**
+   * Returns the Spectrum Condition that can be used in a Query
+   *
+   * @return QueryCondition
+   */
+  public function buildQueryCondition(): QueryCondition
   {
     $field = $this->entity->field_field->value;
     $operator = static::$operationMapping[$this->entity->field_operator->value];
@@ -54,6 +58,11 @@ class Condition extends Model
     return new QueryCondition($field, $operator, $value);
   }
 
+  /**
+   * Returns the value the Condition will contain
+   *
+   * @return void
+   */
   public function getValue()
   {
     $value = $this->entity->field_value->value;
@@ -83,10 +92,12 @@ class Condition extends Model
   {
     $fieldName = $this->entity->field_field->value;
     $fieldDefinitions = $this->parent->getDrupalFieldDefinitions();
+
     if(array_key_exists($fieldName, $fieldDefinitions))
     {
       return $fieldDefinitions[$fieldName];
     }
+
     return null;
   }
 }

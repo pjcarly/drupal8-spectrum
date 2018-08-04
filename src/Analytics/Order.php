@@ -21,7 +21,12 @@ class Order extends Model
     static::addRelationship(new FieldRelationship('parent', 'field_parent.target_id'));
   }
 
-  public function buildQueryOrder()//: QueryOrder
+  /**
+   * Returns a Spectrum Query Order based on the values filled in that can be used in a Query to define your Order
+   *
+   * @return QueryOrder
+   */
+  public function buildQueryOrder() : QueryOrder
   {
     return new QueryOrder($this->entity->field_field->value, $this->entity->field_direction->value);
   }
