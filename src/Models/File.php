@@ -19,11 +19,16 @@ class File extends Model
   {
   }
 
-  protected function getBaseApiPath()
+  protected function getBaseApiPath() : string
   {
     return 'file';
   }
 
+  /**
+   * Serializes the model, but also adds the URL to the file, and the hash
+   *
+   * @return JsonApiBaseNode
+   */
   public function getJsonApiNode() : JsonApiBaseNode
   {
     $node = parent::getJsonApiNode();
@@ -33,17 +38,32 @@ class File extends Model
     return $node;
   }
 
-  public function getHash()
+  /**
+   * Returns a hash based on the UUID, with this hash you can validate requests for files, and see if it matches the FID in the database
+   *
+   * @return string
+   */
+  public function getHash() : string
   {
     return md5($this->entity->uuid->value);
   }
 
-  public function getRealSrc()
+  /**
+   * Return the real SRC of the file, this will return a direct link to the file, specific for the file back-end storage
+   *
+   * @return string
+   */
+  public function getRealSrc() : string
   {
     return $this->entity->url();
   }
 
-  public function getBase64SRC()
+  /**
+   * Returns a base64 encoded string of the file
+   *
+   * @return string
+   */
+  public function getBase64SRC() : string
   {
     $mime = $this->entity->get('filemime')->value;
     $base64 = base64_encode(file_get_contents($this->getRealSrc()));
@@ -51,14 +71,27 @@ class File extends Model
     return 'data:'.$mime.';base64,'.$base64;
   }
 
-  public function getSRC()
+  /**
+   * Return a Drupal absolute URL that you can use to return the File indepentenly of the File storage back-end
+   * All the information to get the file is contained in the URL. the FID (file ID), and DG an MD5 hash of the UUID (so you can validate the call by an extra param)
+   *
+   * @return string
+   */
+  public function getSRC() : string
   {
     $url = UrlUtils::getBaseURL() . $this->getBaseApiPath().'/' . $this->entity->get('filename')->value . '?fid=' . $this->getId() . '&dg=' . $this->getHash();
 
     return $url;
   }
 
-  public static function createNewFile($data, $filename)
+  /**
+   * Create a new FileModel by saving a data blob, getting the entity from drupal and wrapping it in a model
+   *
+   * @param mixed $data
+   * @param string $filename
+   * @return void
+   */
+  public static function createNewFile($data, string $filename)
   {
     $fileEntity = file_save_data($data, 's3://'.basename($filename), FILE_EXISTS_RENAME);
     $file = File::forge($fileEntity);

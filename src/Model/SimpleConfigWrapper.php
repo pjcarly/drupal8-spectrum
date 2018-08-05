@@ -2,13 +2,20 @@
 
 namespace Drupal\spectrum\Model;
 
+use Drupal\Core\Config\ImmutableConfig;
+
+/**
+ * This class exposes magic getters to get values from a model without having to know the drupal implementation
+ * Useful for within Email templates for example, where we can just get {{ account.name }} instead of {{ account.entity.title.value }}
+ */
 class SimpleConfigWrapper
 {
-  // This class exposes magic getters to get values from a model without having to know the drupal implementation
-  // Useful for within Email templates for example, where we can just get {{ account.name }} instead of {{ account.entity.title.value }}
   private $config;
 
-  public function __construct($config)
+  /**
+   * @param ImmutableConfig $config The drupal config you want to wrap
+   */
+  public function __construct(ImmutableConfig $config)
   {
     $this->config = $config->get();
   }

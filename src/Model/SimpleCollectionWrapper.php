@@ -7,25 +7,45 @@ use Drupal\spectrum\Model\Collection;
 
 use Drupal\spectrum\Model\SimpleModelWrapper;
 
+/**
+ * This class is a wrapper of collection, with the simple use of using collections in twig templates without having to know the Drupal implementation
+ * This class exposes magic getters to get values from a model without having to know the drupal implementation
+ * Useful for within Email templates for example, where we can just get {{ account.name }} instead of {{ account.entity.title.value }}
+ */
 class SimpleCollectionWrapper implements \IteratorAggregate
 {
-  // This class exposes magic getters to get values from a model without having to know the drupal implementation
-  // Useful for within Email templates for example, where we can just get {{ account.name }} instead of {{ account.entity.title.value }}
+  /**
+   * The wrapped Collection
+   *
+   * @var Collection
+   */
   private $collection;
 
+  /**
+   * @param Collection $collection The collection you want to wrap
+   */
   public function __construct(Collection $collection)
   {
     $this->collection = $collection;
   }
 
+  /**
+   * Return the wrapped collection
+   *
+   * @return Collection
+   */
   public function getCollection() : Collection
   {
     return $this->collection;
   }
 
+  /**
+   * Implementation of \IteratorAggregate, This function makes it possible to loop over a collection, we are just passing the $models as the loopable array
+   *
+   * @return void
+   */
   public function getIterator()
   {
-    // This function makes it possible to loop over a collection, we are just passing the $models as the loopable array
     $simpleModels = [];
 
     foreach($this->collection as $key => $model)
@@ -36,7 +56,12 @@ class SimpleCollectionWrapper implements \IteratorAggregate
     return new \ArrayIterator($simpleModels);
   }
 
-
+  /**
+   * Magic getter to expose Collection logic
+   *
+   * @param string $property
+   * @return void
+   */
   public function __get($property)
   {
     if (property_exists($this->collection, $property))
@@ -60,6 +85,12 @@ class SimpleCollectionWrapper implements \IteratorAggregate
     }
   }
 
+  /**
+   * Magic issetter for twig templates
+   *
+   * @param string $property
+   * @return boolean
+   */
   public function __isset($property)
   {
     // Needed for twig to be able to access relationship via magic getter
