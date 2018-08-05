@@ -49,16 +49,32 @@ class User extends Model
     return $currentUser;
   }
 
+  /**
+   * Returns the roles of the user
+   *
+   * @return array
+   */
   public function getRoles() : array
   {
     return $this->entity->getRoles();
   }
 
+  /**
+   * Check if the user is an Anonymous user
+   *
+   * @return boolean
+   */
   public function isAnonymous() : bool
   {
     return $this->entity->isAnonymous();
   }
 
+  /**
+   * Check if a role exist on the User
+   *
+   * @param string $role
+   * @return boolean
+   */
   public function hasRole(string $role) : bool
   {
     $roles = $this->getRoles();
@@ -66,17 +82,32 @@ class User extends Model
     return in_array($role, $roles);
   }
 
+  /**
+   * Check if the user is active
+   *
+   * @return boolean
+   */
   public function isActive() : bool
   {
     return $this->entity->isActive();
   }
 
+  /**
+   * Activate the user (in memory, model must be saved to persist)
+   *
+   * @return User
+   */
   public function activate() : User
   {
     $this->entity->status->value = true;
     return $this;
   }
 
+  /**
+   * Block the user (in memory, model must be saved to persist)
+   *
+   * @return User
+   */
   public function block() : User
   {
     $this->entity->status->value = false;

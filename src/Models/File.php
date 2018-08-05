@@ -10,6 +10,9 @@ use Drupal\spectrum\Utils\UrlUtils;
 use Drupal\Component\Render\PlainTextOutput;
 use Drupal\spectrum\Exceptions\NotImplementedException;
 
+/**
+ * A File model for the file entity
+ */
 class File extends Model
 {
   public static $entityType = 'file';
@@ -92,7 +95,7 @@ class File extends Model
    * @param string $uriScheme
    * @param string $directory
    * @param string $filename
-   * @param [type] $data
+   * @param mixed $data the blob of the file you want to save
    * @return File
    */
   public static function createNewFile(string $uriScheme, string $directory, string $filename, $data) : File

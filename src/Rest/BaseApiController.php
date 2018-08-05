@@ -14,6 +14,10 @@ use Drupal\cors\EventSubscriber\CorsResponseEventSubscriber;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Models\User;
 
+/**
+ * The base API Controller to create custom webservice functionality. This class exposes a static handle() method which can be used in the Symfony routing files
+ * This should be the entry point for all calls, and you should route the calls to ApiHandlers
+ */
 class BaseApiController implements ContainerAwareInterface
 {
   use ContainerAwareTrait;
@@ -68,7 +72,18 @@ class BaseApiController implements ContainerAwareInterface
     return $access;
   }
 
-  public function handle(RouteMatchInterface $routeMatch, Request $request, $api = NULL, $slug = NULL, $action = NULL)
+  /**
+   * The default entry point for the Symfony routing, from here all calls should be routed to apihandlers.
+   * CORS headers will be applied to responses, and Permission checking will be done via the PermissionService
+   *
+   * @param RouteMatchInterface $routeMatch
+   * @param Request $request
+   * @param string $api The API you want to reach, this is used to route the call to an API Handler
+   * @param string $slug The slug that will be given to the API handler (for example the ID of a record you want to query)
+   * @param string $action An optional Action you want to execute on the APIHandler (for example publish)
+   * @return void
+   */
+  public function handle(RouteMatchInterface $routeMatch, Request $request, string $api = NULL, string $slug = NULL, string $action = NULL)
   {
     $response = new Response(null, 500, array());
     $permissionService = Model::getPermissionsService();

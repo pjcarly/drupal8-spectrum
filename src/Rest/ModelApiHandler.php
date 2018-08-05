@@ -21,39 +21,105 @@ use Drupal\spectrum\Exceptions\InvalidTypeException;
 use Drupal\spectrum\Exceptions\NotImplementedException;
 use Drupal\spectrum\Exceptions\ModelNotFoundException;
 
+/**
+ * This class provides an implementation of an BaseApiHandler for a Model in a jsonapi.org compliant way
+ */
 class ModelApiHandler extends BaseApiHandler
 {
+  /**
+   * Embedded API relationships for this ApiHandler, this provides an extension to the jsonapi.org spec, by giving the opportunity to
+   * save or update a model record plus any related other records
+   * The key of the array will be the key in the jsonapi.org hash that contains the embedded jsonapi.org document(s)
+   * The value of the array must be a string that matches a relationshipname on the model
+   *
+   * @var array
+   */
   protected static $embeddedApiRelationships = [];
 
+  /**
+   * The fully qualified classname of the model you want to use in this apihandler
+   *
+   * @var string
+   */
   private $modelClassName;
+
+  /**
+   * The default maxlimit for a result, to make sure we dont return everything in the database, but paginate results
+   *
+   * @var integer
+   */
   protected $maxLimit = 200;
-  protected $listView;
+
+
+  /**
+   * Base conditions that will be added to all queries done in the api handler
+   *
+   * @var array
+   */
   protected $baseConditions = [];
+
+  /**
+   * condition groups that will be added to all queries done in the api handler
+   *
+   * @var array
+   */
   protected $conditionGroups = [];
 
-  public function __construct($modelClassName, $slug = null)
+  /**
+   * @param string $modelClassName The fully qualified classname of the model you want to use in this apihandler
+   * @param string|int|null $slug
+   */
+  public function __construct(string $modelClassName, $slug = null)
   {
     parent::__construct($slug);
     $this->modelClassName = Model::getModelClassForEntityAndBundle($modelClassName::$entityType, $modelClassName::$bundle);
     $this->defaultHeaders['Content-Type'] = 'application/vnd.api+json';
   }
 
-  protected final function addConditionGroup(ConditionGroup $conditionGroup)
+  /**
+   * Add a ConditionGroup that will be applied to all queries
+   *
+   * @param ConditionGroup $conditionGroup
+   * @return ModelApiHandler
+   */
+  protected final function addConditionGroup(ConditionGroup $conditionGroup) : ModelApiHandler
   {
     $this->conditionGroups[] = $conditionGroup;
+    return $this;
   }
 
-  protected final function addBaseCondition(Condition $condition)
+  /**
+   * Add a base condition that will be applied to all queries in this apihandler
+   *
+   * @param Condition $condition
+   * @return ModelApiHandler
+   */
+  protected final function addBaseCondition(Condition $condition) : ModelApiHandler
   {
     $this->baseConditions[] = $condition;
+    return $this;
   }
 
+  /**
+   * This function can be used to change the JsonApi.org result before serializing it and returned in the response.
+   *
+   * @param Collection|Model $object
+   * @return JsonApiBaseNode
+   */
   protected function getJsonApiNodeForModelOrCollection($object) : JsonApiBaseNode
   {
     return $object->getJsonApiNode();
   }
 
-  public function get(Request $request)
+  /**
+   * This method executes get functionality for the Rest call. If a slug is provided, 1 result will be fetched from the database
+   * If no slug was provided a list of results will be returend.
+   * Permissions to the API will be checked, and fields will be filtered to only include the fields where the user has access to
+   *
+   * @param Request $request
+   * @return Response
+   */
+  public function get(Request $request) : Response
   {
     $modelClassName = $this->modelClassName;
     $query = $modelClassName::getModelQuery();
@@ -383,20 +449,59 @@ class ModelApiHandler extends BaseApiHandler
     return new Response(json_encode($this->serialize($jsonapi)), $responseCode, array());
   }
 
+  /**
+   * This method is called to serialize the jsonapi node. you can override it to provide your own implementation
+   *
+   * @param JsonApiRootNode $jsonapi
+   * @return \stdClass
+   */
   protected function serialize(JsonApiRootNode $jsonapi) : \stdClass
   {
     return $jsonapi->serialize();
   }
 
+  /**
+   * This method is called before the model will be validated in a post, giving you the opportunity to do override functionality per ApiHandler
+   *
+   * @param Model $model
+   * @return Model
+   */
   protected function beforePostValidate(Model $model) : Model
   {
     return $model;
   }
 
-  protected function beforePostSave(Model $model){}
-  protected function afterPostSave(Model $model){}
+  /**
+   * This method is called before the model will be saved in a post, giving you the opportunity to do override functionality per ApiHandler
+   *
+   * @param Model $model
+   * @return Model
+   */
+  protected function beforePostSave(Model $model) : Model
+  {
+    return $model;
+  }
 
-  public function post(Request $request)
+  /**
+   * This method is called after the model is saved in a post, giving you the opportunity to do override functionality per ApiHandler
+   *
+   * @param Model $model
+   * @return Model
+   */
+  protected function afterPostSave(Model $model) : Model
+  {
+    return $model;
+  }
+
+  /**
+   * This method executes post functionality for the Rest call. Slugs cannot be provided
+   * A call to this method will insert a new model in the database.
+   * Permissions to the API will be checked, and fields will be filtered to only allow to fill in the fields where the user has access to
+   *
+   * @param Request $request
+   * @return Response
+   */
+  public function post(Request $request) : Response
   {
     $modelClassName = $this->modelClassName;
     $response;
@@ -542,7 +647,7 @@ class ModelApiHandler extends BaseApiHandler
       if($validation->hasSucceeded())
       {
         // We call our beforeSave hook, so we can potentially fetch some relationships for the before hooks of the model
-        $this->beforePostSave($model);
+        $model = $this->beforePostSave($model);
 
         // No errors, we can save, and return the newly created model serialized
         $jsonapi = new JsonApiRootNode();
@@ -566,7 +671,7 @@ class ModelApiHandler extends BaseApiHandler
         }
 
         // We call our afterSave hook, so we can potentially do some actions based on the newly created model
-        $this->afterPostSave($model);
+        $model = $this->afterPostSave($model);
 
         // we serialize the response
         $jsonapi->addNode($this->getJsonApiNodeForModelOrCollection($model));
@@ -614,15 +719,49 @@ class ModelApiHandler extends BaseApiHandler
     return new Response(isset($response) ? json_encode($response) : null, $responseCode, array());
   }
 
+  /**
+   * This method is called before the model will be validated in a patch, giving you the opportunity to do override functionality per ApiHandler
+   *
+   * @param Model $model
+   * @return Model
+   */
   protected function beforePatchValidate(Model $model) : Model
   {
     return $model;
   }
 
-  protected function beforePatchSave(Model $model, Model $originalModel){}
-  protected function afterPatchSave(Model $model, Model $originalModel){}
+  /**
+   * This method is called before the model will be updated in a patch, giving you the opportunity to do override functionality per ApiHandler
+   *
+   * @param Model $model
+   * @return Model
+   */
+  protected function beforePatchSave(Model $model, Model $originalModel) : Model
+  {
+    return $model;
+  }
 
-  public function patch(Request $request)
+  /**
+   * This method is called after the model is saved in a patch, giving you the opportunity to do override functionality per ApiHandler
+   *
+   * @param Model $model
+   * @return Model
+   */
+  protected function afterPatchSave(Model $model, Model $originalModel) : Model
+  {
+    return $model;
+  }
+
+  /**
+   * This method executes patch functionality for the Rest call. A slug must be provided
+   * A call to this method will update a new model in the database, if the fields arent included in the response, they will be ignored in the udpate.
+   * If you want to make fields empty, you must provide them with value NULL
+   * Permissions to the API will be checked, and fields will be filtered to only update and return the fields where the user has access to
+   *
+   * @param Request $request
+   * @return Response
+   */
+  public function patch(Request $request) : Response
   {
     $modelClassName = $this->modelClassName;
 
@@ -849,7 +988,7 @@ class ModelApiHandler extends BaseApiHandler
         if($validation->hasSucceeded())
         {
           // We call our beforeSave hook, so we can potentially fetch some relationships for the before hooks of the model
-          $this->beforePatchSave($model, $originalModel);
+          $model = $this->beforePatchSave($model, $originalModel);
 
           // No errors, we can save, and return the newly created model serialized
           $jsonapi = new JsonApiRootNode();
@@ -876,7 +1015,7 @@ class ModelApiHandler extends BaseApiHandler
           }
 
           // We call our afterSave hook, so we can potentially do some actions based on the newly created model
-          $this->afterPatchSave($model, $originalModel);
+          $model = $this->afterPatchSave($model, $originalModel);
 
           // we serialize the response
           $jsonapi->addNode($this->getJsonApiNodeForModelOrCollection($model));
@@ -931,7 +1070,13 @@ class ModelApiHandler extends BaseApiHandler
     return new Response(isset($response) ? json_encode($response) : null, $responseCode, array());
   }
 
-  public function delete(Request $request)
+  /**
+   * This method executes a delete on the model, where the ID was provided in the slug. Ofcourse the permission will be checked whether the user is allowed to delete the model
+   *
+   * @param Request $request
+   * @return Response
+   */
+  public function delete(Request $request) : Response
   {
     $modelClassName = $this->modelClassName;
     $response;
@@ -984,7 +1129,18 @@ class ModelApiHandler extends BaseApiHandler
     return new Response(isset($response) ? json_encode($response) : null, $responseCode, array());
   }
 
-  protected function addSingleLink(JsonApiRootNode $jsonapi, $name, $baseUrl, $limit = 0, $page = 0, $sort = null)
+  /**
+   * Adds a link to JsonApiRoot node, this adds meta information. needed to do pagination for example
+   *
+   * @param JsonApiRootNode $jsonapi
+   * @param string $name
+   * @param string $baseUrl
+   * @param integer $limit
+   * @param integer $page
+   * @param string $sort
+   * @return ModelApiHandler
+   */
+  protected function addSingleLink(JsonApiRootNode $jsonapi, string $name, string $baseUrl, int $limit = 0, int $page = 0, string $sort = null) : ModelApiHandler
   {
     $link = new JsonApiLink($name, $baseUrl);
     if(!empty($limit))
@@ -1000,9 +1156,21 @@ class ModelApiHandler extends BaseApiHandler
       $link->addParam('page', $page);
     }
     $jsonapi->addLink($name, $link);
+
+    return $this;
   }
 
-  protected function checkForIncludes($source, JsonApiRootNode $jsonApiRootNode, $relationshipNamesToInclude)
+
+  /**
+   * Add includes to the JsonApiRootNode based on the indlues in the query or in the api handler.
+   * Includes are other related Models that are also serialized to a jsonapi.org document
+   *
+   * @param Collection|Model $source
+   * @param JsonApiRootNode $jsonApiRootNode
+   * @param array $relationshipNamesToInclude
+   * @return void
+   */
+  protected function checkForIncludes($source, JsonApiRootNode $jsonApiRootNode, array $relationshipNamesToInclude) : ModelApiHandler
   {
     if(!empty($source) && !$source->isEmpty)
     {
@@ -1083,9 +1251,19 @@ class ModelApiHandler extends BaseApiHandler
         }
       }
     }
+
+    return $this;
   }
 
-  public static function getConditionListForFilterArray(string $modelClassName, array $filter)//: array
+  /**
+   * This method parses a filter array (which is generally found in the query parameter of the request)
+   * To an array of Conditions that can be used to query the database for results
+   *
+   * @param string $modelClassName
+   * @param array $filter
+   * @return array
+   */
+  public static function getConditionListForFilterArray(string $modelClassName, array $filter) : array
   {
     $prettyToFieldsMap = $modelClassName::getPrettyFieldsToFieldsMapping();
     $conditions = [];
@@ -1147,7 +1325,14 @@ class ModelApiHandler extends BaseApiHandler
     return $conditions;
   }
 
-  public static function getListViewForFilterArray(string $modelClassName, array $filter)
+  /**
+   * This method checks if there is a listview parameter in the filter array and fetches it from the DB
+   *
+   * @param string $modelClassName
+   * @param array $filter
+   * @return ListView|null
+   */
+  public static function getListViewForFilterArray(string $modelClassName, array $filter) : ?ListView
   {
     if(array_key_exists('_listview', $filter))
     {
@@ -1166,7 +1351,14 @@ class ModelApiHandler extends BaseApiHandler
     return null;
   }
 
-  public static function getSortOrderListForSortArray(string $modelClassName, array $sortQueryFields)//: array
+  /**
+   * This method returns an array of sort orders found in the sort array (generally passed in the query parameters of the request)
+   *
+   * @param string $modelClassName
+   * @param array $sortQueryFields
+   * @return array
+   */
+  public static function getSortOrderListForSortArray(string $modelClassName, array $sortQueryFields) : array
   {
     $prettyToFieldsMap = $modelClassName::getPrettyFieldsToFieldsMapping();
     $sortOrders = [];
@@ -1208,13 +1400,25 @@ class ModelApiHandler extends BaseApiHandler
     return $sortOrders;
   }
 
+  /**
+   * Get the fully qualified classname of the modelclass of this apihandler
+   *
+   * @return string
+   */
   protected function getModelClassName() : string
   {
     return $this->modelClassName;
   }
 
-  protected function setModelClassName(string $modelClassName)
+  /**
+   * Set the fully qualified classname of the modelclass of this apihandler
+   *
+   * @param string $modelClassName
+   * @return ModelApiHandler
+   */
+  protected function setModelClassName(string $modelClassName) : ModelApiHandler
   {
     $this->modelClassName = $modelClassName;
+    return $this;
   }
 }
