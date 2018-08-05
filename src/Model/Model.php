@@ -640,7 +640,7 @@ abstract class Model
       {
         if($relationship->isPolymorphic)
         {
-          $this->relatedViaFieldOnEntity[$relationship->relationshipName] = PolymorphicCollection::forge(null);
+          $this->relatedViaFieldOnEntity[$relationship->relationshipName] = PolymorphicCollection::forge();
         }
         else
         {
@@ -1417,6 +1417,26 @@ abstract class Model
       $fieldDefinition = $fieldDefinitions[$fieldName];
     }
     return $fieldDefinition;
+  }
+
+  /**
+   * Return the Drupal field settings for a passed in field
+   *
+   * @param string $fieldName
+   * @return array
+   */
+  public static function getFieldSettings(string $fieldName) : array
+  {
+    $fieldDefinition = static::getFieldDefinition($fieldName);
+
+    if(empty($fieldDefinition))
+    {
+      return [];
+    }
+    else
+    {
+      return $fieldDefinition->getSettings();
+    }
   }
 
   /**

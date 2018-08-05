@@ -259,7 +259,7 @@ class Collection implements \IteratorAggregate, \Countable
                 {
                   if($relationship->isPolymorphic)
                   {
-                    $referencedCollection = PolymorphicCollection::forge(null);
+                    $referencedCollection = PolymorphicCollection::forge();
                   }
                   else
                   {
@@ -274,6 +274,18 @@ class Collection implements \IteratorAggregate, \Countable
             }
 
             static::putReferencedCollectionOnReferencingCollection($relationship, $referencedRelationship, $this, $referencedCollection);
+          }
+        }
+
+        if(empty($returnValue))
+        {
+          if($relationship->isPolymorphic)
+          {
+            $returnValue = PolymorphicCollection::forge();
+          }
+          else
+          {
+            $returnValue = Collection::forge($relationship->modelType);
           }
         }
       }
@@ -321,6 +333,11 @@ class Collection implements \IteratorAggregate, \Countable
             static::putReferencedCollectionOnReferencingCollection($relationship->fieldRelationship, $relationship, $referencingCollection, $this);
           }
         }
+
+        if(empty($returnValue))
+        {
+          $returnValue = Collection::forge($relationship->modelType);
+        }
       }
     }
     else
@@ -362,7 +379,7 @@ class Collection implements \IteratorAggregate, \Countable
    * @param string $relationship
    * @return array
    */
-  public function getFieldIds(string $relationship) : array
+  public function getFieldIds(FieldRelationship $relationship) : array
   {
     $fieldIds = [];
 
@@ -467,14 +484,14 @@ class Collection implements \IteratorAggregate, \Countable
    * @deprecated
    * Forge a new Collection, try to use the more readable helper methods "forgeByIds", "forgeByModels" or "forgeByEntites" instead
    *
-   * @param string|null $modelType
+   * @param string $modelType is optional when this is a Polymorphic collection
    * @param array|null $models
    * @param array|null $entities
    * @param array|null $ids
    * @param ModelQuery $modelQuery
    * @return Collection
    */
-  public static function forge(?string $modelType, ?array $models = [], ?array $entities = [], ?array $ids = [], ModelQuery $modelQuery = null) : Collection
+  public static function forge(string $modelType = null, ?array $models = [], ?array $entities = [], ?array $ids = [], ModelQuery $modelQuery = null) : Collection
   {
     $collection = new static();
     $collection->modelType = $modelType;
@@ -690,7 +707,7 @@ class Collection implements \IteratorAggregate, \Countable
       {
         if($relationship->isPolymorphic)
         {
-          $resultCollection = PolymorphicCollection::forge(null);
+          $resultCollection = PolymorphicCollection::forge();
         }
         else
         {

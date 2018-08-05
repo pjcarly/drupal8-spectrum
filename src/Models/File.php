@@ -7,6 +7,8 @@ use Drupal\spectrum\Model\FieldRelationship;
 use Drupal\spectrum\Model\ReferencedRelationship;
 use Drupal\spectrum\Serializer\JsonApiBaseNode;
 use Drupal\spectrum\Utils\UrlUtils;
+use Drupal\Component\Render\PlainTextOutput;
+use Drupal\spectrum\Exceptions\NotImplementedException;
 
 class File extends Model
 {
@@ -87,20 +89,55 @@ class File extends Model
   /**
    * Create a new FileModel by saving a data blob, getting the entity from drupal and wrapping it in a model
    *
-   * @param mixed $data
+   * @param string $uriScheme
+   * @param string $directory
    * @param string $filename
-   * @return void
+   * @param [type] $data
+   * @return File
    */
-  public static function createNewFile($data, string $filename)
+  public static function createNewFile(string $uriScheme, string $directory, string $filename, $data) : File
   {
-    $fileEntity = file_save_data($data, 's3://'.basename($filename), FILE_EXISTS_RENAME);
-    $file = File::forge($fileEntity);
-    // we want the file to dissapear when it is not attached to a record
-    // we put the status on 0, if it is attached somewhere, Drupal will make sure it is not deleted
-    // when the attached record is deleted, the corresponding file will follow suit aswell.
-    // 6 hours after last modified date for a file, and not attached to a record, cron will clean up the file
-    $file->entity->status->value = 0;
-    $file->save();
-    return $file;
+    $directory = trim(trim($directory), '/');
+    // Replace tokens. As the tokens might contain HTML we convert it to plaintext.
+    $directory = PlainTextOutput::renderFromHtml(\Drupal::token()->replace($directory, []));
+    $filename = basename($filename);
+
+    // We build the URI
+    $target = $uriScheme . '://' . $directory ;
+
+    // Prepare the destination directory.
+    if (file_prepare_directory($target, FILE_CREATE_DIRECTORY))
+    {
+      // The destination is already a directory, so append the source basename.
+      $target = file_stream_wrapper_uri_normalize($target . '/' . drupal_basename($filename));
+
+      // Create or rename the destination
+      file_destination($target, FILE_EXISTS_RENAME);
+
+      // Save the blob in a File Entity
+      $fileEntity = file_save_data($data, $target, FILE_EXISTS_RENAME);
+      $file = File::forgeByEntity($fileEntity);
+      // we want the file to dissapear when it is not attached to a record
+      // we put the status on 0, if it is attached somewhere, Drupal will make sure it is not deleted
+      // When the attached record is deleted, the corresponding file will follow suit aswell.
+      // 6 hours after last modified date for a file, and not attached to a record, cron will clean up the file
+      $file->entity->status->value = 0;
+      $file->save();
+
+      return $file;
+    }
+    else
+    {
+      // Perhaps $destination is a dir/file?
+      $dirname = drupal_dirname($target);
+      if (!file_prepare_directory($dirname, FILE_CREATE_DIRECTORY))
+      {
+        throw new \Exception('File could not be moved/copied because the destination directory '.$target.' is not configured correctly.');
+      }
+      else
+      {
+        throw new NotImplementedException('Functionality not implemented');
+      }
+    }
   }
 }

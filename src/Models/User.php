@@ -197,7 +197,7 @@ class User extends Model
 
     foreach($this->getRoles() as $role)
     {
-      if($permissionService->roleHasOAuthScopePermission($role))
+      if($permissionService->roleHasOAuthScopePermission($role, $scope))
       {
         $permissionGranted = true;
         break;
