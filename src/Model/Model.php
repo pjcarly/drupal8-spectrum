@@ -1193,7 +1193,7 @@ abstract class Model
    */
   public static function getModelQuery() : ModelQuery
   {
-      return new ModelQuery(get_called_class());
+    return new ModelQuery(get_called_class());
   }
 
   /**
@@ -1203,7 +1203,7 @@ abstract class Model
    */
   public static function getEntityQuery() : EntityQuery
   {
-      return new EntityQuery(static::$entityType);
+    return new EntityQuery(static::$entityType);
   }
 
   /**
@@ -1213,7 +1213,7 @@ abstract class Model
    */
   public static function getBundleQuery() : BundleQuery
   {
-      return new BundleQuery(static::$entityType, static::$bundle);
+    return new BundleQuery(static::$entityType, static::$bundle);
   }
 
   /**

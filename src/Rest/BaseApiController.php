@@ -81,9 +81,9 @@ class BaseApiController implements ContainerAwareInterface
    * @param string $api The API you want to reach, this is used to route the call to an API Handler
    * @param string $slug The slug that will be given to the API handler (for example the ID of a record you want to query)
    * @param string $action An optional Action you want to execute on the APIHandler (for example publish)
-   * @return void
+   * @return Response
    */
-  public function handle(RouteMatchInterface $routeMatch, Request $request, string $api = NULL, string $slug = NULL, string $action = NULL)
+  public function handle(RouteMatchInterface $routeMatch, Request $request, string $api = NULL, string $slug = NULL, string $action = NULL) : Response
   {
     $response = new Response(null, 500, array());
     $permissionService = Model::getPermissionsService();

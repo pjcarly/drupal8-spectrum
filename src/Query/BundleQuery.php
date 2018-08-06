@@ -13,9 +13,9 @@ class BundleQuery extends EntityQuery
 
   /**
    * @param string $entityType The entity type you want to query
-   * @param string $bundle The bundle you want to query
+   * @param string|null $bundle The bundle you want to query, null in case the entity doesnt have a Bundle
    */
-  public function __construct(string $entityType, string $bundle)
+  public function __construct(string $entityType, ?string $bundle)
   {
     parent::__construct($entityType);
     $this->bundle = $bundle;
