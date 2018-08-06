@@ -123,7 +123,9 @@ class ModelApiHandler extends BaseApiHandler
   {
     $modelClassName = $this->modelClassName;
     $query = $modelClassName::getModelQuery();
-    $limit = null; $page = null; $sort = null; // variables to build our links later on
+    $limit = 0;
+    $page = 0;
+    $sort = '';
     $jsonapi = new JsonApiRootNode();
 
     // Before anything, we check if the user has permission to access this content

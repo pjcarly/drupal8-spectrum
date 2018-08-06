@@ -5,8 +5,16 @@ use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Model\ReferencedRelationship;
 
+/**
+ * A registered Job is a way to Register Fully Qualified Classnames in the system, pointing to a QueuedJob. A registered job can be activated or disabled
+ */
 class RegisteredJob extends Model
 {
+  /**
+   * A way to mark the Context as CLI or not. Based on this, a different print will be done
+   *
+   * @var boolean
+   */
   protected $cliContext = true;
 
   public static $entityType = 'runnable';
@@ -21,7 +29,12 @@ class RegisteredJob extends Model
     static::addRelationship(new ReferencedRelationship('queued_jobs', 'Drupal\spectrum\Runnable\QueuedJob', 'job'));
   }
 
-  public final function singleRun()
+  /**
+   * Execute the Registered Job a single time. You can call this method without needing to schedule the job
+   *
+   * @return void
+   */
+  public final function singleRun() : void
   {
     try
     {
@@ -37,6 +50,11 @@ class RegisteredJob extends Model
     }
   }
 
+  /**
+   * Create a new Instance of the a Job you want to schedule. This job must extend from RunnableModel
+   *
+   * @return RunnableModel
+   */
   public final function createJobInstance() : RunnableModel
   {
     $class = $this->entity->field_class->value;
@@ -49,7 +67,13 @@ class RegisteredJob extends Model
     return $class::createNew();
   }
 
-  public function print($message)
+  /**
+   * A helper method to print something, either to the CLI out, or with regular print()
+   *
+   * @param string $message
+   * @return void
+   */
+  public function print(string $message) : void
   {
     if($this->cliContext)
     {
@@ -61,12 +85,25 @@ class RegisteredJob extends Model
     }
   }
 
-  public function setCliContext($cliContext)
+  /**
+   * Set whether this is a CLI context or not
+   *
+   * @param boolean $cliContext
+   * @return RegisteredJob
+   */
+  public function setCliContext(bool $cliContext) : RegisteredJob
   {
     $this->cliContext = $cliContext;
+    return $this;
   }
 
-  public static function getByKey(string $key)
+  /**
+   * Find a registered job by its unique key
+   *
+   * @param string $key
+   * @return RegisteredJob|null
+   */
+  public static function getByKey(string $key) : ?RegisteredJob
   {
     $query = static::getModelQuery();
     $query->addCondition(new Condition('title', '=', $key));

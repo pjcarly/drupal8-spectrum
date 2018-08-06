@@ -4,7 +4,13 @@ namespace Drupal\spectrum\Runnable;
 use Drupal\Core\Session\AnonymousUserSession;
 use Drupal\Core\Session\AccountSwitcher;
 use Drupal\spectrum\Runnable\RegisteredJob;
+use Drupal\spectrum\Exceptions\JobTerminateException;
 
+/**
+ * A queued job is an implementation of RunnableModel, it can be scheduled to be executed on a later time.
+ * QueuedJob itself shouldnt be instantiated. It should be extended with functionality
+ * We cannot mark the class abstract, as on Query time for new QueuedJobs we dont know the Fully Qualified Classname of the implementation
+ */
 class QueuedJob extends RunnableModel
 {
   public static $entityType = 'runnable';
@@ -13,6 +19,11 @@ class QueuedJob extends RunnableModel
 
   public static $plural = 'Queued Jobs';
 
+  /**
+   * An instance of AccountSwitcher. This gives you the ability to execute the Job as another user, and switch back afterwards.
+   *
+   * @var Drupal\Core\Session\AccountSwitcherInterface
+   */
   private $accountSwitcher;
 
   public static function relationships()
@@ -20,13 +31,21 @@ class QueuedJob extends RunnableModel
     parent::relationships();
   }
 
-  public final function preExecution()
+  /**
+   * This function will be executed just before starting the execution of the job.
+   * Here the status will be set to Runninng and the start time will be set to the current time
+   *
+   * @return void
+   */
+  public final function preExecution() : void
   {
     $currentTime = gmdate('Y-m-d\TH:i:s');
     $this->print('Job with ID: '.$this->getId().' STARTED at '.$currentTime . ' ('.$this->entity->title->value.')');
 
     $this->entity->field_job_status->value = 'Running';
     $this->entity->field_start_time->value = $currentTime;
+    $this->entity->field_error_message->value = null;
+    $this->entity->field_end_time->value = null;
     $this->save();
 
     // Check the user context we need to execute in, and switch to the provided user if necessary.
@@ -43,12 +62,22 @@ class QueuedJob extends RunnableModel
     }
   }
 
-  public function execute()
-  {
+  /**
+   * Execute the job, this function should be overridden by every job, to provide an implementation
+   *
+   * @return void
+   */
+  public function execute() : void {}
 
-  }
-
-  public static function schedule(string $jobName, string $variable = '', \DateTime $date = null)
+  /**
+   * Schedule a job on a given datetime, with a possible variable.
+   *
+   * @param string $jobName (required) The Name of the Job
+   * @param string $variable (optional) Provide a variable for the job, it can be accessed on execution time
+   * @param \DateTime $date (optional) The date you want to schedule the job on. If left blank, "now" will be chosen
+   * @return QueuedJob
+   */
+  public static function schedule(string $jobName, string $variable = '', \DateTime $date = null) : QueuedJob
   {
     $registeredJob = RegisteredJob::getByKey($jobName);
 
@@ -76,19 +105,29 @@ class QueuedJob extends RunnableModel
     $queuedJob->entity->field_scheduled_time->value = $date->format('Y-m-d\TH:i:s');
     $queuedJob->put('job', $registeredJob);
     $queuedJob->save();
+
+    return $queuedJob;
   }
 
-  public final function setFailed(string $message)
+  /**
+   * Set the Job failed with a reason, this function should be called from within the job itself,
+   * it will raise a JobTerminateException and will cause the execution to terminate in a safe way.
+   *
+   * @param string $message
+   * @return void
+   */
+  public final function setFailed(string $message) : void
   {
-    $this->entity->field_job_status->value = 'Failed';
-
-    if(!empty($message))
-    {
-      $this->entity->field_error_message->value = $message;
-    }
+    throw new JobTerminateException($message);
   }
 
-  public final function postExecution()
+  /**
+   * This function will be executed after execution. The status will be put on Completed, and the completion time will be filled in
+   * In case the Job needs to be rescheduled, the rescheduling time will be calculated, and the new job will be inserted
+   *
+   * @return void
+   */
+  public final function postExecution() : void
   {
     // Lets not forget to switch back to the original user context
     $this->accountSwitcher->switchBack();
@@ -149,7 +188,14 @@ class QueuedJob extends RunnableModel
     }
   }
 
-  public final function failedExecution(\Exception $ex = null, $message = null)
+  /**
+   * Sets the job failed, this method will be called from within the scheduler in case an Exception was raised.
+   *
+   * @param \Exception $ex
+   * @param string $message
+   * @return void
+   */
+  public final function failedExecution(?\Exception $ex = null, string $message = null) : void
   {
     // Execution failed, set the status to failed
     // Set a possible error message
@@ -159,14 +205,25 @@ class QueuedJob extends RunnableModel
 
     $this->entity->field_job_status->value = 'Failed';
     $this->entity->field_end_time->value = $currentTime;
+
     if(!empty($ex))
     {
-      $this->entity->field_error_message->value = $ex->getMessage();
+      $message = $ex->getMessage();
+      if(!($ex instanceof JobTerminateException))
+      {
+        $message = '('.$message . ') ' . $ex->getTraceAsString();
+
+        \Drupal::logger('spectrum_cron')->error($ex->getMessage());
+        \Drupal::logger('spectrum_cron')->error($ex->getTraceAsString());
+      }
+
+      $this->entity->field_error_message->value = $message;
     }
     else if(!empty($message))
     {
       $this->entity->field_error_message->value = $message;
     }
+
     $this->save();
   }
 }

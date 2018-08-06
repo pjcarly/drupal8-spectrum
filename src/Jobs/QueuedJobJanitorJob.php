@@ -8,7 +8,7 @@ use Drupal\file\Entity\File;
 
 class QueuedJobJanitorJob extends QueuedJob
 {
-  public function execute()
+  public function execute() : void
   {
     $variable = json_decode($this->entity->field_variable->value);
 
