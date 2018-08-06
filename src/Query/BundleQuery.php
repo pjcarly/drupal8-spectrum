@@ -4,14 +4,18 @@ namespace Drupal\spectrum\Query;
 
 class BundleQuery extends EntityQuery
 {
+  /**
+   * The bundle you are querying
+   *
+   * @var string
+   */
   protected $bundle;
 
-  public $conditions = array();
-  public $sortOrders = array();
-  public $rangeStart;
-  public $rangeLength;
-
-  public function __construct($entityType, $bundle)
+  /**
+   * @param string $entityType The entity type you want to query
+   * @param string|null $bundle The bundle you want to query, null in case the entity doesnt have a Bundle
+   */
+  public function __construct(string $entityType, ?string $bundle)
   {
     parent::__construct($entityType);
     $this->bundle = $bundle;

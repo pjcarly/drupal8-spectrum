@@ -4,6 +4,9 @@ namespace Drupal\spectrum\Models;
 
 use Drupal\image\Entity\ImageStyle;
 
+/**
+ * An image model for the Image model, extends from the File Model, with extra functionality for image styles
+ */
 class Image extends File
 {
   public static $plural = 'Images';
@@ -12,12 +15,18 @@ class Image extends File
   {
   }
 
-  protected function getBaseApiPath()
+  protected function getBaseApiPath() : string
   {
     return 'image';
   }
 
-  public function getBase64SRC(string $style = NULL)
+  /**
+   * {@inheritdoc}
+   *
+   * @param string $style (optional) the drupal image style you want to apply
+   * @return string
+   */
+  public function getBase64SRC(string $style = NULL) : string
   {
     $mime = $this->entity->get('filemime')->value;
     $base64Image = base64_encode(file_get_contents($this->getSRC($style)));
@@ -25,7 +34,13 @@ class Image extends File
     return 'data:'.$mime.';base64,'.$base64Image;
   }
 
-  public function getRealSrc(string $style = NULL)
+  /**
+   * {@inheritdoc}
+   *
+   * @param string $style (optional) the image style you want to apply
+   * @return string
+   */
+  public function getRealSrc(string $style = NULL) : string
   {
     if(!empty($style))
     {
@@ -40,7 +55,13 @@ class Image extends File
     return parent::getRealSrc();
   }
 
-  public function getSRC(string $style = NULL)
+  /**
+   * {@inheritdoc}
+   *
+   * @param string $style (optional) the image style you want to apply
+   * @return string
+   */
+  public function getSRC(string $style = NULL) : string
   {
     $url = parent::getSRC();
     if(!empty($style) && !empty($url))

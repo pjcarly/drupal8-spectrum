@@ -4,6 +4,7 @@ namespace Drupal\spectrum\Email;
 
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Email\EmailTemplate;
+use Drupal\spectrum\Exceptions\EmailException;
 
 class Email
 {
@@ -15,32 +16,72 @@ class Email
   private $fromName = '';
   private $replyTo = '';
 
-  public function addTo($email)
+  /**
+   * Add a recipient
+   *
+   * @param string $email
+   * @return Email
+   */
+  public function addTo(string $email) : Email
   {
     $this->toAddresses[] = $email;
+    return $this;
   }
 
-  public function setFrom($email)
+  /**
+   * Set the "from" email address where the email will be sent from
+   *
+   * @param string $email
+   * @return Email
+   */
+  public function setFrom(string $email) : Email
   {
     $this->fromAddress = $email;
+    return $this;
   }
 
-  public function setFromName($name)
+  /**
+   * Set the "from" name appearing in the email client of the recipients
+   *
+   * @param string $name
+   * @return Email
+   */
+  public function setFromName(string $name) : Email
   {
     $this->fromName = $name;
+    return $this;
   }
 
-  public function setReplyTo($email)
+  /**
+   * Set the reply to email
+   *
+   * @param string $email
+   * @return Email
+   */
+  public function setReplyTo(string $email) : Email
   {
     $this->replyTo = $email;
+    return $this;
   }
 
-  public function setTemplate(EmailTemplate $template)
+  /**
+   * Set an email template that is going to be parsed and sent
+   *
+   * @param EmailTemplate $template
+   * @return Email
+   */
+  public function setTemplate(EmailTemplate $template) : Email
   {
     $this->template = $template;
+    return $this;
   }
 
-  public function send()
+  /**
+   * Send the email
+   *
+   * @return Email
+   */
+  public function send() : Email
   {
     // Get environment variables
     $template = $this->template;
@@ -57,9 +98,9 @@ class Email
       {
         $sendGridKey = $config->get('sendgrid_api_key');
 
-        if (!strlen($sendGridKey)) {
-          \Drupal::logger('spectrum')->error('SendGrid API Key blank.');
-          return NULL;
+        if (empty($sendGridKey))
+        {
+          throw new EmailException('SendGrid API Key blank.');
         }
 
         // we instantiate our client
@@ -86,17 +127,19 @@ class Email
         $awsSecret = $config->get('aws_ses_api_secret');
         $awsRegion = $config->get('aws_ses_region');
 
-        if (!strlen($awsKey)) {
-          \Drupal::logger('spectrum')->error('AWS SES Key blank.');
-          return NULL;
+        if (empty($awsKey))
+        {
+          throw new EmailException('AWS SES Key blank.');
         }
-        if (!strlen($awsSecret)) {
-          \Drupal::logger('spectrum')->error('AWS SES Secret blank.');
-          return NULL;
+
+        if (empty($awsSecret))
+        {
+          throw new EmailException('AWS SES Secret blank.');
         }
-        if (!strlen($awsRegion)) {
-          \Drupal::logger('spectrum')->error('AWS SES Region blank.');
-          return NULL;
+
+        if (empty($awsRegion))
+        {
+          throw new EmailException('AWS SES Region blank.');
         }
 
         $client = \Aws\Ses\SesClient::factory([
@@ -147,18 +190,14 @@ class Email
       }
       else
       {
-        return NULL;
+        throw new EmailException('No email provider Selected');
       }
     }
     catch(\Aws\Ses\Exception\SesException $exc)
     {
-      \Drupal::logger('spectrum')->error('AWS Exception: '.$exc->getMessage());
-      return NULL;
+      throw new EmailException('AWS Exception: '.$exc->getMessage());
     }
-    catch(Exception $exc)
-    {
-      \Drupal::logger('spectrum')->error('Email Sending Exception: '.$exc->getMessage());
-      return NULL;
-    }
+
+    return $this;
   }
 }

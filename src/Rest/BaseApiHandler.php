@@ -5,56 +5,126 @@ namespace Drupal\spectrum\Rest;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * This is the base implementation class for any ApiHandler, it exposes logic that makes it possible to return results from a RestRequest.
+ * Requests will be routed by the REST method to the different functions on this class,
+ * or to an action that can be defined per ApiHandler to execute custom functionality that doesnt fit in the traditional REST structure
+ */
 abstract class BaseApiHandler
 {
+  /**
+   * The slug that was provided in the query string when calling the API
+   *
+   * @var string|int|null
+   */
   protected $slug;
-  protected $defaultHeaders;
 
+  /**
+   * Default response headers that will be added to every response.
+   *
+   * @var array
+   */
+  protected $defaultHeaders = [];
+
+  /**
+   * @param string|int|null $slug The slug that was provided in the query string when calling the API
+   */
   public function __construct($slug = NULL)
   {
     $this->slug = $slug;
-    $this->defaultHeaders = [];
   }
 
-  public function get(Request $request)
+  /**
+   * * Rest GET calls to this API handler will be handled here
+   *
+   * @param Request $request
+   * @return Response
+   */
+  public function get(Request $request) : Response
   {
     return new Response(null, 405, []);
   }
 
-  public function post(Request $request)
+  /**
+   * * Rest POST calls to this API handler will be handled here
+   *
+   * @param Request $request
+   * @return Response
+   */
+  public function post(Request $request) : Response
   {
     return new Response(null, 405, []);
   }
 
-  public function put(Request $request)
+  /**
+   * * Rest PUT calls to this API handler will be handled here
+   *
+   * @param Request $request
+   * @return Response
+   */
+  public function put(Request $request) : Response
   {
     return new Response(null, 405, []);
   }
 
-  public function patch(Request $request)
+  /**
+   * * Rest PATCH calls to this API handler will be handled here
+   *
+   * @param Request $request
+   * @return Response
+   */
+  public function patch(Request $request) : Response
   {
     return new Response(null, 405, []);
   }
 
-  public function delete(Request $request)
+  /**
+   * * Rest DELETE calls to this API handler will be handled here
+   *
+   * @param Request $request
+   * @return Response
+   */
+  public function delete(Request $request) : Response
   {
     return new Response(null, 405, []);
   }
 
-  public function options(Request $request)
+  /**
+   * * Rest OPTIONS calls to this API handler will be handled here
+   *
+   * @param Request $request
+   * @return Response
+   */
+  public function options(Request $request) : Response
   {
     return new Response(null, 405, []);
   }
 
-  private final function setDefaultHeaders(Response $response)
+  /**
+   * Apply the default headers to the response
+   *
+   * @param Response $response
+   * @return BaseApiHandler
+   */
+  private final function setDefaultHeaders(Response $response) : BaseApiHandler
   {
     foreach(array_keys($this->defaultHeaders) as $key)
     {
       $response->headers->set($key, $this->defaultHeaders[$key]);
     }
+
+    return $this;
   }
 
-  public final function handle(Request $request, $action = NULL)
+  /**
+   * This method will split the Request based on the REST method or action to the correct function on the class
+   * Default headers will be added to the response
+   *
+   * @param Request $request
+   * @param string $action
+   * @return Response
+   */
+  public final function handle(Request $request, string $action = NULL) : Response
   {
     $response;
     $method = $request->getMethod();

@@ -11,23 +11,44 @@ use Drupal\spectrum\Models\File;
 
 use Drupal\spectrum\Utils\AddressUtils;
 
+/**
+ * This class exposes magic getters to get values from a model without having to know the drupal implementation
+ * Useful for within Email templates for example, where we can just get {{ account.name }} instead of {{ account.entity.title.value }}
+ */
 class SimpleModelWrapper
 {
-  // This class exposes magic getters to get values from a model without having to know the drupal implementation
-  // Useful for within Email templates for example, where we can just get {{ account.name }} instead of {{ account.entity.title.value }}
+  /**
+   * The wrapped Model
+   *
+   * @var Model
+   */
   private $model;
 
+  /**
+   * @param Model $model The model you want to wrap
+   */
   public function __construct(Model $model)
   {
     $this->model = $model;
   }
 
+  /**
+   * Returns the wrapped Model
+   *
+   * @return Model
+   */
   public function getModel() : Model
   {
     return $this->model;
   }
 
-  public function getValue($underscoredField)
+  /**
+   * Get a value from the model
+   *
+   * @param string $underscoredField This should be the underscored field name, as twig templates cant handle dashes. use first_name instead of first-name
+   * @return mixed
+   */
+  public function getValue(string $underscoredField)
   {
     $model = $this->model;
     // email templates can't handle dashes, so we replaced them with underscores
@@ -148,6 +169,12 @@ class SimpleModelWrapper
     }
   }
 
+  /**
+   * Magic getters that facilitate the use in twig templates
+   *
+   * @param string $property
+   * @return mixed
+   */
   public function __get($property)
   {
     $model = $this->model;
@@ -209,10 +236,15 @@ class SimpleModelWrapper
     }
   }
 
+  /**
+   * Needed for twig to be able to access relationship via magic getter
+   *
+   * @param string $property
+   * @return boolean
+   */
   public function __isset($property)
   {
     $model = $this->model;
-    // Needed for twig to be able to access relationship via magic getter
     $isSet = array_key_exists($property, $model->relatedViaFieldOnEntity) || array_key_exists($property, $model->relatedViaFieldOnExternalEntity) || $model::underScoredFieldExists($property) || property_exists($model, $property) || Model::getterExists($model, $property);
     return $isSet;
   }

@@ -1,6 +1,7 @@
 <?php
 namespace Drupal\spectrum\Model;
 
+use Drupal\spectrum\Query\EntityQuery;
 use Drupal\spectrum\Query\Condition;
 
 class FieldRelationship extends Relationship
@@ -18,13 +19,23 @@ class FieldRelationship extends Relationship
     $this->relationshipField = $relationshipField;
   }
 
-  public function getCondition()
+  /**
+   * Returns a Condition with the relationship modeltype idfield already filled in as the field
+   *
+   * @return Condition
+   */
+  public function getCondition() : Condition
   {
     $modelType = $this->firstModelType;
     return new Condition($modelType::$idField, 'IN', null);
   }
 
-  public function getRelationshipQuery()
+  /**
+   * Returns an EntityQuery for the relationship
+   *
+   * @return EntityQuery
+   */
+  public function getRelationshipQuery() : EntityQuery
   {
     $modelType = $this->firstModelType;
     if($this->isPolymorphic)
@@ -37,7 +48,13 @@ class FieldRelationship extends Relationship
     }
   }
 
-  public function setRelationshipMetaData()
+  /**
+   * Set the metadata of the relationship from the Drupal Field definitions, metadata includes the types (whether the relationship is polymorphic or not)
+   * The fieldCardinality (whether 1 or multiple values can be set on the relationship), the entitytype and bundle
+   *
+   * @return void
+   */
+  protected function setRelationshipMetaData() : void
   {
     // First we will get the field Definition to read our meta data from
     $relationshipSource = $this->relationshipSource;
@@ -73,19 +90,34 @@ class FieldRelationship extends Relationship
     $this->fieldCardinality = $fieldDefinition->getFieldStorageDefinition()->getCardinality();
   }
 
-  public function getField()
+  /**
+   * Returns the field part of the relationship (for example field_user.target_id will return "field_user")
+   *
+   * @return string
+   */
+  public function getField() : string
   {
     $positionOfDot = strpos($this->relationshipField, '.');
     return $positionOfDot ? substr($this->relationshipField, 0, $positionOfDot) : $this->relationshipField;
   }
 
-  public function getColumn()
+  /**
+   * Returns the column of the relationship (for example field_user.target_id will return "target_id")
+   *
+   * @return string
+   */
+  public function getColumn() : string
   {
     $positionOfDot = strpos($this->relationshipField, '.');
     return substr($this->relationshipField, $positionOfDot + 1); // exclude the "." so +1
   }
 
-  // lets define magic getters for ease of access
+  /**
+   * Magic getter for ease of access
+   *
+   * @param [type] $property
+   * @return void
+   */
   public function __get($property)
   {
     if (property_exists($this, $property))

@@ -7,7 +7,12 @@ use Drupal\spectrum\Model\FieldRelationship;
 use Drupal\spectrum\Model\ReferencedRelationship;
 use Drupal\spectrum\Serializer\JsonApiBaseNode;
 use Drupal\spectrum\Utils\UrlUtils;
+use Drupal\Component\Render\PlainTextOutput;
+use Drupal\spectrum\Exceptions\NotImplementedException;
 
+/**
+ * A File model for the file entity
+ */
 class File extends Model
 {
   public static $entityType = 'file';
@@ -19,11 +24,16 @@ class File extends Model
   {
   }
 
-  protected function getBaseApiPath()
+  protected function getBaseApiPath() : string
   {
     return 'file';
   }
 
+  /**
+   * Serializes the model, but also adds the URL to the file, and the hash
+   *
+   * @return JsonApiBaseNode
+   */
   public function getJsonApiNode() : JsonApiBaseNode
   {
     $node = parent::getJsonApiNode();
@@ -33,17 +43,32 @@ class File extends Model
     return $node;
   }
 
-  public function getHash()
+  /**
+   * Returns a hash based on the UUID, with this hash you can validate requests for files, and see if it matches the FID in the database
+   *
+   * @return string
+   */
+  public function getHash() : string
   {
     return md5($this->entity->uuid->value);
   }
 
-  public function getRealSrc()
+  /**
+   * Return the real SRC of the file, this will return a direct link to the file, specific for the file back-end storage
+   *
+   * @return string
+   */
+  public function getRealSrc() : string
   {
     return $this->entity->url();
   }
 
-  public function getBase64SRC()
+  /**
+   * Returns a base64 encoded string of the file
+   *
+   * @return string
+   */
+  public function getBase64SRC() : string
   {
     $mime = $this->entity->get('filemime')->value;
     $base64 = base64_encode(file_get_contents($this->getRealSrc()));
@@ -51,23 +76,71 @@ class File extends Model
     return 'data:'.$mime.';base64,'.$base64;
   }
 
-  public function getSRC()
+  /**
+   * Return a Drupal absolute URL that you can use to return the File indepentenly of the File storage back-end
+   * All the information to get the file is contained in the URL. the FID (file ID), and DG an MD5 hash of the UUID (so you can validate the call by an extra param)
+   *
+   * @return string
+   */
+  public function getSRC() : string
   {
     $url = UrlUtils::getBaseURL() . $this->getBaseApiPath().'/' . $this->entity->get('filename')->value . '?fid=' . $this->getId() . '&dg=' . $this->getHash();
 
     return $url;
   }
 
-  public static function createNewFile($data, $filename)
+  /**
+   * Create a new FileModel by saving a data blob, getting the entity from drupal and wrapping it in a model
+   *
+   * @param string $uriScheme
+   * @param string $directory
+   * @param string $filename
+   * @param mixed $data the blob of the file you want to save
+   * @return File
+   */
+  public static function createNewFile(string $uriScheme, string $directory, string $filename, $data) : File
   {
-    $fileEntity = file_save_data($data, 's3://'.basename($filename), FILE_EXISTS_RENAME);
-    $file = File::forge($fileEntity);
-    // we want the file to dissapear when it is not attached to a record
-    // we put the status on 0, if it is attached somewhere, Drupal will make sure it is not deleted
-    // when the attached record is deleted, the corresponding file will follow suit aswell.
-    // 6 hours after last modified date for a file, and not attached to a record, cron will clean up the file
-    $file->entity->status->value = 0;
-    $file->save();
-    return $file;
+    $directory = trim(trim($directory), '/');
+    // Replace tokens. As the tokens might contain HTML we convert it to plaintext.
+    $directory = PlainTextOutput::renderFromHtml(\Drupal::token()->replace($directory, []));
+    $filename = basename($filename);
+
+    // We build the URI
+    $target = $uriScheme . '://' . $directory ;
+
+    // Prepare the destination directory.
+    if (file_prepare_directory($target, FILE_CREATE_DIRECTORY))
+    {
+      // The destination is already a directory, so append the source basename.
+      $target = file_stream_wrapper_uri_normalize($target . '/' . drupal_basename($filename));
+
+      // Create or rename the destination
+      file_destination($target, FILE_EXISTS_RENAME);
+
+      // Save the blob in a File Entity
+      $fileEntity = file_save_data($data, $target, FILE_EXISTS_RENAME);
+      $file = File::forgeByEntity($fileEntity);
+      // we want the file to dissapear when it is not attached to a record
+      // we put the status on 0, if it is attached somewhere, Drupal will make sure it is not deleted
+      // When the attached record is deleted, the corresponding file will follow suit aswell.
+      // 6 hours after last modified date for a file, and not attached to a record, cron will clean up the file
+      $file->entity->status->value = 0;
+      $file->save();
+
+      return $file;
+    }
+    else
+    {
+      // Perhaps $destination is a dir/file?
+      $dirname = drupal_dirname($target);
+      if (!file_prepare_directory($dirname, FILE_CREATE_DIRECTORY))
+      {
+        throw new \Exception('File could not be moved/copied because the destination directory '.$target.' is not configured correctly.');
+      }
+      else
+      {
+        throw new NotImplementedException('Functionality not implemented');
+      }
+    }
   }
 }
