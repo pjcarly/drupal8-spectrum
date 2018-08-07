@@ -16,13 +16,6 @@ use Drupal\spectrum\Query\Condition;
 class ReferencedRelationship extends Relationship
 {
   /**
-   * Provides a cache to look up the registered fully qualified classnames of the modeltypes in used in the application
-   *
-   * @var array
-   */
-  protected static $cachedModelTypes = [];
-
-  /**
    * The inverse FieldRelationship, this is looked up at construction time
    *
    * @var FieldRelationship
@@ -52,7 +45,7 @@ class ReferencedRelationship extends Relationship
   public function __construct(string $relationshipName, string $modelType, string $fieldRelationshipName, int $cascade = 0)
   {
     parent::__construct($relationshipName, $cascade);
-    $this->modelType = static::getModelType($modelType);
+    $this->modelType = Model::getRegisteredModelTypeForModelType($modelType);
     $this->fieldRelationshipName = $fieldRelationshipName;
     $this->fieldRelationship = $this->modelType::getRelationship($fieldRelationshipName);
   }
@@ -76,21 +69,5 @@ class ReferencedRelationship extends Relationship
   {
     $modelType = $this->modelType;
     return $modelType::getModelQuery();
-  }
-
-  /**
-   * Because modeltypes can be exteded in each application, we load the modelType based on the one available in the model service
-   *
-   * @param string $modelType
-   * @return string
-   */
-  public static function getModelType(string $modelType) : string
-  {
-    if(!array_key_exists($modelType, static::$cachedModelTypes))
-    {
-      static::$cachedModelTypes[$modelType] = Model::getModelClassForEntityAndBundle($modelType::$entityType, $modelType::$bundle);
-    }
-
-    return static::$cachedModelTypes[$modelType];
   }
 }

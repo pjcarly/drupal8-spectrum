@@ -521,7 +521,7 @@ class ModelApiHandler extends BaseApiHandler
     {
       // First we'll build the root model from the json api document
       // since we're talking about a post here, it's always a create, a new model
-      $model = $modelClassName::createNew();
+      $model = $modelClassName::forgeNew();
       // here we fill in the attributes on the new model from the json api document
       $model->applyChangesFromJsonAPIDocument($jsonapidocument);
       // we trigger the beforeValidate as we might need to trigger some functionalitity
@@ -572,12 +572,12 @@ class ModelApiHandler extends BaseApiHandler
                 if(empty($inlineData->data->id))
                 {
                   // new record, we create a new model
-                  $includedModel = $includedModelType::createNew();
+                  $includedModel = $includedModelType::forgeNew();
                 }
                 else
                 {
                   // existing record, lets get it from the database
-                  $includedModel = $includedModelType::forge(null, $inlineData->data->id);
+                  $includedModel = $includedModelType::forgeById($inlineData->data->id);
 
                   if(empty($includedModel))
                   {
@@ -868,12 +868,12 @@ class ModelApiHandler extends BaseApiHandler
                   if(empty($inlineData->data->id))
                   {
                     // new record, we create a new model
-                    $includedModel = $includedModelType::createNew();
+                    $includedModel = $includedModelType::forgeNew();
                   }
                   else
                   {
                     // existing record, lets get it from the database
-                    $includedModel = $includedModelType::forge(null, $inlineData->data->id);
+                    $includedModel = $includedModelType::forgeById($inlineData->data->id);
 
                     if(empty($includedModel))
                     {
@@ -1233,7 +1233,7 @@ class ModelApiHandler extends BaseApiHandler
               if(!array_key_exists($relationshipType, $fetchedCollections))
               {
                 // we haven't fetched this type yet, lets cache it in case we do later
-                $fetchedCollections[$relationshipType] = Collection::forge($relationshipType);
+                $fetchedCollections[$relationshipType] = Collection::forgeNew($relationshipType);
               }
 
               $previouslyFetchedCollection = $fetchedCollections[$relationshipType];
@@ -1341,7 +1341,7 @@ class ModelApiHandler extends BaseApiHandler
       $listViewParameterValue = $filter['_listview'];
       if(!empty($listViewParameterValue) && is_numeric($listViewParameterValue))
       {
-        $listview = ListView::forge(null, $listViewParameterValue);
+        $listview = ListView::forgeById($listViewParameterValue);
 
         if(!empty($listview) && $listview->entity->field_entity->value === $modelClassName::$entityType && $listview->entity->field_bundle->value === $modelClassName::$bundle)
         {

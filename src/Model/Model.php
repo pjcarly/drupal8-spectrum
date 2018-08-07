@@ -85,6 +85,14 @@ abstract class Model
    */
   protected static $serializationTypeAliases = [];
 
+
+  /**
+   * This array holds a mapping between the requested modeltypes and the registered modeltypes
+   * Because a ModelType can have its own implementation per system, we have to look up the registered ModelTypes compared to the one being requested
+   * The key is the one being requested, the value is the registered type.
+   * @var array
+   */
+  protected static $cachedModelTypes = [];
   /**
    * The entity that was wrapped by this Model
    *
@@ -422,7 +430,7 @@ abstract class Model
                 }
 
                 // now that we have a model, lets put them one by one
-                $referencedModel = $referencedModelType::forge($referencedEntity);
+                $referencedModel = $referencedModelType::forgeByEntity($referencedEntity);
                 $returnValue = $this->put($relationship, $referencedModel, true);
               }
             }
@@ -443,7 +451,7 @@ abstract class Model
               $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
 
               // now that we have a model, lets put them one by one
-              $referencedModel = $referencedModelType::forge($referencedEntity);
+              $referencedModel = $referencedModelType::forgeByEntity($referencedEntity);
               $returnValue = $this->put($relationship, $referencedModel, true);
             }
           }
@@ -473,7 +481,7 @@ abstract class Model
               }
 
               // now that we have a model, lets put them one by one
-              $referencingModel = $referencingModelType::forge($referencingEntity);
+              $referencingModel = $referencingModelType::forgeByEntity($referencingEntity);
               $returnValue = $this->put($relationship, $referencingModel, true);
               $referencingModel->put($relationship->fieldRelationship, $this, true);
             }
@@ -640,11 +648,11 @@ abstract class Model
       {
         if($relationship->isPolymorphic)
         {
-          $this->relatedViaFieldOnEntity[$relationship->relationshipName] = PolymorphicCollection::forge();
+          $this->relatedViaFieldOnEntity[$relationship->relationshipName] = PolymorphicCollection::forgeNew();
         }
         else
         {
-          $this->relatedViaFieldOnEntity[$relationship->relationshipName] = Collection::forge($relationship->modelType);
+          $this->relatedViaFieldOnEntity[$relationship->relationshipName] = Collection::forgeNew($relationship->modelType);
         }
 
         return $this->relatedViaFieldOnEntity[$relationship->relationshipName];
@@ -656,7 +664,7 @@ abstract class Model
     }
     else if($relationship instanceof ReferencedRelationship)
     {
-      $this->relatedViaFieldOnExternalEntity[$relationship->relationshipName] = Collection::forge($relationship->modelType);
+      $this->relatedViaFieldOnExternalEntity[$relationship->relationshipName] = Collection::forgeNew($relationship->modelType);
       return $this->relatedViaFieldOnExternalEntity[$relationship->relationshipName];
     }
   }
@@ -826,7 +834,7 @@ abstract class Model
       }
 
       $relationshipModelType = $relationship->modelType;
-      $relationshipModel = $relationshipModelType::createNew();
+      $relationshipModel = $relationshipModelType::forgeNew();
       $this->put($relationship, $relationshipModel);
       return $relationshipModel;
     }
@@ -834,7 +842,7 @@ abstract class Model
     {
       $id = $this->getId();
       $relationshipModelType = $relationship->modelType;
-      $relationshipModel = $relationshipModelType::createNew();
+      $relationshipModel = $relationshipModelType::forgeNew();
 
       // If this record already has an Id, we can fill it in on the new model
       if(!empty($id))
@@ -1067,22 +1075,33 @@ abstract class Model
   }
 
   /**
-   * Create a new entity and wrap it in this Model
+   * @deprecated
+   * Use forgeNew() instead
    *
    * @return Model
    */
   public static function createNew() : Model
   {
+    return static::forgeNew();
+  }
+
+  /**
+   * Create a new entity and wrap it in this Model
+   *
+   * @return Model
+   */
+  public static function forgeNew() : Model
+  {
     if(!empty(static::$bundle))
     {
-      $entity = entity_create(static::$entityType, array('type' => static::$bundle));
+      $entity = entity_create(static::$entityType, ['type' => static::$bundle]);
     }
     else
     {
       $entity = entity_create(static::$entityType);
     }
 
-    return static::forge($entity);
+    return static::forgeByEntity($entity);
   }
 
   /**
@@ -1108,14 +1127,27 @@ abstract class Model
   }
 
   /**
+   * Forge a collection of this modeltype
+   *
+   * @return Collection
+   */
+  public static function forgeCollection() : Collection
+  {
+    $requestedModelType = get_called_class();
+    $registeredModelType = static::getRegisteredModelTypeForModelType($requestedModelType);
+    return Collection::forgeNew($registeredModelType);
+  }
+
+  /**
    * @deprecated
    * Forge a new Model with either an Drupal Entity or an ID. For ease of use and readability use the methods "forgeById" or "forgeByEntity"
+   * This is only used internally
    *
    * @param EntityInterface $entity
    * @param string|int $id
    * @return Model|null will return the Model, or null if the model wasnt found
    */
-  public static function forge(EntityInterface $entity = null, $id = null) : ?Model
+  private static function forge(EntityInterface $entity = null, $id = null) : ?Model
   {
     if(!empty($id))
     {
@@ -1125,10 +1157,7 @@ abstract class Model
       $query->addCondition(new Condition(static::$idField, '=', $id));
       $model = $query->fetchSingleModel();
 
-      if(!empty($model))
-      {
-        return $model;
-      }
+      return $model;
     }
 
     if(empty($entity) && empty($id))
@@ -1144,10 +1173,32 @@ abstract class Model
 
     if(!empty($entity))
     {
-      return new static($entity);
+      // Next we must use the registered modeltype, instead of the modeltype this forge was requested with.
+      // Just to make sure we always return the registered (and therefore possibly overridden) modeltype in the system.
+      $requestedModelType = get_called_class();
+      $registeredModelType = static::getRegisteredModelTypeForModelType($requestedModelType);
+
+      return new $registeredModelType($entity);
     }
 
     return null;
+  }
+
+  /**
+   * Returns the registered fully qualified classname for another fully qualified model classname.
+   * Per system another implementation of the Model might exist.
+   *
+   * @param string $requestedModelType
+   * @return string
+   */
+  public static final function getRegisteredModelTypeForModelType(string $requestedModelType) : string
+  {
+    if(!array_key_exists($requestedModelType, static::$cachedModelTypes))
+    {
+      static::$cachedModelTypes[$requestedModelType] = Model::getModelClassForEntityAndBundle($requestedModelType::$entityType, $requestedModelType::$bundle);
+    }
+
+    return static::$cachedModelTypes[$requestedModelType];
   }
 
   /**

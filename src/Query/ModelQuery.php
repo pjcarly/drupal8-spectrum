@@ -34,7 +34,7 @@ class ModelQuery extends BundleQuery
   public function fetchCollection() : Collection
   {
     $entities = $this->fetch();
-    return Collection::forge($this->modelType, null, $entities);
+    return Collection::forgeByEntities($this->modelType, $entities);
   }
 
   /**
@@ -49,7 +49,7 @@ class ModelQuery extends BundleQuery
     if($entity != null)
     {
       $modelType = $this->modelType;
-      return $modelType::forge($entity);
+      return $modelType::forgeByEntity($entity);
     }
     else
     {

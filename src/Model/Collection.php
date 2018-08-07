@@ -259,16 +259,16 @@ class Collection implements \IteratorAggregate, \Countable
                 {
                   if($relationship->isPolymorphic)
                   {
-                    $referencedCollection = PolymorphicCollection::forge();
+                    $referencedCollection = PolymorphicCollection::forgeNew();
                   }
                   else
                   {
-                    $referencedCollection = Collection::forge($referencedModelType);
+                    $referencedCollection = Collection::forgeNew($referencedModelType);
                   }
                 }
               }
               // we can finally forge a new model
-              $referencedModel = $referencedModelType::forge($referencedEntity);
+              $referencedModel = $referencedModelType::forgeByEntity($referencedEntity);
               // and put it in the collection created above
               $returnValue = $referencedCollection->put($referencedModel, true);
             }
@@ -281,11 +281,11 @@ class Collection implements \IteratorAggregate, \Countable
         {
           if($relationship->isPolymorphic)
           {
-            $returnValue = PolymorphicCollection::forge();
+            $returnValue = PolymorphicCollection::forgeNew();
           }
           else
           {
-            $returnValue = Collection::forge($relationship->modelType);
+            $returnValue = Collection::forgeNew($relationship->modelType);
           }
         }
       }
@@ -318,12 +318,12 @@ class Collection implements \IteratorAggregate, \Countable
                 if($referencingCollection === null)
                 {
                   // referencedRelationships are never polymorphics
-                  $referencingCollection = Collection::forge($referencingModelType);
+                  $referencingCollection = Collection::forgeNew($referencingModelType);
                 }
               }
 
               // now that we have a model, lets put them one by one
-              $referencingModel = $referencingModelType::forge($referencingEntity);
+              $referencingModel = $referencingModelType::forgeByEntity($referencingEntity);
               $returnValue = $referencingCollection->put($referencingModel, true);
             }
           }
@@ -336,7 +336,7 @@ class Collection implements \IteratorAggregate, \Countable
 
         if(empty($returnValue))
         {
-          $returnValue = Collection::forge($relationship->modelType);
+          $returnValue = Collection::forgeNew($relationship->modelType);
         }
       }
     }
@@ -445,6 +445,18 @@ class Collection implements \IteratorAggregate, \Countable
   }
 
   /**
+   * Forge a new empty Collection
+   *
+   * @param string|null $modelType
+   * @param array $ids
+   * @return Collection
+   */
+  public static function forgeNew(?string $modelType) : Collection
+  {
+    return static::forge($modelType, [], [], $ids);
+  }
+
+  /**
    * Forge a new Collection with the ids provided
    *
    * @param string|null $modelType
@@ -491,7 +503,7 @@ class Collection implements \IteratorAggregate, \Countable
    * @param ModelQuery $modelQuery
    * @return Collection
    */
-  public static function forge(string $modelType = null, ?array $models = [], ?array $entities = [], ?array $ids = [], ModelQuery $modelQuery = null) : Collection
+  private static function forge(string $modelType = null, ?array $models = [], ?array $entities = [], ?array $ids = [], ModelQuery $modelQuery = null) : Collection
   {
     $collection = new static();
     $collection->modelType = $modelType;
@@ -546,7 +558,7 @@ class Collection implements \IteratorAggregate, \Countable
     $models = [];
     foreach($entities as $entity)
     {
-      $models[] = $modelType::forge($entity);
+      $models[] = $modelType::forgeByEntity($entity);
     }
     return $models;
   }
@@ -605,7 +617,7 @@ class Collection implements \IteratorAggregate, \Countable
   public function putNew() : Model
   {
     $modelType = $this->modelType;
-    $newModel = $modelType::createNew();
+    $newModel = $modelType::forgeNew();
     $this->put($newModel);
     return $newModel;
   }
@@ -701,17 +713,17 @@ class Collection implements \IteratorAggregate, \Countable
 
       if($relationship instanceof ReferencedRelationship)
       {
-        $resultCollection = static::forge($relationship->modelType);
+        $resultCollection = static::forgeNew($relationship->modelType);
       }
       else if($relationship instanceof FieldRelationship)
       {
         if($relationship->isPolymorphic)
         {
-          $resultCollection = PolymorphicCollection::forge();
+          $resultCollection = PolymorphicCollection::forgeNew();
         }
         else
         {
-          $resultCollection = static::forge($relationship->modelType);
+          $resultCollection = static::forgeNew($relationship->modelType);
         }
       }
       else

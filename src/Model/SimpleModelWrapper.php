@@ -92,7 +92,7 @@ class SimpleModelWrapper
 
           if(!empty($fileId))
           {
-            $returnValue = Image::forge(null, $fileId);
+            $returnValue = Image::forgeById($fileId);
           }
           break;
         case 'file':
@@ -100,7 +100,7 @@ class SimpleModelWrapper
 
           if(!empty($fileId))
           {
-            $returnValue = File::forge(null, $fileId);
+            $returnValue = File::forgeById($fileId);
           }
           break;
         case 'uri':

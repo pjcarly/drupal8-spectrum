@@ -64,7 +64,7 @@ class RegisteredJob extends Model
       throw new \Exception('Class does not exist');
     }
 
-    return $class::createNew();
+    return $class::forgeNew();
   }
 
   /**
