@@ -1178,7 +1178,20 @@ abstract class Model
       $requestedModelType = get_called_class();
       $registeredModelType = static::getRegisteredModelTypeForModelType($requestedModelType);
 
-      return new $registeredModelType($entity);
+      if(is_subclass_of($requestedModelType, $registeredModelType))
+      {
+        // When the requestedmodeltype is a subclass of the registeredmodeltype, we use the requestedmodeltype
+        // As it might just as well be a seperate implementation for another purpose.
+        // This is needed for QueuedJobs, as they all implement logic from QueuedJob, which is registered in the system.
+        // And all queuedjobs extend from QueuedJob, but arent registered in the modelservice.
+        return new $requestedModelType($entity);
+      }
+      else
+      {
+        // If the requestedmodeltype is not a subclass of the registered modeltype,
+        // We use the registeredmodeltype, as it should be the other way round.
+        return new $registeredModelType($entity);
+      }
     }
 
     return null;
