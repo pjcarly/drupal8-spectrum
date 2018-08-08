@@ -453,7 +453,7 @@ class Collection implements \IteratorAggregate, \Countable
    */
   public static function forgeNew(?string $modelType) : Collection
   {
-    return static::forge($modelType, [], [], $ids);
+    return static::forge($modelType, [], [], []);
   }
 
   /**
