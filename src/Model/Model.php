@@ -943,6 +943,143 @@ abstract class Model
   }
 
   /**
+   * This method checks whether a field changed from an old value to something else, it is especially useful in triggermethods to determine
+   * if certain logic should be executed
+   *
+   * @param string $fieldName the fieldname you want to check (for example field_body)
+   * @param mixed $oldValue what the old value should be, to return true for
+   * @return boolean
+   */
+  protected function fieldChangedFrom(string $fieldName, $oldValue) : bool
+  {
+    $returnValue = false;
+    $isNew = $this->isNewlyInserted();
+
+    // If this is a new value, the old value can only be null else return false
+    if($isNew)
+    {
+      return ($oldValue === null);
+    }
+
+    // Next we check if the field actually changed
+    if($this->fieldChanged($fieldName))
+    {
+      // Now we know the field changed, lets compare it to the oldvalue
+      $fieldDefinition = static::getFieldDefinition($fieldName);
+      $newAttribute = $this->entity->$fieldName;
+      $oldAttribute = $this->entity->original->$fieldName;
+
+      switch($fieldDefinition->getType())
+      {
+        case 'address':
+        case 'geolocation':
+          throw new InvalidFieldException('Field type isnt supported for fieldChangedFrom functions, only single value fields supported');
+          break;
+        case 'entity_reference':
+        case 'file':
+        case 'image':
+          $returnValue = ($oldAttribute->target_id == $oldValue);
+          break;
+        case 'link':
+          $returnValue = ($oldAttribute->uri == $oldValue);
+          break;
+        default:
+          $returnValue = ($oldAttribute->value == $oldValue);
+          break;
+      }
+    }
+
+    return $returnValue;
+  }
+
+  /**
+   * This method checks whether a field changed from an old value to a specific new value,
+   * It is especially useful in triggermethods to determine, if certain logic should be executed
+   *
+   * @param string $fieldName the fieldname you want to check (for example field_body)
+   * @param mixed $oldValue what the old value should be
+   * @param mixed $newValue what the old value should be
+   * @return boolean
+   */
+  protected function fieldChangedFromTo(string $fieldName, $oldValue, $newValue) : bool
+  {
+    $returnValue = false;
+    $isNew = $this->isNewlyInserted();
+
+    // Next we check if the field actually changed
+    if($this->fieldChanged($fieldName))
+    {
+      // Now we know the field changed, lets compare it to the oldvalue
+      $fieldDefinition = static::getFieldDefinition($fieldName);
+      $newAttribute = $this->entity->$fieldName;
+      $oldAttribute = $this->entity->original->$fieldName;
+
+      switch($fieldDefinition->getType())
+      {
+        case 'address':
+        case 'geolocation':
+          throw new InvalidFieldException('Field type isnt supported for fieldChangedFrom functions, only single value fields supported');
+          break;
+        case 'entity_reference':
+        case 'file':
+        case 'image':
+          $returnValue = (($isNew && $oldValue == null) || (!$isNew && $oldAttribute->target_id == $oldValue)) && ($newAttribute->target_id == $newValue);
+          break;
+        case 'link':
+          $returnValue = (($isNew && $oldValue == null) || (!$isNew && $oldAttribute->uri == $oldValue)) && ($newAttribute->uri == $newValue);
+          break;
+        default:
+          $returnValue = (($isNew && $oldValue == null) || (!$isNew && $oldAttribute->value == $oldValue)) && ($newAttribute->value == $newValue);
+          break;
+      }
+    }
+
+    return $returnValue;
+  }
+
+  /**
+   * This method checks whether a field changed to a certain new value (independently of what it was before, as long as it actually changed)
+   * It is especially useful in triggermethods to determine  if certain logic should be executed
+   *
+   * @param string $fieldName the fieldname you want to check (for example field_body)
+   * @param mixed $oldValue what the new value should be, to return true for
+   * @return boolean
+   */
+  protected function fieldChangedTo(string $fieldName, $newValue) : bool
+  {
+    $returnValue = false;
+    // Next we check if the field actually changed
+    if($this->fieldChanged($fieldName))
+    {
+      // Now we know the field changed, lets compare it to the new value
+      $fieldDefinition = static::getFieldDefinition($fieldName);
+      $newAttribute = $this->entity->$fieldName;
+      $oldAttribute = $this->entity->original->$fieldName;
+
+      switch($fieldDefinition->getType())
+      {
+        case 'address':
+        case 'geolocation':
+          throw new InvalidFieldException('Field type isnt supported for fieldChangedTo functions, only single value fields supported');
+          break;
+        case 'entity_reference':
+        case 'file':
+        case 'image':
+          $returnValue = ($newAttribute->target_id == $newValue);
+          break;
+        case 'link':
+          $returnValue = ($newAttribute->uri == $newValue);
+          break;
+        default:
+          $returnValue = ($newAttribute->value == $newValue);
+          break;
+      }
+    }
+
+    return $returnValue;
+  }
+
+  /**
    * Helper function for trigger methods. Returns true if the value of the field changed compared to the value stored in the database
    * This can be used to only execute certain code when a field changes. (For Example when setting the Title of a User based on the first and lastname, only execute the method when the first of the lastname changes)
    *
