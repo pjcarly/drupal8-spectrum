@@ -2,39 +2,103 @@
 
 namespace Drupal\spectrum\Serializer;
 
+/**
+ * A JsonApiNode is the representation of a single entity. Upon deserialization it should be able to match the data back to the entity in the back-end
+ * By using the type and ID
+ */
 class JsonApiNode extends JsonApiBaseNode
 {
+  /**
+   * The Id of the entity represented by this node
+   *
+   * @var string|int
+   */
   protected $id;
+
+  /**
+   * The type of the entity represented by this node
+   *
+   * @var string
+   */
   protected $type;
+
+  /**
+   * An array containing the attributes of the entity that will be serialized in this node
+   *
+   * @var array
+   */
   protected $attributes;
+
+  /**
+   * An array containing the relationships of the entity that will be serialized in this node
+   *
+   * @var array
+   */
   protected $relationships;
 
-  public function setId($id)
+  /**
+   * Set the ID of this node
+   *
+   * @param string|int $id
+   * @return JsonApiNode
+   */
+  public function setId($id) : JsonApiNode
   {
     $this->id = $id;
+    return $this;
   }
 
+  /**
+   * Returns the ID of the node
+   *
+   * @return string|int|null
+   */
   public function getId()
   {
     return $this->id;
   }
 
-  public function setType($type)
+  /**
+   * Set the type of the jsonapi node, that will match the entity that will be serialized in this node.
+   * This is used in order to translate the node back to the entity upon deserialization
+   *
+   * @param string $type
+   * @return JsonApiNode
+   */
+  public function setType(string $type) : JsonApiNode
   {
     $this->type = $type;
+    return $this;
   }
 
-  public function getType()
+  /**
+   * Returns the type of the the entity serialized in the node
+   *
+   * @return string
+   */
+  public function getType() : string
   {
     return $this->type;
   }
 
-  public function hasType()
+  /**
+   * Checks whether this node has a type
+   *
+   * @return boolean
+   */
+  public function hasType() : bool
   {
     return !empty($this->type);
   }
 
-  public function addRelationship($name, ?JsonApiDataNode $node)
+  /**
+   * Add a relationship to the node
+   *
+   * @param string $name The name is the key in the serialized hash
+   * @param JsonApiDataNode|null $node
+   * @return JsonApiNode
+   */
+  public function addRelationship(string $name, ?JsonApiDataNode $node)  : JsonApiNode
   {
     if(empty($this->relationships))
     {
@@ -42,9 +106,17 @@ class JsonApiNode extends JsonApiBaseNode
     }
 
     $this->relationships[$name] = $node;
+    return $this;
   }
 
-  public function addAttribute($name, $attribute)
+  /**
+   * Add an attribute to this node
+   *
+   * @param string $name The name is the key in the serialized hash
+   * @param mixed $attribute
+   * @return JsonApiNode
+   */
+  public function addAttribute(string $name, $attribute) : JsonApiNode
   {
     if(empty($this->attributes))
     {
@@ -52,43 +124,84 @@ class JsonApiNode extends JsonApiBaseNode
     }
 
     $this->attributes[$name] = $attribute;
+    return $this;
   }
 
-  public function removeAttribute($name)
+  /**
+   * Remove an attribute from the attributes hash
+   *
+   * @param string $name
+   * @return JsonApiNode
+   */
+  public function removeAttribute(string $name) : JsonApiNode
   {
     if(!empty($name) && array_key_exists($name, $this->attributes))
     {
       unset($this->attributes[$name]);
     }
+
+    return $this;
   }
 
-  public function renameAttribute($oldName, $newName)
+  /**
+   * Rename a attribute to a different different name
+   *
+   * @param string $oldName The old name of the attribute, we will search for this in the attributes array
+   * @param string $newName The new name of the attribute, this will be the new key in the serialized hash
+   * @return JsonApiNode
+   */
+  public function renameAttribute(string $oldName, string $newName) : JsonApiNode
   {
     if(!empty($oldName) && !empty($newName) && array_key_exists($oldName, $this->attributes))
     {
       $this->attributes[$newName] = $this->attributes[$oldName];
       unset($this->attributes[$oldName]);
     }
+
+    return $this;
   }
 
-  public function removeRelationship($name)
+  /**
+   * Remove a relationship by its name
+   *
+   * @param string $name
+   * @return JsonApiNode
+   */
+  public function removeRelationship(string $name) : JsonApiNode
   {
     if(!empty($name) && array_key_exists($name, $this->relationships))
     {
       unset($this->relationships[$name]);
     }
+
+    return $this;
   }
 
-  public function renameRelationship($oldName, $newName)
+  /**
+   * Rename a relationship to a different name, the new name will be the key in the serialized hash
+   *
+   * @param string $oldName The old name of the relationship, we will search for this in the relationships array
+   * @param string $newName The new name of the relationship, this will be the new key in the serialized hash
+   * @return JsonApiNode
+   */
+  public function renameRelationship(string $oldName, string $newName) : JsonApiNode
   {
     if(!empty($oldName) && !empty($newName) && array_key_exists($oldName, $this->relationships))
     {
       $this->relationships[$newName] = $this->relationships[$oldName];
       unset($this->attributes[$oldName]);
     }
+
+    return $this;
   }
 
-  public function getAttribute($name)
+  /**
+   * Returns the value of an attribute
+   *
+   * @param string $name the name of the attribute
+   * @return mixed
+   */
+  public function getAttribute(string $name)
   {
     if(!empty($name) && array_key_exists($name, $this->attributes))
     {
@@ -96,12 +209,33 @@ class JsonApiNode extends JsonApiBaseNode
     }
   }
 
-  public function getAttributes()
+  /**
+   * Returns the attributes array
+   *
+   * @return array|null
+   */
+  public function getAttributes() : ?array
   {
     return $this->attributes;
   }
 
-  public function getRelationship($name)
+  /**
+   * Returns the relationships array
+   *
+   * @return array|null
+   */
+  public function getRelationships() : ?array
+  {
+    return $this->relationships;
+  }
+
+  /**
+   * Get a relationshp by its name
+   *
+   * @param string $name
+   * @return JsonApiDataNode|null
+   */
+  public function getRelationship(string $name) : ?JsonApiDataNode
   {
     if(!empty($name) && array_key_exists($name, $this->relationships))
     {
@@ -109,6 +243,11 @@ class JsonApiNode extends JsonApiBaseNode
     }
   }
 
+  /**
+   * Setrialize the hash into a PHP stdclass, which in turn can be serialized to JSON. The serialized json will be jsonapi.org compliant
+   *
+   * @return \stdClass
+   */
   public function serialize() : \stdClass
   {
     $serialized = new \stdClass();
