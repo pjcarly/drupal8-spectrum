@@ -109,7 +109,7 @@ class JsonApiNode extends JsonApiBaseNode
     }
   }
 
-  public function serialize()
+  public function serialize() : \stdClass
   {
     $serialized = new \stdClass();
 
