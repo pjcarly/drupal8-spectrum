@@ -4,16 +4,31 @@ namespace Drupal\spectrum\Serializer;
 
 use Drupal\spectrum\Exceptions\InvalidTypeException;
 
+/**
+ * A JsonApiRootNode, is a node that is the root of your serialization process, it can only be used once, as it includes the hash "includes"
+ * Which contains the included records which are a different typem but are related to the node or nodes being returned by the endpoint
+ */
 class JsonApiRootNode extends JsonApiDataNode
 {
+  /**
+   * Holds a list of JsonApiNodes which should be Included with the original results
+   *
+   * @var array
+   */
   protected $included;
-  protected $usedNodeForData;
 
-  public function addInclude($jsonapi)
+  /**
+   * Add an include that will be added to the response, in the included hash.
+   * These records are of a different type than the root records, but are related through relationships
+   *
+   * @param JsonApiBaseNode $jsonapi
+   * @return JsonApiRootNode
+   */
+  public function addInclude(JsonApiBaseNode $jsonapi) : JsonApiRootNode
   {
     if(empty($this->included))
     {
-      $this->included = array();
+      $this->included = [];
     }
 
     if($jsonapi instanceof JsonApiNode)
@@ -38,8 +53,15 @@ class JsonApiRootNode extends JsonApiDataNode
     {
       throw new InvalidTypeException();
     }
+
+    return $this;
   }
 
+  /**
+   * Returns a serialized version of the rootnode, this in turn can be serialized to json.
+   *
+   * @return \stdClass
+   */
   public function serialize() : \stdClass
   {
     $serialized = parent::serialize();
@@ -57,11 +79,17 @@ class JsonApiRootNode extends JsonApiDataNode
     return $serialized;
   }
 
-  public function setData(JsonApiDataNode $node)
+  /**
+   * This function copies the data attribute of the provided JsonApiDataNode into this rootnode
+   *
+   * @param JsonApiDataNode $node
+   * @return JsonApiRootNode
+   */
+  public function setData(JsonApiDataNode $node) : JsonApiRootNode
   {
     if($this->asArray && !is_array($node->data))
     {
-      $this->data = array();
+      $this->data = [];
       if(!empty($node->data))
       {
         $this->data[] = $node->data;
@@ -71,17 +99,34 @@ class JsonApiRootNode extends JsonApiDataNode
     {
       $this->data = $node->data;
     }
+
+    return $this;
   }
 
-  public function setMeta(JsonApiDataNode $node)
+  /**
+   * This function copies the meta attribute of the provided jsonapidatanode in this rootnode
+   *
+   * @param JsonApiDataNode $node
+   * @return JsonApiRootNode
+   */
+  public function setMeta(JsonApiDataNode $node) : JsonApiRootNode
   {
     foreach($node->getMeta() as $key => $value)
     {
       $this->addMeta($key, $value);
     }
+
+    return $this;
   }
 
-  public static function getNoneDefaultDataKeys($jsonapidocument)
+  /**
+   * This function extracts the none default keys in the jsonapiroot node. The default keys are the ones provided by the jsonapi.org spec
+   * Every other key in the hash will be returned.
+   *
+   * @param \stdClass $jsonapidocument
+   * @return array
+   */
+  public static function getNoneDefaultDataKeys(\stdClass $jsonapidocument) : array
   {
     $noneDefaultKeys = [];
     $standardKeys = ['type', 'id', 'attributes', 'relationships', 'links'];
@@ -92,6 +137,7 @@ class JsonApiRootNode extends JsonApiDataNode
         $noneDefaultKeys[] = $key;
       }
     }
+
     return $noneDefaultKeys;
   }
 }

@@ -1142,7 +1142,7 @@ class ModelApiHandler extends BaseApiHandler
    * @param string $sort
    * @return ModelApiHandler
    */
-  protected function addSingleLink(JsonApiRootNode $jsonapi, string $name, string $baseUrl, int $limit = 0, int $page = 0, string $sort = null) : ModelApiHandler
+  protected function addSingleLink(JsonApiRootNode $jsonapi, string $name, string $baseUrl, ?int $limit = 0, ?int $page = 0, ?string $sort = null) : ModelApiHandler
   {
     $link = new JsonApiLink($name, $baseUrl);
     if(!empty($limit))
