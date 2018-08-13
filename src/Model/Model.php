@@ -649,7 +649,7 @@ abstract class Model
       {
         if($relationship->isPolymorphic)
         {
-          $this->relatedViaFieldOnEntity[$relationship->relationshipName] = PolymorphicCollection::forgeNew();
+          $this->relatedViaFieldOnEntity[$relationship->relationshipName] = PolymorphicCollection::forgeNew(null);
         }
         else
         {

@@ -45,6 +45,17 @@ abstract class Relationship
    */
   public $cascadingDelete = false;
 
+    /**
+   * The fully qualified classname of the model you wish to relate. This might not be the FQC passed in the constructor, a lookup will be done to see if another registered (overridden) modelclass exists
+   *
+   * @var string
+   */
+  public $modelType;
+
+  /**
+   * @param string $relationshipName the name you want to give to your relationship
+   * @param integer $cascade the Cascade indicator (NO_CASCADE, and CASCADE_ON_DELETE are available as static ints on Relationship)
+   */
   public function __construct(string $relationshipName, int $cascade = 0)
   {
     $this->relationshipName = $relationshipName;

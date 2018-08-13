@@ -1185,11 +1185,51 @@ class ModelApiHandler extends BaseApiHandler
         {
           // Before anything else, we check if the user has access to the data
           $deepRelationship = $modelClassName::getDeepRelationship($relationshipNameToInclude);
-          $deepRelationshipModelClassName = $deepRelationship->modelType;
 
-          if(!$deepRelationshipModelClassName::userHasReadPermission())
+          // Now we check permissions
+          if($deepRelationship instanceof FieldRelationship)
           {
-            // No access to model class, skip the include
+            // A field relationship can be polymorphic, only if the user has access to all types, can we allow the include
+            if($deepRelationship->isPolymorphic)
+            {
+              $allPolymorphicTypesAllowed = true;
+
+              foreach($deepRelationship->polymorphicModelTypes as $deepRelationshipModelClassName)
+              {
+                $allPolymorphicTypesAllowed = $deepRelationshipModelClassName::userHasReadPermission();
+
+                if(!$allPolymorphicTypesAllowed)
+                {
+                  break;
+                }
+              }
+
+              if(!$allPolymorphicTypesAllowed)
+              {
+                continue;
+              }
+            }
+            else
+            {
+              $deepRelationshipModelClassName = $deepRelationship->modelType;
+              if(!$deepRelationshipModelClassName::userHasReadPermission())
+              {
+                // No access to model class, skip the include
+                continue;
+              }
+            }
+          }
+          else if($deepRelationship instanceof ReferencedRelationship)
+          {
+            $deepRelationshipModelClassName = $deepRelationship->modelType;
+            if(!$deepRelationshipModelClassName::userHasReadPermission())
+            {
+              // No access to model class, skip the include
+              continue;
+            }
+          }
+          else
+          {
             continue;
           }
 
@@ -1329,6 +1369,13 @@ class ModelApiHandler extends BaseApiHandler
                   if($settings['target_type'] === 'user')
                   {
                     $condition = new Condition($field.'.entity.name', $operator, $value);
+                    $conditions[] = $condition;
+                  }
+                  else if($settings['target_type'] === 'user_role')
+                  {
+                    // TODO, fix this, currently getting exception "Getting the base fields is not supported for entity type user_role"
+                    // works without entity.title appended
+                    $condition = new Condition($field, $operator, $value);
                     $conditions[] = $condition;
                   }
                   else

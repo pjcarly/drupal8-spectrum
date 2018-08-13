@@ -158,6 +158,17 @@ class Collection implements \IteratorAggregate, \Countable
   }
 
   /**
+   * Remove the Model from the Collection
+   *
+   * @param Model $model
+   * @return Collection
+   */
+  public function removeModel(Model $model) : Collection
+  {
+    return $this->remove($model->key);
+  }
+
+  /**
    * Remove all the models from the collection
    *
    * @return Collection
@@ -259,7 +270,7 @@ class Collection implements \IteratorAggregate, \Countable
                 {
                   if($relationship->isPolymorphic)
                   {
-                    $referencedCollection = PolymorphicCollection::forgeNew();
+                    $referencedCollection = PolymorphicCollection::forgeNew(null);
                   }
                   else
                   {
@@ -281,7 +292,7 @@ class Collection implements \IteratorAggregate, \Countable
         {
           if($relationship->isPolymorphic)
           {
-            $returnValue = PolymorphicCollection::forgeNew();
+            $returnValue = PolymorphicCollection::forgeNew(null);
           }
           else
           {
@@ -448,7 +459,6 @@ class Collection implements \IteratorAggregate, \Countable
    * Forge a new empty Collection
    *
    * @param string|null $modelType
-   * @param array $ids
    * @return Collection
    */
   public static function forgeNew(?string $modelType) : Collection
@@ -719,7 +729,7 @@ class Collection implements \IteratorAggregate, \Countable
       {
         if($relationship->isPolymorphic)
         {
-          $resultCollection = PolymorphicCollection::forgeNew();
+          $resultCollection = PolymorphicCollection::forgeNew(null);
         }
         else
         {

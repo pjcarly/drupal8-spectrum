@@ -4,11 +4,32 @@ namespace Drupal\spectrum\Model;
 use Drupal\spectrum\Query\EntityQuery;
 use Drupal\spectrum\Query\Condition;
 
+/**
+ * A Field Relationship is a relationship that has a column on the enitty you're defining the relationship on.
+ * It adds a foreign key with the ID of another entity
+ */
 class FieldRelationship extends Relationship
 {
+  /**
+   * The name of the relationship field on the entity
+   *
+   * @var string
+   */
   public $relationshipField;
-  public $modelType;
+
+  /**
+   * Indicator whether this relationship is polymorphic (multiple bundles allowed) or not
+   *
+   * @var boolean
+   */
   public $isPolymorphic = false;
+
+  /**
+   * An array containing the list of fully qualified classnames of all the polymoprhic model types
+   *
+   * @var array
+   */
+  public $polymorphicModelTypes = [];
 
   private $firstModelType;
   public $fieldCardinality; // cardinality is the maximum number of references allowed for the field.
@@ -68,6 +89,7 @@ class FieldRelationship extends Relationship
     // Here we decide if our relationship is polymorphic or for a single entity/bundle type
     $relationshipEntityType = $fieldSettings['target_type'];
     $relationshipBundle = null;
+
     if(!empty($fieldSettings['handler_settings']['target_bundles']))
     {
       // with all entity references this shouldn't be a problem, however, in case of 'user', this is blank
@@ -80,6 +102,11 @@ class FieldRelationship extends Relationship
     {
       $this->isPolymorphic = true;
       $this->modelType = null;
+
+      foreach($fieldSettings['handler_settings']['target_bundles'] as $targetBundle)
+      {
+        $this->polymorphicModelTypes[] = Model::getModelClassForEntityAndBundle($relationshipEntityType, $targetBundle);
+      }
     }
     else
     {

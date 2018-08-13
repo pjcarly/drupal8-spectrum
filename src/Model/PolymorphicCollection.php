@@ -102,6 +102,8 @@ class PolymorphicCollection extends Collection
       // so we can just use the parent addModelToArrays function, we won't have any conflicts there
       $this->addModelToArrays($model, $includeInOriginalModels);
     }
+
+    return $this;
   }
 
   /**

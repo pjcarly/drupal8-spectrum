@@ -30,13 +30,6 @@ class ReferencedRelationship extends Relationship
   public $fieldRelationshipName;
 
   /**
-   * The fully qualified classname of the model you wish to relate. This might not be the FQC passed in the constructor, a lookup will be done to see if another registered (overridden) modelclass exists
-   *
-   * @var string
-   */
-  public $modelType;
-
-  /**
    * @param string $relationshipName The name of your relationship
    * @param string $modelType The fully qualified classname of the model you wish to relate. A lookup will be done in the modelservice to find the registered modelclass for then entity/bundle combination, as it might be overridden.
    * @param string $fieldRelationshipName The relationshipName of the Field Relationship on the inverse Model
