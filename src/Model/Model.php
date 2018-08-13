@@ -953,10 +953,9 @@ abstract class Model
   protected function fieldChangedFrom(string $fieldName, $oldValue) : bool
   {
     $returnValue = false;
-    $isNew = $this->isNewlyInserted();
 
     // If this is a new value, the old value can only be null else return false
-    if($isNew)
+    if($this->isNewlyInserted())
     {
       return ($oldValue === null);
     }
@@ -966,7 +965,6 @@ abstract class Model
     {
       // Now we know the field changed, lets compare it to the oldvalue
       $fieldDefinition = static::getFieldDefinition($fieldName);
-      $newAttribute = $this->entity->$fieldName;
       $oldAttribute = $this->entity->original->$fieldName;
 
       switch($fieldDefinition->getType())
@@ -1012,7 +1010,7 @@ abstract class Model
       // Now we know the field changed, lets compare it to the oldvalue
       $fieldDefinition = static::getFieldDefinition($fieldName);
       $newAttribute = $this->entity->$fieldName;
-      $oldAttribute = $this->entity->original->$fieldName;
+      $oldAttribute = isset($this->entity->original) ? $this->entity->original->$fieldName : null;
 
       switch($fieldDefinition->getType())
       {
@@ -1054,7 +1052,6 @@ abstract class Model
       // Now we know the field changed, lets compare it to the new value
       $fieldDefinition = static::getFieldDefinition($fieldName);
       $newAttribute = $this->entity->$fieldName;
-      $oldAttribute = $this->entity->original->$fieldName;
 
       switch($fieldDefinition->getType())
       {

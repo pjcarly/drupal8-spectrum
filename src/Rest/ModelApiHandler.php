@@ -1170,7 +1170,7 @@ class ModelApiHandler extends BaseApiHandler
    * @param Collection|Model $source
    * @param JsonApiRootNode $jsonApiRootNode
    * @param array $relationshipNamesToInclude
-   * @return void
+   * @return ModelApiHandler
    */
   protected function checkForIncludes($source, JsonApiRootNode $jsonApiRootNode, array $relationshipNamesToInclude) : ModelApiHandler
   {
@@ -1265,60 +1265,86 @@ class ModelApiHandler extends BaseApiHandler
    * @param array $filter
    * @return array
    */
-  public static function getConditionListForFilterArray(string $modelClassName, array $filter) : array
+  public static function getConditionListForFilterArray(string $modelClassName, array $filters) : array
   {
     $prettyToFieldsMap = $modelClassName::getPrettyFieldsToFieldsMapping();
     $conditions = [];
-    foreach(array_keys($filter) as $prettyFilter)
+
+    foreach($filters as $index => $filter)
     {
-      // lets start by making sure the field exists
-      // we explode, because we have a potential field with a column (like address.city) as opposed to just a field (like name)
-      $prettyFieldParts = explode('.', $prettyFilter);
-
-      if(array_key_exists($prettyFieldParts[0], $prettyToFieldsMap))
+      if(is_array($filter) && array_key_exists('field', $filter))
       {
-        $field = $prettyToFieldsMap[$prettyFieldParts[0]];
-        $operator = null;
-        $value = null;
-
-        $filterValue = $filter[$prettyFilter];
-
-        // the filter value can either be the specific value, or an array with extra attributes
-        if(is_array($filterValue))
+        // lets start by making sure the field exists
+        // we explode, because we have a potential field with a column (like address.city) as opposed to just a field (like name)
+        $prettyFieldParts = explode('.', $filter['field']);
+        if(array_key_exists($prettyFieldParts[0], $prettyToFieldsMap))
         {
-          // we found an array, meaning we must check for 'operator' as well
-          $operator = (array_key_exists('operator', $filterValue) && Condition::isValidSingleModelOperator($filterValue['operator'])) ? $filterValue['operator'] : null;
-          $value = array_key_exists('value', $filterValue) ? $filterValue['value'] : null;
-        }
-        else
-        {
-          // no array, so it will just be the value
-          $operator = '=';
-          $value = $filterValue;
-        }
+          $field = $prettyToFieldsMap[$prettyFieldParts[0]];
+          $operator = (array_key_exists('operator', $filter) && Condition::isValidSingleModelOperator($filter['operator'])) ? $filter['operator'] : '=';
+          $value = array_key_exists('value', $filter) ? $filter['value'] : null;
+          $id = array_key_exists('id', $filter) ? $filter['id'] : null;
 
-        if(!empty($operator) && !empty($value) && !empty($field))
-        {
-          if(sizeof($prettyFieldParts) > 1)
+          // Now that we filtered everything out the filter arrays, we can build our actual Condition
+          if(!empty($operator) && !empty($field) && (!empty($value) || !empty($id)))
           {
-            // this means we have a field with a column (like address.city)
-            $typePrettyToFieldsMap = $modelClassName::getTypePrettyFieldToFieldsMapping();
-            // meaning we have a extra column present
-            $fieldDefinition = $modelClassName::getFieldDefinition($field);
-            $fieldType = $fieldDefinition->getType();
-
-            if(array_key_exists($fieldType, $typePrettyToFieldsMap) && array_key_exists($prettyFieldParts[1], $typePrettyToFieldsMap[$fieldType]))
+            // Since either the value, or the ID can be passed, we first check what we found in the filter
+            // This is only needed for Entity_reference fields, where you can filter on the title of the related object through "value"
+            // Or on the ID of the object through the "ID"
+            if(!empty($id))
             {
-              $column = $typePrettyToFieldsMap[$fieldType][$prettyFieldParts[1]];
-              $condition = new Condition($field.'.'.$column, $operator, $value);
+              // ID is more important than value, so we check it first
+              // An ID cant have a seperate column, so no need to check for that, we can just return the condition
+              $condition = new Condition($field, $operator, $id);
               $conditions[] = $condition;
             }
-          }
-          else
-          {
-            // just a field, no column (like name)
-            $condition = new Condition($field, $operator, $value);
-            $conditions[] = $condition;
+            else
+            {
+              // No ID passed, we can check for value
+              $fieldDefinition = $modelClassName::getFieldDefinition($field);
+              $fieldType = $fieldDefinition->getType();
+
+              // First We must check if it is a single value field. Or a column
+              if(sizeof($prettyFieldParts) > 1)
+              {
+                // More than 1 value in the field parts, so we can assume an extra column is present
+                $typePrettyToFieldsMap = Model::getTypePrettyFieldToFieldsMapping();
+
+                // Only certain columns are allowed to filter on, we check if the type is present, and the column is allowed
+                if(array_key_exists($fieldType, $typePrettyToFieldsMap) && array_key_exists($prettyFieldParts[1], $typePrettyToFieldsMap[$fieldType]))
+                {
+                  $column = $typePrettyToFieldsMap[$fieldType][$prettyFieldParts[1]];
+                  $condition = new Condition($field.'.'.$column, $operator, $value);
+                  $conditions[] = $condition;
+                }
+              }
+              else
+              {
+                // just a field, no column (like name)
+
+                // Lets check for the type, because if the type is an entity reference, we will filter on the title of the referenced entity
+                if($fieldType === 'entity_reference')
+                {
+                  // Because the user entity works differently than any other, we must also check for the target_type, and use a different column
+                  $settings = $fieldDefinition->getSettings();
+                  if($settings['target_type'] === 'user')
+                  {
+                    $condition = new Condition($field.'.entity.name', $operator, $value);
+                    $conditions[] = $condition;
+                  }
+                  else
+                  {
+                    $condition = new Condition($field.'.entity.title', $operator, $value);
+                    $conditions[] = $condition;
+                  }
+                }
+                else
+                {
+                  // Just any other field type
+                  $condition = new Condition($field, $operator, $value);
+                  $conditions[] = $condition;
+                }
+              }
+            }
           }
         }
       }
@@ -1373,18 +1399,17 @@ class ModelApiHandler extends BaseApiHandler
 
       $prettyFieldParts = explode('.', $prettyField);
 
-
       // if the pretty field exists, lets add it to the sort order
       if(array_key_exists($prettyFieldParts[0], $prettyToFieldsMap))
       {
         $field = $prettyToFieldsMap[$prettyFieldParts[0]];
+        $fieldDefinition = $modelClassName::getFieldDefinition($field);
+        $fieldType = $fieldDefinition->getType();
 
-        if(sizeof($prettyFieldParts) > 1)
+        if(sizeof($prettyFieldParts) > 1) // meaning we have a extra column present
         {
+          // Only certain types are allowed to sort on a different column
           $typePrettyToFieldsMap = $modelClassName::getTypePrettyFieldToFieldsMapping();
-          // meaning we have a extra column present
-          $fieldDefinition = $modelClassName::getFieldDefinition($field);
-          $fieldType = $fieldDefinition->getType();
 
           if(array_key_exists($fieldType, $typePrettyToFieldsMap) && array_key_exists($prettyFieldParts[1], $typePrettyToFieldsMap[$fieldType]))
           {
@@ -1394,7 +1419,25 @@ class ModelApiHandler extends BaseApiHandler
         }
         else
         {
-          $sortOrders[] = new Order($field, $direction);
+          if($fieldType === 'entity_reference')
+          {
+            // In case the field type is entity reference, we want to sort by the title, not the ID
+            // Because the user entity works differently than any other, we must also check for the target_type
+            $settings = $fieldDefinition->getSettings();
+            if($settings['target_type'] === 'user')
+            {
+              $sortOrders[] = new Order($field.'.entity.name', $direction);
+            }
+            else
+            {
+              $sortOrders[] = new Order($field.'.entity.title', $direction);
+            }
+          }
+          else
+          {
+            // Any other field, can be sorted like normal
+            $sortOrders[] = new Order($field, $direction);
+          }
         }
       }
     }

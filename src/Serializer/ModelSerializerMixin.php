@@ -351,10 +351,16 @@ trait ModelSerializerMixin
     return $root->serialize();
   }
 
-  public static function getTypePrettyFieldToFieldsMapping()
+  /**
+   * This function returns, the allowed columns where we can sort and filter on in the model api handler
+   * Only certain types have extra columns, the first key of the array will be the type of field, the second key the pretty field, and the value will be the actual column name
+   *
+   * @return array
+   */
+  public static function getTypePrettyFieldToFieldsMapping() : array
   {
-    $mapping = array();
-    $mapping['address'] = array();
+    $mapping = [];
+    $mapping['address'] = [];
     $mapping['address']['country-code'] = 'country_code';
     $mapping['address']['administrative-area'] = 'administrative_area';
     $mapping['address']['locality'] = 'locality';
