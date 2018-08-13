@@ -11,6 +11,7 @@ use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Exceptions\InvalidTypeException;
 use Drupal\spectrum\Exceptions\NotImplementedException;
 use Drupal\spectrum\Exceptions\ModelClassNotDefinedException;
+use Drupal\spectrum\Exceptions\ModelNotFoundException;
 use Drupal\spectrum\Exceptions\InvalidRelationshipTypeException;
 use Drupal\spectrum\Exceptions\RelationshipNotDefinedException;
 use Drupal\spectrum\Exceptions\PolymorphicException;
@@ -1125,6 +1126,42 @@ abstract class Model
     }
 
     return $returnValue;
+  }
+
+  /**
+   * Refreshes the entity from the database, the wrapped entity in this modelclass will be replaced with a new entity from the database
+   * Any unsaved changes will be lost!
+   *
+   * This does not work on the entities, and will throw an Exception if tried
+   *
+   * @return Model
+   */
+  public function refresh() : Model
+  {
+    if($this->isNew())
+    {
+      throw new ModelNotFoundException('You cant refresh a model which doesnt exist in the database');
+    }
+
+    // Drupal caches the entities in memory for the remainder of the transaction
+    // we want to clear that cash, because we want the data as it is in the database
+    $modelClass = get_called_class();
+    $modelClass::clearDrupalStaticEntityCache();
+
+    // We do a new entity query
+    $entityQuery = static::getEntityQuery();
+    $entityQuery->addCondition(new Condition(static::$idField, '=', $this->getId()));
+
+    $entity = $entityQuery->fetchSingle();
+
+    if(empty($entity))
+    {
+      throw new ModelNotFoundException('Model no longer exists in the database');
+    }
+
+    // And replace the entity in this model, with the queried entity
+    $this->entity = $entity;
+    return $this;
   }
 
   /**
