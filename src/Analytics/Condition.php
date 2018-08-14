@@ -7,6 +7,7 @@ use Drupal\spectrum\Model\FieldRelationship;
 use Drupal\spectrum\Model\ReferencedRelationship;
 
 use Drupal\spectrum\Query\Condition as QueryCondition;
+use Drupal\spectrum\Query\ConditionGroup as QueryConditionGroup;
 
 class Condition extends Model
 {
@@ -44,66 +45,71 @@ class Condition extends Model
    *
    * @return QueryCondition
    */
-  public function buildQueryCondition(): QueryCondition
+  public function buildQueryConditionGroup(): QueryConditionGroup
   {
-    $field = $this->entity->field_field->value;
-    $operator = static::$operationMapping[$this->entity->field_operator->value];
-    $value = $this->getValue(); // This parses possible literals
+    // This will be the returnvalue, we will fill in the conditions below
+    $conditiongroup = new QueryConditionGroup();
 
+    // We start of with field we are querying on
+    $field = $this->entity->field_field->value;
+
+    // Next lets check what type of operator it is, in case it is multivalue, we will have to explode the value later on
+    $operator = static::$operationMapping[$this->entity->field_operator->value];
+
+    // Next we get the value from the model, and see if we need parse the value
+    $values = [$this->entity->field_value->value];
+    // In case the operator is a multivalue field, we explode the value and parse every single value at a time
     if(in_array($operator, QueryCondition::$multipleValueOperators))
     {
-      $value = explode(',', $value);
-      $value = array_map('trim', $value);
+      $values = explode(',', $value);
+      $values = array_map('trim', $value);
     }
 
-    return new QueryCondition($field, $operator, $value);
-  }
-
-  /**
-   * Returns the value the Condition will contain
-   *
-   * @return void
-   */
-  public function getValue()
-  {
-    $value = $this->entity->field_value->value;
-
-    if(in_array($value, static::$userLiterals) || in_array($value, static::$dateLiterals))
+    // Now we loop over every found value, and add conditions to the conditiongroup if necessary
+    $fieldDefinition = null;
+    foreach($values as $value)
     {
-      $fieldDefinition = $this->getDrupalFieldDefinition();
-      if(!empty($fieldDefinition))
+      // We will parse possible literals in the value
+      if(in_array($value, static::$userLiterals) || in_array($value, static::$dateLiterals))
       {
-        $fieldType = $fieldDefinition->getType();
-        if($fieldType === 'entity_reference')
+        $fieldDefinition = empty($fieldDefinition) ? $this->getDrupalFieldDefinition() : $fieldDefinition;
+        if(!empty($fieldDefinition))
         {
-          $fieldSettings = $fieldDefinition->getItemDefinition()->getSettings();
-
-          if($fieldSettings['target_type'] === 'user')
+          $fieldType = $fieldDefinition->getType();
+          if($fieldType === 'entity_reference')
           {
-            if($value === 'MYSELF')
+            $fieldSettings = $fieldDefinition->getItemDefinition()->getSettings();
+
+            if($fieldSettings['target_type'] === 'user')
             {
-              $currentUser = \Drupal::currentUser();
-              $value = $currentUser->id();
+              if($value === 'MYSELF')
+              {
+                $currentUser = \Drupal::currentUser();
+                $value = $currentUser->id();
+
+                $conditiongroup->addCondition(new QueryCondition($field, $operator, $value));
+              }
             }
           }
-        }
-        else if($fieldType === 'datetime')
-        {
-          if($value === 'TODAY')
+          else if($fieldType === 'datetime')
           {
-            $today = new \DateTime();
-            $value = $today->format(DATETIME_DATE_STORAGE_FORMAT);
-          }
-          else if($value === 'NOW')
-          {
-            $now = new \DateTime();
-            $value = $now->format(DATETIME_DATETIME_STORAGE_FORMAT);
+            if($value === 'TODAY')
+            {
+              $today = new \DateTime();
+              $value = $today->format(DATETIME_DATE_STORAGE_FORMAT);
+            }
+            else if($value === 'NOW')
+            {
+              $now = new \DateTime();
+              $value = $now->format(DATETIME_DATETIME_STORAGE_FORMAT);
+            }
           }
         }
       }
     }
 
-    return $value;
+
+    new QueryCondition($field, $operator, $value);
   }
 
   private function getDrupalFieldDefinition()
