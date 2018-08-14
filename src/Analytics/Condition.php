@@ -11,6 +11,7 @@ use Drupal\spectrum\Query\Condition as QueryCondition;
 class Condition extends Model
 {
   public static $userLiterals = ['MYSELF'];
+  public static $dateLiterals = ['TODAY', 'NOW'];
 
   public static $operationMapping = [
     'EQUALS' => '=',
@@ -67,19 +68,36 @@ class Condition extends Model
   {
     $value = $this->entity->field_value->value;
 
-    if(in_array($value, static::$userLiterals))
+    if(in_array($value, static::$userLiterals) || in_array($value, static::$dateLiterals))
     {
       $fieldDefinition = $this->getDrupalFieldDefinition();
-      if(!empty($fieldDefinition) && $fieldDefinition->getType() === 'entity_reference')
+      if(!empty($fieldDefinition))
       {
-        $fieldSettings = $fieldDefinition->getItemDefinition()->getSettings();
-
-        if($fieldSettings['target_type'] === 'user')
+        $fieldType = $fieldDefinition->getType();
+        if($fieldType === 'entity_reference')
         {
-          if($value === 'MYSELF')
+          $fieldSettings = $fieldDefinition->getItemDefinition()->getSettings();
+
+          if($fieldSettings['target_type'] === 'user')
           {
-            $currentUser = \Drupal::currentUser();
-            $value = $currentUser->id();
+            if($value === 'MYSELF')
+            {
+              $currentUser = \Drupal::currentUser();
+              $value = $currentUser->id();
+            }
+          }
+        }
+        else if($fieldType === 'datetime')
+        {
+          if($value === 'TODAY')
+          {
+            $today = new \DateTime();
+            $value = $today->format(DATETIME_DATE_STORAGE_FORMAT);
+          }
+          else if($value === 'NOW')
+          {
+            $now = new \DateTime();
+            $value = $now->format(DATETIME_DATETIME_STORAGE_FORMAT);
           }
         }
       }
