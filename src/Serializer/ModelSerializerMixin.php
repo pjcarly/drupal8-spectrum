@@ -93,6 +93,11 @@ trait ModelSerializerMixin
         // TODO: this is really hacky, we must consider finding a more performant solution than the one with the target_ids now
         if(!empty($this->entity->get($fieldName)->entity))
         {
+          // Lets figure out what the target-type is, in some cases, we just serialize the target_id (currency for example)
+          // Becaue it is a ISO default
+          $fieldObjectSettings = $fieldDefinition->getSettings();
+
+          // Lets prepare a data node
           $relationshipDataNode = new JsonApiDataNode();
 
           // Lets also check the cardinality of the field (amount of references the field can contain)
@@ -133,7 +138,7 @@ trait ModelSerializerMixin
             }
           }
 
-          if($fieldName === 'field_currency')
+          if(!empty($fieldObjectSettings) && array_key_exists('target_type', $fieldObjectSettings) && $fieldObjectSettings['target_type'] === 'currency')
           {
             $valueToSerialize = $referencedEntity->target_id;
           }
@@ -311,12 +316,13 @@ trait ModelSerializerMixin
       {
         $fieldNamePretty = $fieldToPrettyMapping[$fieldName];
         $fieldType = $fieldDefinition->getType();
+        $fieldObjectSettings = $fieldDefinition->getSettings();
 
         $valueToSerialize = $this->getValueToSerialize($fieldName, $fieldDefinition);
 
         if($fieldType === 'entity_reference')
         {
-          if($fieldName === 'field_currency')
+          if(!empty($fieldObjectSettings) && array_key_exists('target_type', $fieldObjectSettings) && $fieldObjectSettings['target_type'] === 'currency')
           {
             $node->addAttribute($fieldNamePretty, $valueToSerialize);
           }

@@ -160,7 +160,11 @@ trait ModelDeserializerMixin
 
                   break;
                 case 'entity_reference':
-                  if($fieldName === 'field_currency')
+                  // Entity references are generally deserialized through the relationships hash,
+                  // Except for currency, a currency is passed as a value (the ISO currency code)
+                  // And since in our system the ID of the currency is the iso currency code, we use that instead
+                  $fieldObjectSettings = $fieldDefinition->getSettings();
+                  if(!empty($fieldObjectSettings) && array_key_exists('target_type', $fieldObjectSettings) && $fieldObjectSettings['target_type'] === 'currency')
                   {
                     $this->entity->$fieldName->target_id = $attributeValue;
                   }

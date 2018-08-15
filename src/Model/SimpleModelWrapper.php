@@ -81,7 +81,8 @@ class SimpleModelWrapper
           $returnValue = $lat.','.$lng;
           break;
         case 'entity_reference':
-          if($fieldName === 'field_currency')
+          $fieldObjectSettings = $fieldDefinition->getSettings();
+          if(!empty($fieldObjectSettings) && array_key_exists('target_type', $fieldObjectSettings) && $fieldObjectSettings['target_type'] === 'currency')
           {
             $returnValue = $model->entity->get($fieldName)->target_id;
           }
