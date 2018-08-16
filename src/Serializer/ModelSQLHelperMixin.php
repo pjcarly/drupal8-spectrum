@@ -15,12 +15,11 @@ use Drupal\spectrum\Models\Image;
 
 trait ModelSQLHelperMixin
 {
-  public static function getViewTabelColumnForField(string $fieldName, string $alias, $fieldDefinition = null) : array
+  public static function getViewTableColumnForField(string $fieldName, string $alias, $fieldDefinition = null) : array
   {
     $fieldDefinition = empty($fieldDefinition) ? static::getFieldDefinition($fieldName) : $fieldDefinition;
     $fieldType = $fieldDefinition->getType();
     $fieldCardinality = $fieldDefinition->getFieldStorageDefinition()->getCardinality();
-
 
     $columns = [];
 
@@ -74,7 +73,23 @@ trait ModelSQLHelperMixin
     return $columns;
   }
 
-  public static function getViewSelectColumns() : array
+  /**
+   * Ignore certain fields in the SQL view array.
+   *
+   * @return array
+   */
+  public static function getIgnoreFieldsForSQL() : array
+  {
+    return [];
+  }
+
+  /**
+   * Get the SELECT part of the SQL for the provided fields
+   *
+   * @param array $fields The fields you want to include in your fields
+   * @return array
+   */
+  public static function getViewSelectColumnsForFields(array $fields) : array
   {
     $columns = [];
 
@@ -98,13 +113,13 @@ trait ModelSQLHelperMixin
       }
 
       // Now we'll check the other fields
-      if(!in_array($fieldName, $ignoreFields))
+      if(!in_array($fieldName, $ignoreFields) && in_array($fieldName, $fields))
       {
         $type = substr($fieldName, 0, 6);
 
         if($type === 'field_')
         {
-          $fieldColumns = static::getViewTabelColumnForField($fieldName, $fieldNamePretty, $fieldDefinition);
+          $fieldColumns = static::getViewTableColumnForField($fieldName, $fieldNamePretty, $fieldDefinition);
           $columns = array_merge($columns, $fieldColumns);
         }
         else if($fieldName === 'user_picture') // doesnt follow the defaults for some reason
@@ -137,10 +152,12 @@ trait ModelSQLHelperMixin
   {
     $joins = [];
 
+    $customIgnoreFields = static::getIgnoreFieldsForSQL();
     $ignoreFields = static::getIgnoreFields();
     $fieldDefinitions = static::getFieldDefinitions();
     $fieldToPrettyMapping = static::getFieldsToPrettyFieldsMapping();
 
+    $amountOfFields = 0;
     foreach($fieldDefinitions as $fieldName => $fieldDefinition)
     {
       $fieldNamePretty = $fieldToPrettyMapping[$fieldName];
@@ -154,19 +171,31 @@ trait ModelSQLHelperMixin
       }
 
       // Now we'll check the other fields
-      if(!in_array($fieldName, $ignoreFields))
+      if(!in_array($fieldName, $ignoreFields) && !in_array($fieldName, $customIgnoreFields))
       {
         $type = substr($fieldName, 0, 6);
+        $amountOfFields++;
+
+        if($amountOfFields > 60)
+        {
+          continue;
+        }
 
         if($type === 'field_')
         {
-          $joins[] = 'LEFT JOIN '.static::$entityType.'__'.$fieldName. ' AS `'.$fieldNamePretty.'` ON `'.$fieldNamePretty.'`.entity_id = `'.static::$entityType.'`.'.static::$idField;
+          $joins[$fieldName] = 'LEFT JOIN '.static::$entityType.'__'.$fieldName. ' AS `'.$fieldNamePretty.'` ON `'.$fieldNamePretty.'`.entity_id = `'.static::$entityType.'`.'.static::$idField;
         }
         else if($fieldName === 'user_picture')
         {
-          $joins[] = 'LEFT JOIN user__user_picture AS user_picture ON user_picture.entity_id = user.uid';
+          $joins[$fieldName] = 'LEFT JOIN user__user_picture AS user_picture ON user_picture.entity_id = user.uid';
         }
       }
+    }
+
+    if($amountOfFields > 60)
+    {
+      // Only 60 joins allowed due to MySQL constraints
+      trigger_error('Bundle '.static::$bundle.' has too many columns ('.$amountOfFields.'), stopped at 60', E_USER_WARNING);
     }
 
     return $joins;
@@ -179,9 +208,11 @@ trait ModelSQLHelperMixin
 
   public static function getViewSelectQuery() : string
   {
-    $query = 'SELECT '.implode(', ', static::getViewSelectColumns()). ' ';
+    $joins = static::getViewJoins();
+
+    $query = 'SELECT '.implode(', ', static::getViewSelectColumnsForFields(array_keys($joins))). ' ';
     $query .= 'FROM '.static::getViewBaseTable().' ';
-    $query .= implode(' ', static::getViewJoins()).' ';
+    $query .= implode(' ', $joins).' ';
 
     $where = static::getViewWhereClause();
 
