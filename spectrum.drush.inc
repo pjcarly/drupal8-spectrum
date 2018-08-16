@@ -91,7 +91,6 @@ function drush_spectrum_scheduler_react()
   $loop = Factory::create();
 
   $loop->addPeriodicTimer(1/4, function(){
-
     $currentTime = gmdate("Y-m-d\TH:i:s");
     $query = QueuedJob::getModelQuery();
     $query->addCondition(new Condition('field_job_status', 'IN', ['Queued', 'Running']));

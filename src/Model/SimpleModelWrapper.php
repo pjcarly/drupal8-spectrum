@@ -102,6 +102,7 @@ class SimpleModelWrapper
           if(!empty($fileId))
           {
             $returnValue = File::forgeById($fileId);
+            $returnValue = new File($returnValue->entity); // TODO File/Image model fix
           }
           break;
         case 'uri':

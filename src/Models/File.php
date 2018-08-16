@@ -119,7 +119,7 @@ class File extends Model
 
       // Save the blob in a File Entity
       $fileEntity = file_save_data($data, $target, FILE_EXISTS_RENAME);
-      $file = File::forgeByEntity($fileEntity);
+      $file = new File($fileEntity); // TODO File/Image model fix
       // we want the file to dissapear when it is not attached to a record
       // we put the status on 0, if it is attached somewhere, Drupal will make sure it is not deleted
       // When the attached record is deleted, the corresponding file will follow suit aswell.

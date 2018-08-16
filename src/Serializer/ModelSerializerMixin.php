@@ -151,7 +151,7 @@ trait ModelSerializerMixin
       case 'file':
         if(!empty($this->entity->get($fieldName)->entity))
         {
-          $fileModel = File::forgeByEntity($this->entity->get($fieldName)->entity);
+          $fileModel = new File($this->entity->get($fieldName)->entity); // TODO File/Image model fix
           $jsonapinode = $fileModel->getJsonApiNode();
 
           $attribute = new \stdClass();

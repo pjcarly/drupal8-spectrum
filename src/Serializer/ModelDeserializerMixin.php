@@ -74,6 +74,7 @@ trait ModelDeserializerMixin
                     if(isset($attributeValue->id) && isset($attributeValue->hash))
                     {
                       $fileModel = File::forgeById($attributeValue->id);
+                      $fileModel = new File($fileModel->entity); // TODO File/Image model fix
                       // We must be sure that the hash provided in the deserialization, matches the file entity in the database
                       // That way no unauthorized file linking can occur
                       if($fileModel->getId() === $attributeValue->id && $fileModel->getHash() === $attributeValue->hash)
