@@ -1,6 +1,7 @@
 <?php
 namespace Drupal\spectrum\Model;
 
+use Drupal\spectrum\Query\Query;
 use Drupal\spectrum\Query\BundleQuery;
 use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Exceptions\InvalidTypeException;
@@ -231,9 +232,10 @@ class Collection implements \IteratorAggregate, \Countable
    * fetch a relationshipname from the database
    *
    * @param string $relationshipName
+   * @param Query $queryToCopyFrom (optional) add a query to fetch, to limit the amount of results when fetching, all base conditions, conditions and conditiongroups will be add to the fetch query
    * @return Collection the fetched relationship
    */
-  public function fetch(string $relationshipName) : Collection
+  public function fetch(string $relationshipName, ?Query $queryToCopyFrom = null) : Collection
   {
     $returnValue = null;
     $lastRelationshipNameIndex = strrpos($relationshipName, '.');
@@ -243,6 +245,13 @@ class Collection implements \IteratorAggregate, \Countable
       $modelType = $this->modelType;
       $relationship = $modelType::getRelationship($relationshipName);
       $relationshipQuery = $relationship->getRelationshipQuery();
+
+      // Lets see if we need to copy in some default conditions
+      if(!empty($queryToCopyFrom))
+      {
+        $relationshipQuery->copyConditionsFrom($queryToCopyFrom);
+      }
+
       $relationshipCondition = $relationship->getCondition();
 
       if($relationship instanceof FieldRelationship)
@@ -372,7 +381,7 @@ class Collection implements \IteratorAggregate, \Countable
       $secondToLastRelationshipName = substr($relationshipName, 0, $lastRelationshipNameIndex);
       $resultCollection = $this->get($secondToLastRelationshipName);
       $lastRelationshipName = substr($relationshipName, $lastRelationshipNameIndex+1);
-      $returnValue = $resultCollection->fetch($lastRelationshipName);
+      $returnValue = $resultCollection->fetch($lastRelationshipName, $queryToCopyFrom);
     }
 
     return $returnValue;

@@ -3,6 +3,7 @@
 namespace Drupal\spectrum\Model;
 
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\spectrum\Query\Query;
 use Drupal\spectrum\Query\EntityQuery;
 use Drupal\spectrum\Query\BundleQuery;
 use Drupal\spectrum\Query\ModelQuery;
@@ -384,9 +385,10 @@ abstract class Model
    * Fetch the relationship from the Database
    *
    * @param string $relationshipName
+   * @param Query $queryToCopyFrom (optional) add a query to fetch, to limit the amount of results when fetching, all base conditions, conditions and conditiongroups will be add to the fetch query
    * @return Model|Collection|null
    */
-  public function fetch(string $relationshipName)
+  public function fetch(string $relationshipName, ?Query $queryToCopyFrom = null)
   {
     $returnValue = null;
 
@@ -397,6 +399,13 @@ abstract class Model
       $relationship = static::getRelationship($relationshipName);
 
       $relationshipQuery = $relationship->getRelationshipQuery();
+
+      // Lets see if we need to copy in some default conditions
+      if(!empty($queryToCopyFrom))
+      {
+        $relationshipQuery->copyConditionsFrom($queryToCopyFrom);
+      }
+
       $relationshipCondition = $relationship->getCondition();
 
       if($relationship instanceof FieldRelationship)
@@ -499,7 +508,7 @@ abstract class Model
       if(!empty($resultCollection))
       {
         $lastRelationshipName = substr($relationshipName, $lastRelationshipNameIndex+1);
-        $returnValue = $resultCollection->fetch($lastRelationshipName);
+        $returnValue = $resultCollection->fetch($lastRelationshipName, $queryToCopyFrom);
       }
     }
 

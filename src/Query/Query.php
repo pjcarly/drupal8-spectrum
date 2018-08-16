@@ -365,4 +365,60 @@ abstract class Query
 
     return $result;
   }
+
+  /**
+   * Get this holds all the Conditions on the query, and will be applied in the order you add them.
+   *
+   * @return  array
+   */
+  public function getConditions() : array
+  {
+    return $this->conditions;
+  }
+
+  /**
+   * Get this array holds the base conditions, no matter what, they will always be applied on the query, regardless of logic or implementation
+   *
+   * @return  array
+   */
+  public function getBaseConditions() : array
+  {
+    return $this->baseConditions;
+  }
+
+  /**
+   * Get here the ConditionGroups are stored, the condition groups will be applied in the order you add them.
+   *
+   * @return  array
+   */
+  public function getConditionGroups() : array
+  {
+    return $this->conditionGroups;
+  }
+
+  /**
+   * This function will copy all the base conditions, conditions and condition groups from the provided query, into this query
+   *
+   * @param Query $query
+   * @return Query
+   */
+  public function copyConditionsFrom(Query $query) : Query
+  {
+    foreach($query->getBaseConditions() as $baseCondition)
+    {
+      $this->addBaseCondition($baseCondition);
+    }
+
+    foreach($query->getConditions() as $condition)
+    {
+      $this->addCondition($condition);
+    }
+
+    foreach($query->getConditionGroups() as $conditionGroup)
+    {
+      $this->addConditionGroup($conditionGroup);
+    }
+
+    return $this;
+  }
 }

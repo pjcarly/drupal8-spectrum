@@ -1185,6 +1185,7 @@ class ModelApiHandler extends BaseApiHandler
         {
           // Before anything else, we check if the user has access to the data
           $deepRelationship = $modelClassName::getDeepRelationship($relationshipNameToInclude);
+          $entityQuery = null;
 
           // Now we check permissions
           if($deepRelationship instanceof FieldRelationship)
@@ -1192,21 +1193,39 @@ class ModelApiHandler extends BaseApiHandler
             // A field relationship can be polymorphic, only if the user has access to all types, can we allow the include
             if($deepRelationship->isPolymorphic)
             {
-              $allPolymorphicTypesAllowed = true;
-
+              // We need to check which types we have access to
+              // Because the relationship is polymorphic, we have to test each type
+              $allowedBundles = [];
               foreach($deepRelationship->polymorphicModelTypes as $deepRelationshipModelClassName)
               {
-                $allPolymorphicTypesAllowed = $deepRelationshipModelClassName::userHasReadPermission();
-
-                if(!$allPolymorphicTypesAllowed)
+                // Lets preemtively create an entity query, in order to copy the conditions from later, when it turns out we dont have access to all types
+                if(empty($entityQuery))
                 {
-                  break;
+                  $entityQuery = $deepRelationshipModelClassName::getEntityQuery();
+                }
+
+                if($deepRelationshipModelClassName::userHasReadPermission() && !empty($deepRelationshipModelClassName::$bundle))
+                {
+                  $allowedBundles = $deepRelationshipModelClassName::$bundle;
                 }
               }
 
-              if(!$allPolymorphicTypesAllowed)
+              // Lets check if we have access to everything
+              if(sizeof($allowedBundles) !== sizeof($deepRelationship->polymorphicModelTypes))
               {
-                continue;
+                // Unfortunately the user cant access every type, so lets see which ones do work
+                if(sizeof($allowedBundles) === 0)
+                {
+                  // Nothing works, skip this relationship entirely
+                  continue;
+                }
+                else
+                {
+                  // This is the tricky part, we must now filter on which types we have access on, and which we dont
+                  // We add a condition to the entityquery created above, this will be passed in the fetch
+                  // to make sure the results are only those of the types the user has access to
+                  $entityQuery->addCondition(new Condition('type', 'IN', $allowedBundles));
+                }
               }
             }
             else
@@ -1234,7 +1253,9 @@ class ModelApiHandler extends BaseApiHandler
           }
 
           // first of all, we fetch the data
-          $source->fetch($relationshipNameToInclude);
+          // We also pass in a possible entity query, in case we get conditions on the relationships we want to query
+          // in case the query = null, everything will be fetched
+          $source->fetch($relationshipNameToInclude, $entityQuery);
           $fetchedObject = $source->get($relationshipNameToInclude);
           // We don't know yet if this is a Collection or a Model we just fetched,
           // as the source we fetched it from can be both as well
