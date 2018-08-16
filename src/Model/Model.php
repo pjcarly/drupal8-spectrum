@@ -303,9 +303,9 @@ abstract class Model
    * Clear the relationship from this Model
    *
    * @param string $relationshipName
-   * @return void
+   * @return Model
    */
-  public function clear(string $relationshipName)
+  public function clear(string $relationshipName) : Model
   {
     $relationship = static::getRelationship($relationshipName);
     if($relationship instanceof FieldRelationship)
@@ -319,6 +319,8 @@ abstract class Model
     {
       unset($this->relatedViaFieldOnExternalEntity[$relationshipName]);
     }
+
+    return $this;
   }
 
   /**

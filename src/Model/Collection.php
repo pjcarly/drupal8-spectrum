@@ -212,6 +212,22 @@ class Collection implements \IteratorAggregate, \Countable
   }
 
   /**
+   * Clear the provided relationship of every model in this Collection
+   *
+   * @param string $relationshipName
+   * @return Collection
+   */
+  public function clear(string $relationshipName) : Collection
+  {
+    foreach($this->models as $model)
+    {
+      $model->clear($relationshipName);
+    }
+
+    return $this;
+  }
+
+  /**
    * fetch a relationshipname from the database
    *
    * @param string $relationshipName
