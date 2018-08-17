@@ -86,10 +86,10 @@ trait ModelSQLHelperMixin
   /**
    * Get the SELECT part of the SQL for the provided fields
    *
-   * @param array $fields The fields you want to include in your fields
+   * @param array $fieldsFromJoin The fields you want to include in your fields originating from a JOIN
    * @return array
    */
-  public static function getViewSelectColumnsForFields(array $fields) : array
+  public static function getViewSelectColumnsForFields(array $fieldsFromJoin) : array
   {
     $columns = [];
 
@@ -113,21 +113,32 @@ trait ModelSQLHelperMixin
       }
 
       // Now we'll check the other fields
-      if(!in_array($fieldName, $ignoreFields) && in_array($fieldName, $fields))
+      if(!in_array($fieldName, $ignoreFields))
       {
         $type = substr($fieldName, 0, 6);
 
         if($type === 'field_')
         {
-          $fieldColumns = static::getViewTableColumnForField($fieldName, $fieldNamePretty, $fieldDefinition);
-          $columns = array_merge($columns, $fieldColumns);
+          // These are fields from a different table (throught the field API) which are joined on the base table
+          if(in_array($fieldName, $fieldsFromJoin))
+          {
+            // Only add fields for joins we actually did
+            $fieldColumns = static::getViewTableColumnForField($fieldName, $fieldNamePretty, $fieldDefinition);
+            $columns = array_merge($columns, $fieldColumns);
+          }
         }
-        else if($fieldName === 'user_picture') // doesnt follow the defaults for some reason
+        else if($fieldName === 'user_picture')
         {
-          $columns[] = 'user_picture.user_picture_target_id AS user_picture';
+          // For some reason this default field works differently than any other field, we do it manually
+          if(in_array($fieldName, $fieldsFromJoin))
+          {
+            // Only add fields for joins we actually did
+            $columns[] = 'user_picture.user_picture_target_id AS user_picture';
+          }
         }
         else
         {
+          // These fields exist on the base table, we can just include them
           $columns[] = static::$entityType.'.'.$fieldName.' AS `'.$fieldNamePretty.'`';
         }
       }
@@ -178,6 +189,7 @@ trait ModelSQLHelperMixin
 
         if($amountOfFields > 60)
         {
+          trigger_error('Skipping field '.$fieldName.' for bundle '.static::$bundle, E_USER_WARNING);
           continue;
         }
 
