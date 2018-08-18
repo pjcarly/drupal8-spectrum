@@ -947,4 +947,12 @@ class Collection implements \IteratorAggregate, \Countable
       }
     }
   }
+
+  /**
+   * Get the value of modelType
+   */
+  public function getModelType() : string
+  {
+    return $this->modelType;
+  }
 }

@@ -20,8 +20,8 @@ class ListView extends Model
 
   public static function relationships()
   {
-    static::addRelationship(new ReferencedRelationship('conditions', 'Drupal\spectrum\Analytics\Condition', 'parent'));
-    static::addRelationship(new ReferencedRelationship('sort_orders', 'Drupal\spectrum\Analytics\Order', 'parent'));
+    static::addRelationship(new ReferencedRelationship('conditions', 'Drupal\spectrum\Analytics\Condition', 'parent', ReferencedRelationship::$CASCADE_ON_DELETE));
+    static::addRelationship(new ReferencedRelationship('sort_orders', 'Drupal\spectrum\Analytics\Order', 'parent', ReferencedRelationship::$CASCADE_ON_DELETE));
   }
 
   /**
