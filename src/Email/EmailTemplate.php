@@ -39,7 +39,7 @@ class EmailTemplate extends Model
    * Add a generic object to the scope of this email template, properties on this object can be used in the email template
    *
    * @param string $name
-   * @param [type] $object
+   * @param object $object
    * @return EmailTemplate
    */
   public function addObjectToScope(string $name, $object) : EmailTemplate
@@ -70,7 +70,7 @@ class EmailTemplate extends Model
   /**
    * Fetch an EmailTemplate from the database based on the field_key
    *
-   * @param string $name
+   * @param string $key
    * @return EmailTemplate
    */
   public static function getByKey(string $key) : EmailTemplate
