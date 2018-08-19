@@ -2,20 +2,10 @@
 
 namespace Drupal\spectrum\Query;
 
+/**
+ * An EntityQuery, is the most basic query around, it provides a way of querying results with a certain entity. (multiple bundles can be returned)
+ */
 class EntityQuery extends Query
 {
-  /**
-   * The entity type you want to query
-   *
-   * @var string
-   */
-  protected $entityType;
 
-  /**
-   * @param string $entityType The entity type you want to query
-   */
-  public function __construct(string $entityType)
-  {
-    $this->entityType = $entityType;
-  }
 }

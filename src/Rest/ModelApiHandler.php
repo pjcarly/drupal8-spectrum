@@ -950,7 +950,6 @@ class ModelApiHandler extends BaseApiHandler
                   else
                   {
                     // if the child model isn't found, we ignore it, perhaps it was deleted seperatly?
-                    // TODO: is this a good idea?
                     continue;
                   }
                 }
@@ -1394,7 +1393,7 @@ class ModelApiHandler extends BaseApiHandler
                   }
                   else if($settings['target_type'] === 'user_role')
                   {
-                    // TODO, fix this, currently getting exception "Getting the base fields is not supported for entity type user_role"
+                    // TODO fix this, currently getting exception "Getting the base fields is not supported for entity type user_role"
                     // works without entity.title appended
                     $condition = new Condition($field, $operator, $value);
                     $conditions[] = $condition;

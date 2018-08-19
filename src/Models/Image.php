@@ -9,12 +9,27 @@ use Drupal\image\Entity\ImageStyle;
  */
 class Image extends File
 {
+  /**
+   * THe plural of this model
+   *
+   * @var string
+   */
   public static $plural = 'Images';
 
+  /**
+   * The Relationships to other models
+   *
+   * @return void
+   */
   public static function relationships()
   {
   }
 
+  /**
+   * This function can be used in dynamic api handlers
+   *
+   * @return string
+   */
   protected function getBaseApiPath() : string
   {
     return 'image';

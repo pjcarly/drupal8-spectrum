@@ -12,12 +12,39 @@ use Drupal\spectrum\Query\Order;
 
 class ListView extends Model
 {
+  /**
+   * The entityType for this Model
+   *
+   * @var string
+   */
   public static $entityType = 'query';
+
+  /**
+   * THe bundle for this Model
+   *
+   * @var string
+   */
   public static $bundle = 'list_view';
+
+  /**
+   * The Id field for this Model
+   *
+   * @var string
+   */
   public static $idField = 'id';
 
+  /**
+   * The Plural Description of this model
+   *
+   * @var string
+   */
   public static $plural = 'List Views';
 
+  /**
+   * The Relationships to other Models
+   *
+   * @return void
+   */
   public static function relationships()
   {
     static::addRelationship(new ReferencedRelationship('conditions', 'Drupal\spectrum\Analytics\Condition', 'parent', ReferencedRelationship::$CASCADE_ON_DELETE));
@@ -43,7 +70,12 @@ class ListView extends Model
     return $query;
   }
 
-  public function getDrupalFieldDefinitions()
+  /**
+   * Returns the FieldDefinition for the entity type of this Listview
+   *
+   * @return \Drupal\Core\Field\FieldDefinitionInterface
+   */
+  public function getDrupalFieldDefinitions() : \Drupal\Core\Field\FieldDefinitionInterface
   {
     $entityType = $this->entity->field_entity->value;
     $bundle = $this->entity->field_bundle->value;

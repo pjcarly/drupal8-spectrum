@@ -15,11 +15,38 @@ use Drupal\spectrum\Exceptions\NotImplementedException;
  */
 class File extends Model
 {
+  /**
+   * The Entitytype of this model
+   *
+   * @var string
+   */
   public static $entityType = 'file';
+
+  /**
+   * The Bundle of this model
+   *
+   * @var string
+   */
+  public static $bundle = '';
+  /**
+   * The idfield of this Model
+   *
+   * @var string
+   */
   public static $idField = 'fid';
 
+  /**
+   * The plural description of this model
+   *
+   * @var string
+   */
   public static $plural = 'Files';
 
+  /**
+   * The relationships to other models
+   *
+   * @return void
+   */
   public static function relationships()
   {
   }

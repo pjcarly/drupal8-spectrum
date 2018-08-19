@@ -41,8 +41,11 @@ class UserPermissions implements ContainerInjectionInterface
 
   /**
    * {@inheritdoc}
+   *
+   * @param ContainerInterface $container
+   * @return UserPermissions
    */
-  public static function create(ContainerInterface $container)
+  public static function create(ContainerInterface $container) : UserPermissions
   {
     return new static($container->get('entity.manager'));
   }
@@ -53,7 +56,7 @@ class UserPermissions implements ContainerInjectionInterface
    * @return array
    *   Permissions array.
    */
-  public function permissions()
+  public function permissions() : array
   {
     $permissions = [];
 

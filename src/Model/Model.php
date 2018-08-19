@@ -1536,7 +1536,7 @@ abstract class Model
    * @param string $fieldName
    * @return void
    */
-  public static function getRelationshipByFieldName(string $fieldName)
+  public static function getRelationshipByFieldName(string $fieldName) : ?FieldRelationship
   {
     $relationships = static::getRelationships();
     $foundRelationship = null;
@@ -1548,7 +1548,6 @@ abstract class Model
         $foundRelationship = $relationship;
         break;
       }
-      // TODO: make this work with entity reference multi-field
     }
 
     return $foundRelationship;

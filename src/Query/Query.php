@@ -67,6 +67,21 @@ abstract class Query
   public $tag;
 
   /**
+   * The entity type you want to query
+   *
+   * @var string
+   */
+  protected $entityType;
+
+  /**
+   * @param string $entityType The entity type you want to query
+   */
+  public function __construct(string $entityType)
+  {
+    $this->entityType = $entityType;
+  }
+
+  /**
    * Set a tag you want to add to the query
    *
    * @param string $tag

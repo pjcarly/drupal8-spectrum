@@ -112,7 +112,7 @@ class ConditionGroup
   /**
    * This function will be called recursively to set the conditions in a nested way on the provided base (which can be both a base query or a conditiongroup)
    *
-   * @param \Drupal\Core\Entity\Query\QueryInterface|\Drupal\Core\Entity\Query\ConditionInterface $query $base
+   * @param $base \Drupal\Core\Entity\Query\QueryInterface|\Drupal\Core\Entity\Query\ConditionInterface
    * @param array $logic
    * @param QueryInterface $drupalQuery
    * @return void

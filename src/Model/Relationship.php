@@ -74,6 +74,12 @@ abstract class Relationship
     return $this;
   }
 
+  /**
+   * Sets the source where the relationship is defined
+   *
+   * @param string $source
+   * @return Relationship
+   */
   public function setRelationshipSource(string $source) : Relationship
   {
     $this->relationshipSource = $source;
@@ -102,7 +108,24 @@ abstract class Relationship
     return $this->relationshipName;
   }
 
+  /**
+   * This function will be called to set the metadata of the relationship
+   *
+   * @return void
+   */
   protected function setRelationshipMetaData() : void {}
+
+  /**
+   * Returns a EntityQuery that can be used to query entities of this relationship
+   *
+   * @return EntityQuery
+   */
   public abstract function getRelationshipQuery() : EntityQuery;
+
+  /**
+   * Returns a Condition, with the correct relationship field and operator filled in. The value will be blank and dependend on implementation
+   *
+   * @return Condition
+   */
   public abstract function getCondition() : Condition;
 }

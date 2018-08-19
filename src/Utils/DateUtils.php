@@ -5,6 +5,9 @@ namespace Drupal\spectrum\Utils;
 use \DateTime;
 use \DateTimeZone;
 
+/**
+ * Date helper functions
+ */
 class DateUtils
 {
   /**
