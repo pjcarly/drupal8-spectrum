@@ -4,12 +4,24 @@ namespace Drupal\spectrum\Template;
 
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Model\SimpleModelWrapper;
-use Drupal\spectrum\Email\EmailTemplate;
 
+/**
+ * This class exposes a render function to render Twig Templates with.
+ */
 class TwigRenderer
 {
+  /**
+   * The twig rendering engine
+   *
+   * @var [type]
+   */
   private $twig;
 
+  /**
+   * Returns the twig renderer that will be used to render twig templates
+   *
+   * @return object
+   */
   private function getTwigRenderer()
   {
     if(empty($this->twig))
@@ -22,7 +34,14 @@ class TwigRenderer
     return $this->twig;
   }
 
-  public function render(string $template, array $scope = [])
+  /**
+   * Parses the passed in twig template with the passed in scope
+   *
+   * @param string $template
+   * @param array $scope
+   * @return string
+   */
+  public function render(string $template, array $scope = []) : string
   {
     if(!empty($template))
     {

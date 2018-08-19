@@ -474,7 +474,7 @@ abstract class Model
         $id = $this->getId();
         if(!empty($id)) // fetching referenced relationships for new records is not possible
         {
-          $relationshipCondition->value = array($id);
+          $relationshipCondition->value = [$id];
           $relationshipQuery->addCondition($relationshipCondition);
           $referencingEntities = $relationshipQuery->fetch();
 
@@ -635,7 +635,7 @@ abstract class Model
     }
     else
     {
-      $returnValue = array();
+      $returnValue = [];
       foreach($entity->$field->getValue() as $fieldValue)
       {
         $returnValue[] = $fieldValue[$column];
@@ -1344,7 +1344,7 @@ abstract class Model
 
     if(empty($entity) && empty($id))
     {
-      $values = array();
+      $values = [];
       if(!empty(static::$bundle))
       {
         $values['type'] = static::$bundle;
@@ -1504,7 +1504,7 @@ abstract class Model
   {
     if(!array_key_exists($modelType, static::$relationships))
     {
-      static::$relationships[$modelType] = array();
+      static::$relationships[$modelType] = [];
       static::relationships();
     }
   }
@@ -1624,7 +1624,7 @@ abstract class Model
     $sourceModelType = get_called_class();
     if(!array_key_exists($sourceModelType, static::$relationships))
     {
-      static::$relationships[$sourceModelType] = array();
+      static::$relationships[$sourceModelType] = [];
     }
 
     $relationship->setRelationshipSource($sourceModelType);
@@ -1755,7 +1755,7 @@ abstract class Model
   public static function getterExists(Model $model, string $property) : bool
   {
     $getterName = 'get'.$property;
-    if(!empty($property) && is_callable(array($model, $getterName)))
+    if(!empty($property) && is_callable([$model, $getterName]))
     {
       $reflector = new \ReflectionMethod($model, $getterName);
       $isProto = ($reflector->getDeclaringClass()->getName() !== get_class($model));
@@ -2006,7 +2006,7 @@ abstract class Model
   {
     if(static::$modelClassMapping === null)
     {
-      static::$modelClassMapping = array();
+      static::$modelClassMapping = [];
 
       foreach(static::getModelClasses() as $modelClassName)
       {

@@ -2,9 +2,17 @@
 
 namespace Drupal\spectrum\Utils;
 
+/**
+ * This class provides Url helper functions used throughout the application
+ */
 class UrlUtils
 {
-  public static function getBaseURL()
+  /**
+   * Returns the Base URL where you can add a dynamic part to later on
+   *
+   * @return string
+   */
+  public static function getBaseURL() : string
   {
     $request = \Drupal::request();
     $rootUrl = $request->getSchemeAndHttpHost() . base_path();

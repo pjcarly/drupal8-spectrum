@@ -14,15 +14,32 @@ use Drupal\spectrum\Models\File;
 use Drupal\spectrum\Models\Image;
 use Drupal\spectrum\Models\User;
 
+use Drupal\Core\Field\FieldDefinitionInterface;
+
+/**
+ * This trait contains all the methods used for serializing a Model to a jsonapi.org compliant document
+ */
 trait ModelSerializerMixin
 {
-  // This method returns the current Model as a JsonApiNode (jsonapi.org)
-  public static function getIgnoreFields()
+  /**
+   * Returns an array of fields that will be ignored during serialization. These are mostly internal drupal fields that shouldnt be exposed, as we dont want to leak configuration
+   *
+   * @return array
+   */
+  public static function getIgnoreFields() : array
   {
-    return array('type', 'revision_log', 'vid', 'revision_timestamp', 'revision_uid', 'revision_log', 'revision_translation_affected', 'revision_translation_affected', 'default_langcode', 'path', 'content_translation_source', 'content_translation_outdated', 'pass', 'uuid', 'langcode', 'metatag', 'field_meta_tags', 'menu_link', 'roles', 'preferred_langcode', 'preferred_admin_langcode', 'revision_default');
+    return ['type', 'revision_log', 'vid', 'revision_timestamp', 'revision_uid', 'revision_log', 'revision_translation_affected', 'revision_translation_affected', 'default_langcode', 'path', 'content_translation_source', 'content_translation_outdated', 'pass', 'uuid', 'langcode', 'metatag', 'field_meta_tags', 'menu_link', 'roles', 'preferred_langcode', 'preferred_admin_langcode', 'revision_default'];
   }
 
-  public function getValueToSerialize($fieldName, $fieldDefinition = null)
+  /**
+   * Returns the value that will be serialized for the passed fieldname on this entity
+   * Necessary transforms will be done based on the field type
+   *
+   * @param string $fieldName
+   * @param FieldDefinitionInterface $fieldDefinition
+   * @return mixed
+   */
+  public function getValueToSerialize(string $fieldName, FieldDefinitionInterface $fieldDefinition = null)
   {
     $fieldDefinition = empty($fieldDefinition) ? static::getFieldDefinition($fieldName) : $fieldDefinition;
     $valueToSerialize = null;
@@ -107,7 +124,7 @@ trait ModelSerializerMixin
             $relationshipDataNode->asArray(true);
           }
 
-          $idsThatHaveBeenset = array();
+          $idsThatHaveBeenset = [];
           foreach($this->entity->get($fieldName) as $referencedEntity)
           {
             $target_id = $referencedEntity->target_id;
@@ -288,6 +305,13 @@ trait ModelSerializerMixin
     return $valueToSerialize;
   }
 
+  /**
+   * This function will return a JsonApiNode representation of the current model.
+   * Necessary checks will be done to make sure the user has access to the fields he wants to serialize.
+   * If the user doesnt have access, fields will omitted from the JsonApiNode
+   *
+   * @return JsonApiBaseNode
+   */
   public function getJsonApiNode() : JsonApiBaseNode
   {
     $node = new JsonApiNode();
@@ -348,7 +372,12 @@ trait ModelSerializerMixin
     return $node;
   }
 
-  public function serialize()
+  /**
+   * Returns a serialized JsonApiRootNode
+   *
+   * @return \stdClass
+   */
+  public function serialize() : \stdClass
   {
     $root = new JsonApiRootNode();
     $node = $this->getJsonApiNode();
@@ -378,14 +407,20 @@ trait ModelSerializerMixin
     return $mapping;
   }
 
-  public static function getTypeFieldToPrettyFielsMapping()
+  /**
+   * Returns an array per field type, containing the drupal-field to pretty field
+   * For example [integer => [field_amount_of_passengers => 'amount-of-passengers]]
+   *
+   * @return array
+   */
+  public static function getTypeFieldToPrettyFielsMapping() : array
   {
     $prettyMapping = static::getTypePrettyFieldToFieldsMapping();
-    $mapping = array();
+    $mapping = [];
 
     foreach($prettyMapping as $type => $prettyFieldsMapping)
     {
-      $mapping[$type] = array();
+      $mapping[$type] = [];
       foreach($prettyFieldsMapping as $prettyField => $localField)
       {
         $mapping[$type][$localField] = $prettyField;
@@ -395,10 +430,16 @@ trait ModelSerializerMixin
     return $mapping;
   }
 
-  // This function returns a mapping of the different fields, with "field_" stripped, and a dasherized representation of the field name
-  public static function getPrettyFieldsToFieldsMapping()
+
+  /**
+   * This function returns a mapping of the different fields, with "field_" stripped, and a dasherized representation of the field name
+   * Mainly to avoid exposing drupal configuration to jsonapi.org.
+   *
+   * @return array
+   */
+  public static function getPrettyFieldsToFieldsMapping() : array
   {
-    $mapping = array();
+    $mapping = [];
     $fieldList = static::getFieldDefinitions();
 
     foreach($fieldList as $key => $value)
@@ -417,12 +458,16 @@ trait ModelSerializerMixin
     return $mapping;
   }
 
-  // This function returns the inverse of getPrettyFieldsToFieldsMapping(), for mapping pretty fields back to the original
-  public static function getFieldsToPrettyFieldsMapping()
+  /**
+   * This function returns the inverse of getPrettyFieldsToFieldsMapping(), for mapping pretty fields back to the original
+   *
+   * @return void
+   */
+  public static function getFieldsToPrettyFieldsMapping() : array
   {
     $prettyMapping = static::getPrettyFieldsToFieldsMapping();
 
-    $mapping = array();
+    $mapping = [];
     foreach($prettyMapping as $pretty => $field)
     {
       $mapping[$field] = $pretty;
@@ -431,7 +476,13 @@ trait ModelSerializerMixin
     return $mapping;
   }
 
-  public static function getFieldForPrettyField($prettyField)
+  /**
+   * Pass in a pretty field name, and have the drupal field name returned if not found, null will be returned
+   *
+   * @param string $prettyField
+   * @return string|null
+   */
+  public static function getFieldForPrettyField(string $prettyField) : ?string
   {
     $field = null;
     $prettyToFieldsMap = static::getPrettyFieldsToFieldsMapping();
@@ -444,7 +495,13 @@ trait ModelSerializerMixin
     return $field;
   }
 
-  public static function prettyFieldExists($prettyField) : bool
+  /**
+   * Checks if a pretty field exists for this entity
+   *
+   * @param string $prettyField
+   * @return boolean
+   */
+  public static function prettyFieldExists(string $prettyField) : bool
   {
     $field = static::getFieldForPrettyField($prettyField);
     return !empty($field);

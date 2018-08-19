@@ -10,8 +10,8 @@ class Condition
   public $operator;
   public $value;
 
-  public static $singleValueOperators = array('=', '<>', '>', '>=', '<', '<=', 'LIKE', 'CONTAINS', 'STARTS_WITH', 'ENDS_WITH');
-  public static $multipleValueOperators = array('IN', 'NOT IN', 'BETWEEN');
+  public static $singleValueOperators = ['=', '<>', '>', '>=', '<', '<=', 'LIKE', 'CONTAINS', 'STARTS_WITH', 'ENDS_WITH'];
+  public static $multipleValueOperators = ['IN', 'NOT IN', 'BETWEEN'];
 
   public function __construct($fieldName, $operator, $value)
   {

@@ -115,7 +115,7 @@ class Collection implements \IteratorAggregate, \Countable
   public function sort(string $sortingFunction) : Collection
   {
     // Bug in PHP causes PHP warnings for uasort, we surpressed warnings with @, but be weary!
-    @uasort($this->models, array($this->modelType, $sortingFunction));
+    @uasort($this->models, [$this->modelType, $sortingFunction]);
     return $this;
   }
 
@@ -576,7 +576,7 @@ class Collection implements \IteratorAggregate, \Countable
    */
   public function getEntities() : array
   {
-    $entities = array();
+    $entities = [];
     foreach($this->models as $model)
     {
       $id = $model->getId();
@@ -851,7 +851,7 @@ class Collection implements \IteratorAggregate, \Countable
   public function __isset($property)
   {
     // Needed for twig to be able to access relationship via magic getter
-    return property_exists($this, $property) || in_array($property, array('size', 'isEmpty', 'entities'));
+    return property_exists($this, $property) || in_array($property, ['size', 'isEmpty', 'entities']);
   }
 
   /**

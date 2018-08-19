@@ -2,26 +2,59 @@
 
 namespace Drupal\spectrum\Utils;
 
+/**
+ * This class provides functionality to parse parenthesis in a string to a nested array structure.
+ * We use it to parse condition logic of queries to the correct format
+ */
 class ParenthesisParser
 {
-  // something to keep track of parens nesting
+  /**
+   * something to keep track of parens nesting
+   *
+   * @var array
+   */
   protected $stack = null;
-  // current level
+
+  /**
+   * current level
+   *
+   * @var array
+   */
   protected $current = null;
 
-  // input string to parse
+  /**
+   * input string to parse
+   *
+   * @var string
+   */
   protected $string = null;
-  // current character offset in string
+
+  /**
+   * current character offset in string
+   *
+   * @var int
+   */
   protected $position = null;
-  // start of text-buffer
+
+  /**
+   * start of text-buffer
+   *
+   * @var int
+   */
   protected $buffer_start = null;
 
-  public function parse($string)
+  /**
+   * Parses an input string to a nested array
+   *
+   * @param string $string
+   * @return array
+   */
+  public function parse(string $string) : array
   {
-    if (!$string)
+    if (empty($string))
     {
       // no string, no data
-      return array();
+      return [];
     }
 
     if ($string[0] == '(')
@@ -30,8 +63,8 @@ class ParenthesisParser
       $string = substr($string, 1, -1);
     }
 
-    $this->current = array();
-    $this->stack = array();
+    $this->current = [];
+    $this->stack = [];
 
     $this->string = $string;
     $this->length = strlen($this->string);
@@ -44,7 +77,7 @@ class ParenthesisParser
           $this->push();
           // push current scope to the stack an begin a new scope
           array_push($this->stack, $this->current);
-          $this->current = array();
+          $this->current = [];
         break;
 
         case ')':
@@ -78,7 +111,12 @@ class ParenthesisParser
     return $this->current;
   }
 
-  protected function push()
+  /**
+   * Pushes the current cycle 1 level up
+   *
+   * @return ParenthesisParser
+   */
+  protected function push() : ParenthesisParser
   {
     if ($this->buffer_start !== null)
     {
@@ -89,5 +127,7 @@ class ParenthesisParser
       // throw token into current scope
       $this->current[] = $buffer;
     }
+
+    return $this;
   }
 }

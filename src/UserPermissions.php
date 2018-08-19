@@ -13,6 +13,10 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 use Drupal\spectrum\Model\Model;
 
+/**
+ * This class provides a hook into the Drupal permissions functionality, to dynamically allocate permissions.
+ * However due to a platform bug it is currently unused
+ */
 class UserPermissions implements ContainerInjectionInterface
 {
   use StringTranslationTrait;

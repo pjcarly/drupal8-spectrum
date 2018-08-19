@@ -2,21 +2,33 @@
 
 namespace Drupal\spectrum\Serializer;
 
+use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Model\Collection;
 use Drupal\spectrum\Model\ReferencedRelationship;
 use Drupal\spectrum\Model\FieldRelationship;
 use Drupal\spectrum\Serializer\JsonApiRootNode;
 use Drupal\spectrum\Models\File;
 
+/**
+ * This trait is used to abstract deserialization functionality
+ */
 trait ModelDeserializerMixin
 {
-  public function applyChangesFromJsonAPIDocument($deserialized)
+  /**
+   * This function will update the values of the entity based on the values of a jsonapi.org compliant object
+   * based on the field type, necessary transforms to the drupal datastructure will be done.
+   * Necessary checks will be done to make sure the user has permission to edit the field. In case no permission is granted, the field on the entity will not be updated
+   *
+   * @param \stdClass $deserialized
+   * @return Model
+   */
+  public function applyChangesFromJsonAPIDocument(\stdClass $deserialized) : Model
   {
     // get helper variables
     $fieldNameMapping = static::getPrettyFieldsToFieldsMapping();
 
     // we'll keep track of some flags
-    $foundRelationships = array();
+    $foundRelationships = [];
 
     // and now we'll loop over the different content of the deserialized object
     foreach($deserialized->data as $key => $value)
@@ -146,7 +158,7 @@ trait ModelDeserializerMixin
                   }
                   else
                   {
-                    $value = array();
+                    $value = [];
                     $value['country_code'] = $attributeValue->{'countryCode'};
                     $value['administrative_area'] = $attributeValue->{'administrativeArea'};
                     $value['locality'] = $attributeValue->{'locality'};
@@ -260,5 +272,7 @@ trait ModelDeserializerMixin
         }
       }
     }
+
+    return $this;
   }
 }

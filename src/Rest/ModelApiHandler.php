@@ -132,7 +132,7 @@ class ModelApiHandler extends BaseApiHandler
     if(!$modelClassName::userHasReadPermission())
     {
       // No access, return a 405 response
-      return new Response(null, 405, array());
+      return new Response(null, 405, []);
     }
 
     // We start by adding the link to this request
@@ -364,7 +364,7 @@ class ModelApiHandler extends BaseApiHandler
         }
 
         // Lets check for our includes
-        $includes = array();
+        $includes = [];
         // The url might define includes
         if($request->query->has('include'))
         {
@@ -418,7 +418,7 @@ class ModelApiHandler extends BaseApiHandler
       if(!empty($result))
       {
         // Lets check for our includes
-        $includes = array();
+        $includes = [];
         // The url might define includes
         if($request->query->has('include'))
         {
@@ -448,7 +448,7 @@ class ModelApiHandler extends BaseApiHandler
       }
     }
 
-    return new Response(json_encode($this->serialize($jsonapi)), $responseCode, array());
+    return new Response(json_encode($this->serialize($jsonapi)), $responseCode, []);
   }
 
   /**
@@ -513,7 +513,7 @@ class ModelApiHandler extends BaseApiHandler
     if(!$modelClassName::userHasCreatePermission())
     {
       // No access, return a 405 response
-      return new Response(null, 405, array());
+      return new Response(null, 405, []);
     }
 
     $jsonapidocument = json_decode($request->getContent());
@@ -718,7 +718,7 @@ class ModelApiHandler extends BaseApiHandler
       $responseCode = 404;
     }
 
-    return new Response(isset($response) ? json_encode($response) : null, $responseCode, array());
+    return new Response(isset($response) ? json_encode($response) : null, $responseCode, []);
   }
 
   /**
@@ -774,7 +774,7 @@ class ModelApiHandler extends BaseApiHandler
     if(!$modelClassName::userHasEditPermission())
     {
       // No access, return a 405 response
-      return new Response(null, 405, array());
+      return new Response(null, 405, []);
     }
 
     $jsonapidocument = json_decode($request->getContent());
@@ -1069,7 +1069,7 @@ class ModelApiHandler extends BaseApiHandler
       $responseCode = 404;
     }
 
-    return new Response(isset($response) ? json_encode($response) : null, $responseCode, array());
+    return new Response(isset($response) ? json_encode($response) : null, $responseCode, []);
   }
 
   /**
@@ -1088,7 +1088,7 @@ class ModelApiHandler extends BaseApiHandler
     if(!$modelClassName::userHasDeletePermission())
     {
       // No access, return a 405 response
-      return new Response(null, 405, array());
+      return new Response(null, 405, []);
     }
 
     $query = $modelClassName::getModelQuery();
@@ -1128,7 +1128,7 @@ class ModelApiHandler extends BaseApiHandler
       $responseCode = 404;
     }
 
-    return new Response(isset($response) ? json_encode($response) : null, $responseCode, array());
+    return new Response(isset($response) ? json_encode($response) : null, $responseCode, []);
   }
 
   /**
@@ -1177,7 +1177,7 @@ class ModelApiHandler extends BaseApiHandler
     if(!empty($source) && !$source->isEmpty)
     {
       $modelClassName = $this->modelClassName;
-      $fetchedCollections = array(); // we will cache collections here, so we don't get duplicate data to include when multiple relationships point to the same object
+      $fetchedCollections = []; // we will cache collections here, so we don't get duplicate data to include when multiple relationships point to the same object
       foreach($relationshipNamesToInclude as $relationshipNameToInclude)
       {
         $hasRelationship = $modelClassName::hasDeepRelationship($relationshipNameToInclude);

@@ -85,7 +85,7 @@ class BaseApiController implements ContainerAwareInterface
    */
   public function handle(RouteMatchInterface $routeMatch, Request $request, string $api = NULL, string $slug = NULL, string $action = NULL) : Response
   {
-    $response = new Response(null, 500, array());
+    $response = new Response(null, 500, []);
     $permissionService = Model::getPermissionsService();
 
     // Permissions are different with or without an action

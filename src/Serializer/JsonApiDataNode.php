@@ -50,11 +50,11 @@ class JsonApiDataNode extends JsonApiBaseNode
       if(!empty($this->data) && !is_array($this->data))
       {
         $firstNode = $this->data;
-        $this->data = array($firstNode);
+        $this->data = [$firstNode];
       }
       else if(empty($this->data))
       {
-        $this->data = array();
+        $this->data = [];
       }
 
       $this->data[] = $node;
@@ -107,7 +107,7 @@ class JsonApiDataNode extends JsonApiBaseNode
 
     if(is_array($this->data) || ($this->asArray))
     {
-      $serializedData = array();
+      $serializedData = [];
       if(!empty($this->data))
       {
         foreach($this->data as $dataMember)

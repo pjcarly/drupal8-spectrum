@@ -94,6 +94,6 @@ class SimpleCollectionWrapper implements \IteratorAggregate
   public function __isset($property)
   {
     // Needed for twig to be able to access relationship via magic getter
-    return property_exists($this->collection, $property) || in_array($property, array('size', 'isEmpty', 'entities'));
+    return property_exists($this->collection, $property) || in_array($property, ['size', 'isEmpty', 'entities']);
   }
 }
