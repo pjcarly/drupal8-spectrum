@@ -4,12 +4,27 @@ namespace Drupal\spectrum\Query;
 
 use Drupal\Core\Entity\Query\QueryInterface;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\spectrum\Runnable\BatchableInterface;
 
 /**
  * This class provides base functionality for different query types
  */
-abstract class Query
+abstract class Query implements BatchableInterface
 {
+  /**
+   * This variable stores the batch size, it is used by the BatchableInterface to process batches of queries
+   *
+   * @var int
+   */
+  protected $batchSize;
+
+  /**
+   * Here we store the current page we are on in our batch cycle
+   *
+   * @var int
+   */
+  protected $batchPage;
+
   /**
    * This array holds the base conditions, no matter what, they will always be applied on the query, regardless of logic or implementation
    *
@@ -79,6 +94,22 @@ abstract class Query
   public function __construct(string $entityType)
   {
     $this->entityType = $entityType;
+  }
+
+
+  public function getNextBatch() : array
+  {
+    $this->setRange(($this->batchPage - 1) * $this->batchSize, $this->batchSize);
+    $this->batchPage++;
+
+    return $this->fetch();
+  }
+
+  public function setBatchSize(int $batchSize) : BatchableInterface
+  {
+    $this->batchSize = $batchSize;
+    $this->batchPage = 1;
+    return $this;
   }
 
   /**
