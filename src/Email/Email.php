@@ -8,12 +8,39 @@ use Drupal\spectrum\Exceptions\EmailException;
 
 class Email
 {
-  private $email;
+  /**
+   * The template that will be used to send this email with
+   *
+   * @var string
+   */
   private $template;
 
+  /**
+   * A list of email Addresses that will be sent to
+   *
+   * @var array
+   */
   private $toAddresses = [];
+
+  /**
+   * THe FROM email address
+   *
+   * @var string
+   */
   private $fromAddress = '';
+
+  /**
+   * THe FROM name
+   *
+   * @var string
+   */
   private $fromName = '';
+
+  /**
+   * The reply to email address
+   *
+   * @var string
+   */
   private $replyTo = '';
 
   /**

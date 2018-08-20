@@ -6,13 +6,46 @@ use Drupal\spectrum\Model\Model;
 
 class User extends Model
 {
+  /**
+   * THe entityType of this Model
+   *
+   * @var string
+   */
   public static $entityType = 'user';
+
+  /**
+   * The Bundle of this Model
+   *
+   * @var string
+   */
   public static $bundle = '';
+
+  /**
+   * The IdField of this Model
+   *
+   * @var string
+   */
   public static $idField = 'uid';
 
+  /**
+   * THe Plural description of this model
+   *
+   * @var string
+   */
   public static $plural = 'Users';
+
+  /**
+   * This variable will hold a cache of the current user during this transaction
+   *
+   * @var [type]
+   */
   public static $currentUser = null;
 
+  /**
+   * THe relationships to other models
+   *
+   * @return void
+   */
   public static function relationships()
   {
 

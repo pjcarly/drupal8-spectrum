@@ -13,9 +13,26 @@ Use Drupal\spectrum\Utils\StringUtils;
 use Drupal\spectrum\Models\File;
 use Drupal\spectrum\Models\Image;
 
+use Drupal\Core\Field\FieldDefinitionInterface;
+
+/**
+ * This class provides functionality to create MySQL views for drupal entities, where each row ill be an entity, and each column a field on the entity
+ * Due to join limits in MySQL no more than 60 drupal fields (from the field api) can be returned
+ * Fields that contain more than 1 value are also ignored (fieldcardinality must be 1)
+ */
 trait ModelSQLHelperMixin
 {
-  public static function getViewTableColumnForField(string $fieldName, string $alias, $fieldDefinition = null) : array
+  /**
+   * Returns the colums of the field, that can be used in the SELECT part of the query
+   * Fields which contain multiple values like address, will have multiple colums
+   * Fields with only 1 value will have only 1 column
+   *
+   * @param string $fieldName
+   * @param string $alias
+   * @param FieldDefinitionInterface $fieldDefinition
+   * @return array
+   */
+  public static function getViewTableColumnsForField(string $fieldName, string $alias, FieldDefinitionInterface $fieldDefinition = null) : array
   {
     $fieldDefinition = empty($fieldDefinition) ? static::getFieldDefinition($fieldName) : $fieldDefinition;
     $fieldType = $fieldDefinition->getType();
@@ -123,7 +140,7 @@ trait ModelSQLHelperMixin
           if(in_array($fieldName, $fieldsFromJoin))
           {
             // Only add fields for joins we actually did
-            $fieldColumns = static::getViewTableColumnForField($fieldName, $fieldNamePretty, $fieldDefinition);
+            $fieldColumns = static::getViewTableColumnsForField($fieldName, $fieldNamePretty, $fieldDefinition);
             $columns = array_merge($columns, $fieldColumns);
           }
         }
@@ -147,6 +164,11 @@ trait ModelSQLHelperMixin
     return $columns;
   }
 
+  /**
+   * Returns the base table for the entity
+   *
+   * @return string
+   */
   public static function getViewBaseTable() : string
   {
     $baseTablePrefix = static::$entityType;
@@ -159,6 +181,11 @@ trait ModelSQLHelperMixin
     return $baseTablePrefix . '_field_data AS '.static::$entityType;
   }
 
+  /**
+   * Returns an array containing the JOIN part of the different fields to use in your query
+   *
+   * @return array
+   */
   public static function getViewJoins() : array
   {
     $joins = [];
@@ -213,11 +240,22 @@ trait ModelSQLHelperMixin
     return $joins;
   }
 
+  /**
+   * Returns the WHERE clause of your query, this will make sure when multiple bundles are in an entity, only the results of this models bundle will be returned
+   *
+   * @return string|null
+   */
   public static function getViewWhereClause() : ?string
   {
     return empty(static::$bundle) ? null : static::$entityType.'.type = \''. static::$bundle.'\'';
   }
 
+  /**
+   * Returns the entire Query necessary so you can build your view per entity, this will containing the SELECT, FROM, JOINs and WHERE
+   * And can be used in a MySQL view
+   *
+   * @return string
+   */
   public static function getViewSelectQuery() : string
   {
     $joins = static::getViewJoins();

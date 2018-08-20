@@ -13,6 +13,10 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 use Drupal\spectrum\Model\Model;
 
+/**
+ * This class provides a hook into the Drupal permissions functionality, to dynamically allocate permissions.
+ * However due to a platform bug it is currently unused
+ */
 class UserPermissions implements ContainerInjectionInterface
 {
   use StringTranslationTrait;
@@ -37,8 +41,11 @@ class UserPermissions implements ContainerInjectionInterface
 
   /**
    * {@inheritdoc}
+   *
+   * @param ContainerInterface $container
+   * @return UserPermissions
    */
-  public static function create(ContainerInterface $container)
+  public static function create(ContainerInterface $container) : UserPermissions
   {
     return new static($container->get('entity.manager'));
   }
@@ -49,7 +56,7 @@ class UserPermissions implements ContainerInjectionInterface
    * @return array
    *   Permissions array.
    */
-  public function permissions()
+  public function permissions() : array
   {
     $permissions = [];
 

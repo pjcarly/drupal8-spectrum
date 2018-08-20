@@ -2,13 +2,38 @@
 
 namespace Drupal\spectrum\Query;
 
+/**
+ * This class is used to add Sort Ordering to your query.
+ */
 class Order
 {
+  /**
+   * The Drupal field name
+   *
+   * @var string
+   */
   public $fieldName;
+
+  /**
+   * The sorting direction
+   *
+   * @var string
+   */
   public $direction;
+
+  /**
+   * The language code
+   *
+   * @var string
+   */
   public $langcode;
 
-  public function __construct($fieldName, $direction = 'ASC', $langcode = null)
+  /**
+   * @param string $fieldName The Drupal field name
+   * @param string $direction The sorting direction
+   * @param string $langcode The language code
+   */
+  public function __construct(string $fieldName, string $direction = 'ASC', string $langcode = null)
   {
     $this->fieldName = $fieldName;
     $this->direction = $direction;

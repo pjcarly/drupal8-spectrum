@@ -284,7 +284,7 @@ class Validation
   public function toJsonApi() : \stdClass
   {
     $errors = new \stdClass();
-    $errors->errors = array();
+    $errors->errors = [];
 
     $modelName = $this->modelName;
     $fieldToPrettyMapping = $modelName::getFieldsToPrettyFieldsMapping();

@@ -4,23 +4,65 @@ namespace Drupal\spectrum\Query;
 
 use Drupal\spectrum\Exceptions\InvalidOperatorException;
 
+/**
+ * This class provides functionality to create Conditions. These can be added to Queries, ConditionGroups or other places
+ */
 class Condition
 {
+  /**
+   * The name of the drupal field
+   *
+   * @var string
+   */
   public $fieldName;
+
+  /**
+   * The operator that is being used in the condition
+   *
+   * @var string
+   */
   public $operator;
+
+  /**
+   * The value you want to filter by, in case the string 'null' is passed, it will be replaced by NULL
+   *
+   * @var string
+   */
   public $value;
 
-  public static $singleValueOperators = array('=', '<>', '>', '>=', '<', '<=', 'LIKE', 'CONTAINS', 'STARTS_WITH', 'ENDS_WITH');
-  public static $multipleValueOperators = array('IN', 'NOT IN', 'BETWEEN');
+  /**
+   * This array contains the allowed single value operators
+   *
+   * @var array
+   */
+  public static $singleValueOperators = ['=', '<>', '>', '>=', '<', '<=', 'LIKE', 'CONTAINS', 'STARTS_WITH', 'ENDS_WITH'];
 
-  public function __construct($fieldName, $operator, $value)
+  /**
+   * This array contains the allowed multi value operators
+   *
+   * @var array
+   */
+  public static $multipleValueOperators = ['IN', 'NOT IN', 'BETWEEN'];
+
+  /**
+   *
+   * @param string $fieldName The Drupal field name
+   * @param string $operator The operator you want to use
+   * @param mixed $value The value of your condition, can be any type, Pass the string 'null' to check for NULL
+   */
+  public function __construct(string $fieldName, string $operator, $value)
   {
     $this->fieldName = $fieldName;
     $this->operator = $operator;
     $this->value = $value;
   }
 
-  public function validateValues()
+  /**
+   * Validates the Condition, if the value is an array, multi operators can be used, if it is something else, single values can be used
+   *
+   * @return Condition
+   */
+  public function validateValues() : Condition
   {
     if(is_array($this->value) && !Condition::isValidMultipleModelsOperator($this->operator))
     {
@@ -30,9 +72,17 @@ class Condition
     {
       throw new InvalidOperatorException();
     }
+
+    return $this;
   }
 
-  public function addQueryCondition($query)
+  /**
+   * Apply this condition to a DrupalEntityQuery. This can both be a drupal query or a condition (in order to create nested groups)
+   *
+   * @param \Drupal\Core\Entity\Query\QueryInterface|\Drupal\Core\Entity\Query\ConditionInterface $query
+   * @return Condition
+   */
+  public function addQueryCondition($query) : Condition
   {
     if($this->value === 'null')
     {
@@ -61,14 +111,28 @@ class Condition
         $query->condition($this->fieldName, $this->value, $this->operator);
       }
     }
+
+    return $this;
   }
 
-  public static function isValidSingleModelOperator($operator) : bool
+  /**
+   * Checks if the provided string is a valid single value operator
+   *
+   * @param string $operator
+   * @return boolean
+   */
+  public static function isValidSingleModelOperator(string $operator) : bool
   {
     return in_array(strtoupper($operator), Condition::$singleValueOperators);
   }
 
-  public static function isValidMultipleModelsOperator($operator) : bool
+  /**
+   * Checks if the provided string is a valid multi value operator
+   *
+   * @param string $operator
+   * @return boolean
+   */
+  public static function isValidMultipleModelsOperator(string $operator) : bool
   {
     return in_array(strtoupper($operator), Condition::$multipleValueOperators);
   }

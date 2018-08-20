@@ -11,14 +11,60 @@ use Drupal\spectrum\Template\TwigRenderer;
 
 class EmailTemplate extends Model
 {
+  /**
+   * The EntityTYpe for this Model
+   *
+   * @var string
+   */
   public static $entityType = 'template';
+
+  /**
+   * The Bundle for this Model
+   *
+   * @var string
+   */
   public static $bundle = 'email';
+
+  /**
+   * The Id Field for this Model
+   *
+   * @var string
+   */
   public static $idField = 'id';
+
+  /**
+   * The Plural for this model
+   *
+   * @var string
+   */
   public static $plural = 'Email Templates';
 
+  /**
+   * The scope that will be added to the EmailTemplate upon rendering, to fetch dynamic variables from
+   *
+   * @var array
+   */
   private $scope = [];
+
+  /**
+   * After rendering this variable will hold the Subject
+   *
+   * @var string
+   */
   public $subject = '';
+
+  /**
+   * After rendering this variable will hold the HTML Body
+   *
+   * @var string
+   */
   public $html = '';
+
+  /**
+   * After rendering this variable will hold the Text Body
+   *
+   * @var string
+   */
   public $text = '';
 
   /**
@@ -39,7 +85,7 @@ class EmailTemplate extends Model
    * Add a generic object to the scope of this email template, properties on this object can be used in the email template
    *
    * @param string $name
-   * @param [type] $object
+   * @param object $object
    * @return EmailTemplate
    */
   public function addObjectToScope(string $name, $object) : EmailTemplate
@@ -70,7 +116,7 @@ class EmailTemplate extends Model
   /**
    * Fetch an EmailTemplate from the database based on the field_key
    *
-   * @param string $name
+   * @param string $key
    * @return EmailTemplate
    */
   public static function getByKey(string $key) : EmailTemplate

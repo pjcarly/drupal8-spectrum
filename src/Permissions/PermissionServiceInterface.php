@@ -2,6 +2,10 @@
 
 namespace Drupal\spectrum\Permissions;
 
+/**
+ * This interface exposes the different functions Spectrum needs to be able to provide proper access or security checks.
+ * Everyone can choose to implement this how they want, as long as the service is registered in the container, and these functions are present
+ */
 interface PermissionServiceInterface
 {
   /**

@@ -5,10 +5,19 @@ namespace Drupal\spectrum\Utils;
 use \DateTime;
 use \DateTimeZone;
 
+/**
+ * Date helper functions
+ */
 class DateUtils
 {
-  // $datestring: must be in format MM-DDThh:mm
-  // returns DateTime
+  /**
+   * Returns a PHP Datetime object for a datestring in the format MM-DDThh:mm, it will be the next date,
+   * so from TODAY, the first occurence of the day/month combination
+   *
+   * @param string $datestring must be in format MM-DDThh:mm
+   * @param string $timezone
+   * @return DateTime
+   */
   public static function getNextUTCDateTimeForMMDDHourString(string $datestring, string $timezone = '') : DateTime
   {
     $dateSplitted = explode('T', $datestring);
@@ -24,8 +33,14 @@ class DateUtils
   }
 
 
-  // PNR dates are never more than 1 year in the future
-  // Hear we calculate a year, if today is 5 MAY, and we make a booking for 6 MAY, the booking is this year, if we make a booking for 4 MAY it is next year
+  /**
+   * PNR dates are never more than 1 year in the future
+   * Here we calculate a year, if today is 5 MAY, and we make a booking for 6 MAY, the booking is this year, if we make a booking for 4 MAY it is next year
+   *
+   * @param integer $day
+   * @param integer $month
+   * @return string
+   */
   public static function getNextDateStringForDayAndMonth(int $day, int $month) : string
   {
     $now = new DateTime();
@@ -39,17 +54,41 @@ class DateUtils
     return $year.'-'.str_pad($month, 2, '0', STR_PAD_LEFT).'-'.str_pad($day, 2, '0', STR_PAD_LEFT);
   }
 
+  /**
+   * This function will return the Hour and Minute string in a HH:mm format for the provided gmt offset
+   *
+   * @param float $gmtOffset
+   * @return string
+   */
   public static function getHourMinuteStringForGmtOffset(float $gmtOffset) : string
   {
     $returnValue = sprintf('%02d:%02d', (int) $gmtOffset, fmod($gmtOffset, 1) * 60);
     return $returnValue;
   }
 
+  /**
+   * Returns today at midnight in Unix timestamp
+   *
+   * @return integer
+   */
   public static function getToday() : int
   {
     return strtotime('today midnight');
   }
 
+  /**
+   * Generate a Pattern string for the provided date, and format
+   * Dynamic portions of the pattern will be replaced by the value of the passed date
+   * {{YYYY}} replaces the year of the date in 4 digits
+   * {{YY}} replaces the year of the date in 4 digits
+   * {{QQ}} replaces the quarter of the date in 2 digits
+   * {{MM}} replaces the month of the date in 2 digits
+   * {{DD}} replaces the day of the date in 2 digits
+   *
+   * @param DateTime $date
+   * @param string $pattern
+   * @return string
+   */
   public static function generatePatternString(DateTime $date, string $pattern) : string
   {
     $value = $pattern;
@@ -61,11 +100,23 @@ class DateUtils
     return $value;
   }
 
+  /**
+   * Returns the Quarter part of the datetime
+   *
+   * @param DateTime $date
+   * @return float
+   */
   public static function getQuarter(DateTime $date) : float
   {
     return ceil($date->format('n')/3);
   }
 
+  /**
+   * Returns the month number for the month string JAN,FEB,MAR, ...
+   *
+   * @param string $month
+   * @return integer
+   */
   public static function getMonthNumber(string $month) : int
   {
     $monthNumber = false;

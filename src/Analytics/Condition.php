@@ -10,9 +10,25 @@ use Drupal\spectrum\Query\Condition as QueryCondition;
 
 class Condition extends Model
 {
+  /**
+   * These are the values that can be translated in a condtion for an entity_reference field to the User entity
+   *
+   * @var array
+   */
   public static $userLiterals = ['MYSELF'];
+
+  /**
+   * These are values that can be translated into conditions for a field of type Date
+   *
+   * @var array
+   */
   public static $dateLiterals = ['TODAY', 'NOW'];
 
+  /**
+   * These provide a mapping between the select list values, and the actual operator in the query
+   *
+   * @var array
+   */
   public static $operationMapping = [
     'EQUALS' => '=',
     'NOT_EQUALS' => '<>',
@@ -28,12 +44,41 @@ class Condition extends Model
     'NOT_IN' => 'NOT IN',
     'BETWEEN' => 'BETWEEN',
   ];
+
+  /**
+   * The entityType for this model
+   *
+   * @var string
+   */
   public static $entityType = 'query';
+
+  /**
+   * The Bundle for this Model
+   *
+   * @var string
+   */
   public static $bundle = 'condition';
+
+  /**
+   * The ID field of this Model
+   *
+   * @var string
+   */
   public static $idField = 'id';
 
+  /**
+   * The Plural description of this Model
+   *
+   * @var string
+   */
   public static $plural = 'Conditions';
 
+
+  /**
+   * The relationships to other Models
+   *
+   * @return void
+   */
   public static function relationships()
   {
     static::addRelationship(new FieldRelationship('parent', 'field_parent.target_id'));
@@ -106,10 +151,15 @@ class Condition extends Model
     return $value;
   }
 
+  /**
+   * Get a Drupal Field Definition for the field in the condition
+   *
+   * @return \Drupal\Core\Field\FieldDefinitionInterface
+   */
   private function getDrupalFieldDefinition()
   {
     $fieldName = $this->entity->field_field->value;
-    $fieldDefinitions = $this->parent->getDrupalFieldDefinitions();
+    $fieldDefinitions = $this->get('parent')->getDrupalFieldDefinitions();
 
     if(array_key_exists($fieldName, $fieldDefinitions))
     {

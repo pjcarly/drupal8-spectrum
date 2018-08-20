@@ -67,6 +67,21 @@ abstract class Query
   public $tag;
 
   /**
+   * The entity type you want to query
+   *
+   * @var string
+   */
+  protected $entityType;
+
+  /**
+   * @param string $entityType The entity type you want to query
+   */
+  public function __construct(string $entityType)
+  {
+    $this->entityType = $entityType;
+  }
+
+  /**
    * Set a tag you want to add to the query
    *
    * @param string $tag
@@ -255,6 +270,8 @@ abstract class Query
     }
     else
     {
+      // A logic was provided, we add all the conditions on the query to a ConditionGroup
+      // Apply the logic, and then add pass in the drupal query to apply the conditions with logic on.
       $conditionGroup = new ConditionGroup();
       $conditionGroup->setLogic($this->conditionLogic);
 

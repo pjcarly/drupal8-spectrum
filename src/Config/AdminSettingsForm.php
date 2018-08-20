@@ -22,19 +22,19 @@ class AdminSettingsForm extends ConfigFormBase
   {
     $config = $this->config('spectrum.settings');
 
-    $form['wkhtmltopdf_executable'] = array(
+    $form['wkhtmltopdf_executable'] = [
       '#type' => 'textfield',
       '#title' => t('wkhtmltopdf executable'),
       '#default_value' => $config->get('wkhtmltopdf_executable'),
       '#description' => t('The location of the wkhtmltopdf executable.')
-    );
+    ];
 
-    $form['default_base_path'] = array(
+    $form['default_base_path'] = [
       '#type' => 'textfield',
       '#title' => t('Default Base Path'),
       '#default_value' => $config->get('default_base_path'),
       '#description' => t('The default base path, in case logic is done via the CLI and a base_path is needed, make sure this is the URL your website is accessible on.')
-    );
+    ];
 
     $form['email_provider'] = [
       '#type' => 'select',
@@ -47,33 +47,33 @@ class AdminSettingsForm extends ConfigFormBase
       '#default_value' => $config->get('email_provider'),
     ];
 
-    $form['sendgrid_api_key'] = array(
+    $form['sendgrid_api_key'] = [
       '#type' => 'textfield',
       '#title' => t('Sendgrid API Key'),
       '#default_value' => $config->get('sendgrid_api_key'),
       '#description' => t('The API key for your Sendgrid account.')
-    );
+    ];
 
-    $form['aws_ses_api_key'] = array(
+    $form['aws_ses_api_key'] = [
       '#type' => 'textfield',
       '#title' => t('AWS SES Key'),
       '#default_value' => $config->get('aws_ses_api_key'),
       '#description' => t('The key for your AWS SES account.')
-    );
+    ];
 
-    $form['aws_ses_api_secret'] = array(
+    $form['aws_ses_api_secret'] = [
       '#type' => 'textfield',
       '#title' => t('AWS SES Secret'),
       '#default_value' => $config->get('aws_ses_api_secret'),
       '#description' => t('The Secret for your AWS SES account.')
-    );
+    ];
 
-    $form['aws_ses_region'] = array(
+    $form['aws_ses_region'] = [
       '#type' => 'textfield',
       '#title' => t('AWS SES Region'),
       '#default_value' => $config->get('aws_ses_region'),
       '#description' => t('The Region for your AWS SES account.')
-    );
+    ];
 
     return parent::buildForm($form, $form_state);
   }

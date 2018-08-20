@@ -2,6 +2,9 @@
 
 namespace Drupal\spectrum\Query;
 
+/**
+ * A BundleQuery is an EntityQuery with an extra default condition, to only return results of a certain bundle
+ */
 class BundleQuery extends EntityQuery
 {
   /**

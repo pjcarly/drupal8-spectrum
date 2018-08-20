@@ -31,10 +31,27 @@ class FieldRelationship extends Relationship
    */
   public $polymorphicModelTypes = [];
 
+  /**
+   * THe first fully qualified classname of the model in a polymorphic fieldrelationship
+   *
+   * @var string
+   */
   private $firstModelType;
-  public $fieldCardinality; // cardinality is the maximum number of references allowed for the field.
 
-  public function __construct($relationshipName, $relationshipField, $cascade = 0)
+  /**
+   * Cardinality is the maximum number of references allowed for the field.
+   *
+   * @var int
+   */
+  public $fieldCardinality;
+
+  /**
+   *
+   * @param string $relationshipName
+   * @param string $relationshipField
+   * @param integer $cascade
+   */
+  public function __construct(string $relationshipName, string $relationshipField, int $cascade = 0)
   {
     parent::__construct($relationshipName, $cascade);
     $this->relationshipField = $relationshipField;
