@@ -3,8 +3,6 @@ namespace Drupal\spectrum\Jobs;
 
 use Drupal\spectrum\Runnable\QueuedJob;
 use Drupal\spectrum\Query\Condition;
-use Drupal\groupflights\Models\Node\Airline;
-use Drupal\file\Entity\File;
 
 class QueuedJobJanitorJob extends QueuedJob
 {
