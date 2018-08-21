@@ -13,13 +13,31 @@ abstract class BatchJob extends QueuedJob
     $batchSize = $this->getBatchSize();
     $batchable->setBatchSize($batchSize);
 
+    $totalRecords = $batchable->getTotalBatchedRecords();
+
     $sleep = $this->getSleep();
     $loop = Factory::create();
-    $loop->addPeriodicTimer($sleep, function() use (&$loop, &$batchable, &$batchSize) {
+
+    $loopCycle = 0;
+    $loop->addPeriodicTimer($sleep, function() use (&$loop, &$batchable, &$batchSize, &$totalRecords, &$loopCycle) {
       $batch = $batchable->getNextBatch();
+      $loopCycle++;
 
       if(!empty($batch))
       {
+        $recordsProcessed = (($loopCycle-1) * $batchSize) + sizeof($batch);
+        $memory = memory_get_usage() / 1024;
+        $memoryUsage = ($memory < 1024) ? number_format($memory, 2, ',', ' ').' KB' : number_format($memory / 1024, 2, ',', ' ').' MB';
+
+        if(!empty($totalRecords))
+        {
+          $this->print(sprintf('(%s) Processing %u/%u (%s)', $this->entity->title->value, $recordsProcessed, $totalRecords, $memoryUsage));
+        }
+        else
+        {
+          $this->print(sprintf('(%s) Processing %u (%s)', $this->entity->title->value, $recordsProcessed, $memoryUsage));
+        }
+
         $this->processBatch($batch);
 
         Model::clearAllDrupalStaticEntityCaches();

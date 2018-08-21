@@ -96,6 +96,10 @@ abstract class Query implements BatchableInterface
     $this->entityType = $entityType;
   }
 
+  public function getTotalBatchedRecords() : ?int
+  {
+    return $this->fetchTotalCount();
+  }
 
   public function getNextBatch() : array
   {
