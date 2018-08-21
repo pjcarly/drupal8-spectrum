@@ -177,6 +177,10 @@ trait ModelSQLHelperMixin
     {
       $baseTablePrefix = 'users';
     }
+    else if($baseTablePrefix === 'file')
+    {
+      return $baseTablePrefix . '_managed AS '.static::$entityType;
+    }
 
     return $baseTablePrefix . '_field_data AS '.static::$entityType;
   }
