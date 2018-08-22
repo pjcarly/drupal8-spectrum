@@ -7,15 +7,25 @@ use Drupal\spectrum\Models\File;
 use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Model\Collection;
 
+/**
+ * This Batch job will remove unpublished files from the database and filesystem (through drupal triggers)
+ */
 class FileRemoveUnpublishedFilesBatch extends BatchJob
 {
+  /**
+   * {@inheritdoc}
+   */
   protected function getBatchable() : BatchableInterface
   {
     $query = File::getModelQuery();
     $query->addCondition(new Condition('status', '=', '0'));
+
     return $query;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   protected function processBatch(array $batch) : void
   {
     $files = Collection::forgeByEntities('Drupal\spectrum\Models\File', $batch);

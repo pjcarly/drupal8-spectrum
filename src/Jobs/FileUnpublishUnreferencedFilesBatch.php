@@ -7,8 +7,14 @@ use Drupal\spectrum\Models\File;
 use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Model\Collection;
 
+/**
+ * This batch job will unpublish all files which arent in use by other models or drupal
+ */
 class FileUnpublishUnreferencedFilesBatch extends BatchJob
 {
+  /**
+   * {@inheritdoc}
+   */
   protected function getBatchable() : BatchableInterface
   {
     $query = File::getModelQuery();
@@ -16,18 +22,25 @@ class FileUnpublishUnreferencedFilesBatch extends BatchJob
     return $query;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   protected function processBatch(array $batch) : void
   {
     $files = Collection::forgeByEntities('Drupal\spectrum\Models\File', $batch);
 
     foreach($files as $file)
     {
-      // if(!$file->hasReferences())
-      // {
-      //   $file->entity->status->value = 0;
-      // }
+      if($file->isInUse())
+      {
+        $file->entity->status->value = 1;
+      }
+      else
+      {
+        $file->entity->status->value = 0;
+      }
     }
 
-    //$files->save();
+    $files->save();
   }
 }

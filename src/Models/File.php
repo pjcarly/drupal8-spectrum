@@ -65,6 +65,19 @@ class File extends Model
   }
 
   /**
+   * Returns an array of file usage in the file_usage table
+   *
+   * @return array
+   */
+  public function getUsage() : array
+  {
+    $fileUsageService = \Drupal::service('file.usage');
+    $usage = $fileUsageService->listUsage($this->entity);
+
+    return empty($usage) ? [] : $usage;
+  }
+
+  /**
    * Returns true if this file is referenced in other entities
    *
    * @return boolean
@@ -72,6 +85,26 @@ class File extends Model
   public function hasReferences() : bool
   {
     return sizeof($this->getReferences()) > 0;
+  }
+
+  /**
+   * Returns true if the file exists in the file_usage table
+   *
+   * @return boolean
+   */
+  public function hasUsage() : bool
+  {
+    return sizeof($this->getUsage()) > 0;
+  }
+
+  /**
+   * Returns true if the file has references or is listed in the file_usage table
+   *
+   * @return boolean
+   */
+  public function isInUse() : bool
+  {
+    return $this->hasReferences() || $this->hasUsage();
   }
 
   /**

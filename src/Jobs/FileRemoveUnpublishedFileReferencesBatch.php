@@ -7,8 +7,14 @@ use Drupal\spectrum\Models\File;
 use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Model\Collection;
 
+/**
+ * This Batch job will remove all the references to unpublished files, and put the target_id to false
+ */
 class FileRemoveUnpublishedFileReferencesBatch extends BatchJob
 {
+  /**
+   * {@inheritdoc}
+   */
   protected function getBatchable() : BatchableInterface
   {
     $query = File::getModelQuery();
@@ -16,6 +22,9 @@ class FileRemoveUnpublishedFileReferencesBatch extends BatchJob
     return $query;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   protected function processBatch(array $batch) : void
   {
     $files = Collection::forgeByEntities('Drupal\spectrum\Models\File', $batch);

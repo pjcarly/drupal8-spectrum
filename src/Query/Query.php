@@ -147,7 +147,7 @@ abstract class Query implements BatchableInterface
   public function setBatchSize(int $batchSize) : BatchableInterface
   {
     $this->batchSize = $batchSize;
-    $this->batchPage = 1;
+    $this->batchPage = 0;
     $this->batchIds = $this->fetchIds();
 
     return $this;

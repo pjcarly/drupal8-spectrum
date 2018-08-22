@@ -4,8 +4,14 @@ namespace Drupal\spectrum\Jobs;
 use Drupal\spectrum\Runnable\QueuedJob;
 use Drupal\spectrum\Query\Condition;
 
+/**
+ * This job will remove all queuedjob records from the database which are older than maxAgeInDays (which should be added to the variable)
+ */
 class QueuedJobJanitorJob extends QueuedJob
 {
+  /**
+   * {@inheritdoc}
+   */
   public function execute() : void
   {
     $variable = json_decode($this->entity->field_variable->value);
