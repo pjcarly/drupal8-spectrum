@@ -52,8 +52,8 @@ trait ModelDeserializerMixin
                   $this->entity->$fieldName->value = $attributeValue ? '1' : '0'; // cannot be stricly typed, drupal uses true/false as '1' and '0' interchangeably
                   break;
                 case 'geolocation':
-                  $this->entity->$fieldName->lat = $attributeValue->lat;
-                  $this->entity->$fieldName->lng = $attributeValue->lng;
+                  $this->entity->$fieldName->lat = isset($attributeValue->lat) ? $attributeValue->lat : null;
+                  $this->entity->$fieldName->lng = isset($attributeValue->lng) ? $attributeValue->lng : null;
                   break;
                 case 'datetime':
                   $dateValue = null;
