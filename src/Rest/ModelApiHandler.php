@@ -72,7 +72,7 @@ class ModelApiHandler extends BaseApiHandler
   public function __construct(string $modelClassName, $slug = null)
   {
     parent::__construct($slug);
-    $this->modelClassName = Model::getModelClassForEntityAndBundle($modelClassName::$entityType, $modelClassName::$bundle);
+    $this->modelClassName = Model::getModelClassForEntityAndBundle($modelClassName::entityType(), $modelClassName::bundle());
     $this->defaultHeaders['Content-Type'] = 'application/vnd.api+json';
   }
 
@@ -1203,9 +1203,9 @@ class ModelApiHandler extends BaseApiHandler
                   $entityQuery = $deepRelationshipModelClassName::getEntityQuery();
                 }
 
-                if($deepRelationshipModelClassName::userHasReadPermission() && !empty($deepRelationshipModelClassName::$bundle))
+                if($deepRelationshipModelClassName::userHasReadPermission() && !empty($deepRelationshipModelClassName::bundle()))
                 {
-                  $allowedBundles[] = $deepRelationshipModelClassName::$bundle;
+                  $allowedBundles[] = $deepRelationshipModelClassName::bundle();
                 }
               }
 
@@ -1436,7 +1436,7 @@ class ModelApiHandler extends BaseApiHandler
       {
         $listview = ListView::forgeById($listViewParameterValue);
 
-        if(!empty($listview) && $listview->entity->field_entity->value === $modelClassName::$entityType && $listview->entity->field_bundle->value === $modelClassName::$bundle)
+        if(!empty($listview) && $listview->entity->field_entity->value === $modelClassName::entityType() && $listview->entity->field_bundle->value === $modelClassName::bundle())
         {
           return $listview;
         }

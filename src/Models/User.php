@@ -7,18 +7,24 @@ use Drupal\spectrum\Model\Model;
 class User extends Model
 {
   /**
-   * THe entityType of this Model
+   * The Entitytype of this model
    *
-   * @var string
+   * @return string
    */
-  public static $entityType = 'user';
+  public static function entityType() : string
+  {
+    return 'user';
+  }
 
   /**
-   * The Bundle of this Model
+   * The Bundle of this model
    *
-   * @var string
+   * @return string
    */
-  public static $bundle = '';
+  public static function bundle() : string
+  {
+    return '';
+  }
 
   /**
    * This variable will hold a cache of the current user during this transaction
@@ -60,7 +66,7 @@ class User extends Model
 
     if(empty($currentUser))
     {
-      $userType = Model::getModelClassForEntityAndBundle(static::$entityType, static::$bundle);
+      $userType = Model::getModelClassForEntityAndBundle(static::entityType(), static::bundle());
       $currentUser = $userType::forgeById(\Drupal::currentUser()->id());
       static::$currentUser = $currentUser;
     }

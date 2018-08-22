@@ -125,7 +125,7 @@ trait ModelSQLHelperMixin
       }
       else if($fieldName === static::getIdField())
       {
-        $columns[] = static::$entityType.'.'.$fieldName.' AS id';
+        $columns[] = static::entityType().'.'.$fieldName.' AS id';
         continue;
       }
 
@@ -156,7 +156,7 @@ trait ModelSQLHelperMixin
         else
         {
           // These fields exist on the base table, we can just include them
-          $columns[] = static::$entityType.'.'.$fieldName.' AS `'.$fieldNamePretty.'`';
+          $columns[] = static::entityType().'.'.$fieldName.' AS `'.$fieldNamePretty.'`';
         }
       }
     }
@@ -171,7 +171,7 @@ trait ModelSQLHelperMixin
    */
   public static function getViewBaseTable() : string
   {
-    $baseTablePrefix = static::$entityType;
+    $baseTablePrefix = static::entityType();
 
     if($baseTablePrefix === 'user')
     {
@@ -179,10 +179,10 @@ trait ModelSQLHelperMixin
     }
     else if($baseTablePrefix === 'file')
     {
-      return $baseTablePrefix . '_managed AS '.static::$entityType;
+      return $baseTablePrefix . '_managed AS '.static::entityType();
     }
 
-    return $baseTablePrefix . '_field_data AS '.static::$entityType;
+    return $baseTablePrefix . '_field_data AS '.static::entityType();
   }
 
   /**
@@ -220,13 +220,13 @@ trait ModelSQLHelperMixin
 
         if($amountOfFields > 60)
         {
-          trigger_error('Skipping field '.$fieldName.' for bundle '.static::$bundle, E_USER_WARNING);
+          trigger_error('Skipping field '.$fieldName.' for bundle '.static::bundle(), E_USER_WARNING);
           continue;
         }
 
         if($type === 'field_')
         {
-          $joins[$fieldName] = 'LEFT JOIN '.static::$entityType.'__'.$fieldName. ' AS `'.$fieldNamePretty.'` ON `'.$fieldNamePretty.'`.entity_id = `'.static::$entityType.'`.'.static::getIdField();
+          $joins[$fieldName] = 'LEFT JOIN '.static::entityType().'__'.$fieldName. ' AS `'.$fieldNamePretty.'` ON `'.$fieldNamePretty.'`.entity_id = `'.static::entityType().'`.'.static::getIdField();
         }
         else if($fieldName === 'user_picture')
         {
@@ -238,7 +238,7 @@ trait ModelSQLHelperMixin
     if($amountOfFields > 60)
     {
       // Only 60 joins allowed due to MySQL constraints
-      trigger_error('Bundle '.static::$bundle.' has too many columns ('.$amountOfFields.'), stopped at 60', E_USER_WARNING);
+      trigger_error('Bundle '.static::bundle().' has too many columns ('.$amountOfFields.'), stopped at 60', E_USER_WARNING);
     }
 
     return $joins;
@@ -251,7 +251,7 @@ trait ModelSQLHelperMixin
    */
   public static function getViewWhereClause() : ?string
   {
-    return empty(static::$bundle) ? null : static::$entityType.'.type = \''. static::$bundle.'\'';
+    return empty(static::bundle()) ? null : static::entityType().'.type = \''. static::bundle().'\'';
   }
 
   /**

@@ -12,18 +12,24 @@ use Drupal\spectrum\Template\TwigRenderer;
 class EmailTemplate extends Model
 {
   /**
-   * The EntityTYpe for this Model
+   * The Entitytype of this model
    *
-   * @var string
+   * @return string
    */
-  public static $entityType = 'template';
+  public static function entityType() : string
+  {
+    return 'template';
+  }
 
   /**
-   * The Bundle for this Model
+   * The Bundle of this model
    *
-   * @var string
+   * @return string
    */
-  public static $bundle = 'email';
+  public static function bundle() : string
+  {
+    return 'email';
+  }
 
   /**
    * The scope that will be added to the EmailTemplate upon rendering, to fetch dynamic variables from

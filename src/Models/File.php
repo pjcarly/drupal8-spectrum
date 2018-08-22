@@ -18,16 +18,22 @@ class File extends Model
   /**
    * The Entitytype of this model
    *
-   * @var string
+   * @return string
    */
-  public static $entityType = 'file';
+  public static function entityType() : string
+  {
+    return 'file';
+  }
 
   /**
    * The Bundle of this model
    *
-   * @var string
+   * @return string
    */
-  public static $bundle = '';
+  public static function bundle() : string
+  {
+    return '';
+  }
 
   /**
    * The relationships to other models

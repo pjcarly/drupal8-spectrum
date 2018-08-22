@@ -13,18 +13,24 @@ use Drupal\spectrum\Query\Order;
 class ListView extends Model
 {
   /**
-   * The entityType for this Model
+   * The entityType for this model
    *
-   * @var string
+   * @return string
    */
-  public static $entityType = 'query';
+  public static function entityType() : string
+  {
+    return 'query';
+  }
 
   /**
-   * THe bundle for this Model
+   * The Bundle for this Model
    *
-   * @var string
+   * @return string
    */
-  public static $bundle = 'list_view';
+  public static function bundle() : string
+  {
+    return 'list_view';
+  }
 
   /**
    * The Relationships to other Models

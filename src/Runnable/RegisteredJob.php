@@ -17,8 +17,25 @@ class RegisteredJob extends Model
    */
   protected $cliContext = true;
 
-  public static $entityType = 'runnable';
-  public static $bundle = 'registered_job';
+  /**
+   * The entityType for this model
+   *
+   * @return string
+   */
+  public static function entityType() : string
+  {
+    return 'runnable';
+  }
+
+  /**
+   * The Bundle for this Model
+   *
+   * @return string
+   */
+  public static function bundle() : string
+  {
+    return 'registered_job';
+  }
 
   public static function relationships()
   {

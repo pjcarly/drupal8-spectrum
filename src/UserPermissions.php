@@ -65,10 +65,10 @@ class UserPermissions implements ContainerInjectionInterface
     // {
     //   foreach(get_registered_model_classes() as $modelClass)
     //   {
-    //     $permissions[$modelClass::getReadPermissionKey()] = ['title' => $modelClass::$entityType . ' - ' . $modelClass::$plural . ' - 1 READ'];
-    //     $permissions[$modelClass::getCreatePermissionKey()] = ['title' => $modelClass::$entityType . ' - ' . $modelClass::$plural . ' - 2 CREATE'];
-    //     $permissions[$modelClass::getEditPermissionKey()] = ['title' => $modelClass::$entityType . ' - ' . $modelClass::$plural . ' - 3 EDIT'];
-    //     $permissions[$modelClass::getDeletePermissionKey()] = ['title' => $modelClass::$entityType . ' - ' . $modelClass::$plural . ' - 4 DELETE'];
+    //     $permissions[$modelClass::getReadPermissionKey()] = ['title' => $modelClass::entityType() . ' - ' . $modelClass::$plural . ' - 1 READ'];
+    //     $permissions[$modelClass::getCreatePermissionKey()] = ['title' => $modelClass::entityType() . ' - ' . $modelClass::$plural . ' - 2 CREATE'];
+    //     $permissions[$modelClass::getEditPermissionKey()] = ['title' => $modelClass::entityType() . ' - ' . $modelClass::$plural . ' - 3 EDIT'];
+    //     $permissions[$modelClass::getDeletePermissionKey()] = ['title' => $modelClass::entityType() . ' - ' . $modelClass::$plural . ' - 4 DELETE'];
     //   }
     // }
 
