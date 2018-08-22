@@ -9,18 +9,24 @@ use Drupal\spectrum\Model\ReferencedRelationship;
 class Report extends Model
 {
   /**
-   * The entityType of this Model
+   * The entityType for this model
    *
-   * @var string
+   * @return string
    */
-  public static $entityType = 'query';
+  public static function entityType() : string
+  {
+    return 'query';
+  }
 
   /**
-   * The Bundle of this Model
+   * The Bundle for this Model
    *
-   * @var string
+   * @return string
    */
-  public static $bundle = 'report';
+  public static function bundle() : string
+  {
+    return 'report';
+  }
 
   /**
    * The Relationships to other models

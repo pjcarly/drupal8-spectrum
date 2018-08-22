@@ -42,14 +42,14 @@ abstract class Model
    *
    * @var string
    */
-  public static $entityType;
+  public abstract static function entityType() : string;
 
   /**
    * The bundle of this model (for example "article"), this should be defined in every subclass
    *
    * @var string
    */
-  public static $bundle;
+  public abstract static function bundle() : string;
 
   /**
    * Here are the model class mapping stored, with the entitytype/bundle as key, and the fully qualified model classname as value
@@ -595,8 +595,8 @@ abstract class Model
    */
   public static function getIdField() : string
   {
-    $entityType = static::getDrupalEntityType();
-    return $entityType->getKeys()['id'];
+    $drupalEntityType = static::getDrupalEntityType();
+    return $drupalEntityType->getKeys()['id'];
   }
 
   /**
@@ -1279,13 +1279,13 @@ abstract class Model
    */
   public static function forgeNew() : Model
   {
-    if(!empty(static::$bundle))
+    if(!empty(static::bundle()))
     {
-      $entity = entity_create(static::$entityType, ['type' => static::$bundle]);
+      $entity = entity_create(static::entityType(), ['type' => static::bundle()]);
     }
     else
     {
-      $entity = entity_create(static::$entityType);
+      $entity = entity_create(static::entityType());
     }
 
     return static::forgeByEntity($entity);
@@ -1350,12 +1350,12 @@ abstract class Model
     if(empty($entity) && empty($id))
     {
       $values = [];
-      if(!empty(static::$bundle))
+      if(!empty(static::bundle()))
       {
-        $values['type'] = static::$bundle;
+        $values['type'] = static::bundle();
       }
 
-      $entity = entity_create(static::$entityType, $values);
+      $entity = entity_create(static::entityType(), $values);
     }
 
     if(!empty($entity))
@@ -1395,7 +1395,7 @@ abstract class Model
   {
     if(!array_key_exists($requestedModelType, static::$cachedModelTypes))
     {
-      static::$cachedModelTypes[$requestedModelType] = Model::getModelClassForEntityAndBundle($requestedModelType::$entityType, $requestedModelType::$bundle);
+      static::$cachedModelTypes[$requestedModelType] = Model::getModelClassForEntityAndBundle($requestedModelType::entityType(), $requestedModelType::bundle());
     }
 
     return static::$cachedModelTypes[$requestedModelType];
@@ -1411,7 +1411,7 @@ abstract class Model
    */
   public static function clearDrupalStaticEntityCache() : void
   {
-    $entityType = static::$entityType;
+    $entityType = static::entityType();
 
     $store = \Drupal::entityManager()->getStorage($entityType);
     $store->resetCache();
@@ -1429,10 +1429,10 @@ abstract class Model
 
     foreach(static::getModelClasses() as $modelClass)
     {
-      if(!in_array($modelClass::$entityType, $clearedEntitytypes))
+      if(!in_array($modelClass::entityType(), $clearedEntitytypes))
       {
         $modelClass::clearDrupalStaticEntityCache();
-        $clearedEntitytypes[] = $modelClass::$entityType;
+        $clearedEntitytypes[] = $modelClass::entityType();
       }
     }
   }
@@ -1454,7 +1454,7 @@ abstract class Model
    */
   public static function getEntityQuery() : EntityQuery
   {
-    return new EntityQuery(static::$entityType);
+    return new EntityQuery(static::entityType());
   }
 
   /**
@@ -1464,7 +1464,7 @@ abstract class Model
    */
   public static function getBundleQuery() : BundleQuery
   {
-    return new BundleQuery(static::$entityType, static::$bundle);
+    return new BundleQuery(static::entityType(), static::bundle());
   }
 
   /**
@@ -1567,18 +1567,18 @@ abstract class Model
   public static function getSerializationType() : string
   {
     $returnValue = '';
-    $key = static::getKeyForEntityAndBundle(static::$entityType, static::$bundle);
+    $key = static::getKeyForEntityAndBundle(static::entityType(), static::bundle());
     $alias = array_key_exists($key, static::$serializationTypeAliases) ? static::$serializationTypeAliases[$key] : null;
 
     if(empty($alias))
     {
-      if(empty(static::$bundle))
+      if(empty(static::bundle()))
       {
-        $returnValue = static::$entityType;
+        $returnValue = static::entityType();
       }
       else
       {
-        $returnValue = static::$bundle;
+        $returnValue = static::bundle();
       }
     }
     else
@@ -1597,7 +1597,7 @@ abstract class Model
    */
   public static function setSerializationTypeAlias(string $type) : void
   {
-    $key = static::getKeyForEntityAndBundle(static::$entityType, static::$bundle);
+    $key = static::getKeyForEntityAndBundle(static::entityType(), static::bundle());
     static::$serializationTypeAliases[$key] = $type;
   }
 
@@ -1642,13 +1642,13 @@ abstract class Model
    */
   public static function getFieldDefinitions()
   {
-    if(empty(static::$bundle))
+    if(empty(static::bundle()))
     {
-      return \Drupal::service('entity_field.manager')->getFieldDefinitions(static::$entityType, static::$entityType);
+      return \Drupal::service('entity_field.manager')->getFieldDefinitions(static::entityType(), static::entityType());
     }
     else
     {
-      return \Drupal::service('entity_field.manager')->getFieldDefinitions(static::$entityType, static::$bundle);
+      return \Drupal::service('entity_field.manager')->getFieldDefinitions(static::entityType(), static::bundle());
     }
   }
 
@@ -1659,7 +1659,7 @@ abstract class Model
    */
   public static function getDrupalEntityType() : \Drupal\Core\Entity\EntityTypeInterface
   {
-    $entityType = static::$entityType;
+    $entityType = static::entityType();
     $entityTypeManager = \Drupal::entityTypeManager();
     return $entityTypeManager->getDefinition($entityType);
   }
@@ -1725,7 +1725,7 @@ abstract class Model
    */
   public static function getBundleKey() : string
   {
-    return empty(static::$bundle) ? static::$entityType : static::$bundle;
+    return empty(static::bundle()) ? static::entityType() : static::bundle();
   }
 
   /**
@@ -1734,7 +1734,7 @@ abstract class Model
    */
   public static function getBundleInfo()
   {
-    $bundleInfo = \Drupal::service("entity_type.bundle.info")->getBundleInfo(static::$entityType);
+    $bundleInfo = \Drupal::service("entity_type.bundle.info")->getBundleInfo(static::entityType());
     return $bundleInfo[static::getBundleKey()];
   }
 
@@ -1994,7 +1994,7 @@ abstract class Model
     $foundModelClass = null;
     foreach(static::getModelClasses() as $modelClass)
     {
-      if($modelClass::$bundle === $bundle || (empty($modelClass::$bundle) && $modelClass::$entityType === $bundle))
+      if($modelClass::bundle() === $bundle || (empty($modelClass::bundle()) && $modelClass::entityType() === $bundle))
       {
         $foundModelClass = $modelClass;
       }
@@ -2016,8 +2016,8 @@ abstract class Model
 
       foreach(static::getModelClasses() as $modelClassName)
       {
-        $entity = $modelClassName::$entityType;
-        $bundle = $modelClassName::$bundle;
+        $entity = $modelClassName::entityType();
+        $bundle = $modelClassName::bundle();
 
         if(empty($entity))
         {
@@ -2050,7 +2050,7 @@ abstract class Model
    */
   public static function getBasePermissionKey() : string
   {
-    return str_replace('.', '_', static::getKeyForEntityAndBundle(static::$entityType, static::$bundle));
+    return str_replace('.', '_', static::getKeyForEntityAndBundle(static::entityType(), static::bundle()));
   }
 
   public static function getReadPermissionKey() : string

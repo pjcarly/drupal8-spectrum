@@ -563,7 +563,7 @@ class Collection implements \IteratorAggregate, \Countable
 
   private static function fetchEntities(string $modelType, array $ids) : array
   {
-    $query = new BundleQuery($modelType::$entityType, $modelType::$bundle);
+    $query = new BundleQuery($modelType::entityType(), $modelType::bundle());
 
     $query->addCondition(new Condition($modelType::getIdField(), 'IN', $ids));
     return $query->fetch();

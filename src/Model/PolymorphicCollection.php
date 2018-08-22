@@ -91,9 +91,9 @@ class PolymorphicCollection extends Collection
       // it is only possible to have models with a shared entity in a collection
       if(empty($this->entityType))
       {
-        $this->entityType = $model::$entityType;
+        $this->entityType = $model::entityType();
       }
-      else if($this->entityType !== $model::$entityType)
+      else if($this->entityType !== $model::entityType())
       {
         throw new PolymorphicException('Only models with a shared entity type are allowed in a polymorphic collection');
       }

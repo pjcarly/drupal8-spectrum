@@ -22,7 +22,7 @@ class ModelQuery extends BundleQuery
    */
   public function __construct(string $modelType)
   {
-    parent::__construct($modelType::$entityType, $modelType::$bundle);
+    parent::__construct($modelType::entityType(), $modelType::bundle());
     $this->modelType = $modelType;
   }
 

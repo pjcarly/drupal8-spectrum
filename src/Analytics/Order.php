@@ -11,18 +11,24 @@ use Drupal\spectrum\Query\Order as QueryOrder;
 class Order extends Model
 {
   /**
-   * The entitytype of this Model
+   * The entityType for this model
    *
-   * @var string
+   * @return string
    */
-  public static $entityType = 'query';
+  public static function entityType() : string
+  {
+    return 'query';
+  }
 
   /**
-   * The Bundle of this Model
+   * The Bundle for this Model
    *
-   * @var string
+   * @return string
    */
-  public static $bundle = 'order';
+  public static function bundle() : string
+  {
+    return 'order';
+  }
 
   /**
    * The Relationships to other Models

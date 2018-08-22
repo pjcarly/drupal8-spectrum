@@ -13,8 +13,25 @@ use Drupal\spectrum\Exceptions\JobTerminateException;
  */
 class QueuedJob extends RunnableModel
 {
-  public static $entityType = 'runnable';
-  public static $bundle = 'queued_job';
+  /**
+   * The entityType for this model
+   *
+   * @return string
+   */
+  public static function entityType() : string
+  {
+    return 'runnable';
+  }
+
+  /**
+   * The Bundle for this Model
+   *
+   * @return string
+   */
+  public static function bundle() : string
+  {
+    return 'queued_job';
+  }
 
   /**
    * An instance of AccountSwitcher. This gives you the ability to execute the Job as another user, and switch back afterwards.

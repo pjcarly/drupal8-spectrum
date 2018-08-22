@@ -48,16 +48,22 @@ class Condition extends Model
   /**
    * The entityType for this model
    *
-   * @var string
+   * @return string
    */
-  public static $entityType = 'query';
+  public static function entityType() : string
+  {
+    return 'query';
+  }
 
   /**
    * The Bundle for this Model
    *
-   * @var string
+   * @return string
    */
-  public static $bundle = 'condition';
+  public static function bundle() : string
+  {
+    return 'condition';
+  }
 
   /**
    * The relationships to other Models
