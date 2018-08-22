@@ -60,21 +60,6 @@ class Condition extends Model
   public static $bundle = 'condition';
 
   /**
-   * The ID field of this Model
-   *
-   * @var string
-   */
-  public static $idField = 'id';
-
-  /**
-   * The Plural description of this Model
-   *
-   * @var string
-   */
-  public static $plural = 'Conditions';
-
-
-  /**
    * The relationships to other Models
    *
    * @return void

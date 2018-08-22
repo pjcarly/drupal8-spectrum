@@ -27,20 +27,6 @@ class ListView extends Model
   public static $bundle = 'list_view';
 
   /**
-   * The Id field for this Model
-   *
-   * @var string
-   */
-  public static $idField = 'id';
-
-  /**
-   * The Plural Description of this model
-   *
-   * @var string
-   */
-  public static $plural = 'List Views';
-
-  /**
    * The Relationships to other Models
    *
    * @return void

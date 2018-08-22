@@ -26,20 +26,6 @@ class EmailTemplate extends Model
   public static $bundle = 'email';
 
   /**
-   * The Id Field for this Model
-   *
-   * @var string
-   */
-  public static $idField = 'id';
-
-  /**
-   * The Plural for this model
-   *
-   * @var string
-   */
-  public static $plural = 'Email Templates';
-
-  /**
    * The scope that will be added to the EmailTemplate upon rendering, to fetch dynamic variables from
    *
    * @var array

@@ -19,6 +19,13 @@ abstract class Query implements BatchableInterface
   protected $batchSize;
 
   /**
+   * Here we store all the ids the batch must return, we must page over them during every batch cycle
+   *
+   * @var array
+   */
+  protected $batchIds = [];
+
+  /**
    * Here we store the current page we are on in our batch cycle
    *
    * @var int
@@ -68,7 +75,7 @@ abstract class Query implements BatchableInterface
   public $rangeLength;
 
   /**
-   * THe logic that will be applied to the conditions (not baseConditions, and not ConditionGroups)
+   * The logic that will be applied to the conditions (not baseConditions, and not ConditionGroups)
    *
    * @var string
    */
@@ -98,21 +105,51 @@ abstract class Query implements BatchableInterface
 
   public function getTotalBatchedRecords() : ?int
   {
-    return $this->fetchTotalCount();
+    return sizeof($this->batchIds);
   }
 
   public function getNextBatch() : array
   {
-    $this->setRange(($this->batchPage - 1) * $this->batchSize, $this->batchSize);
     $this->batchPage++;
 
-    return $this->fetch();
+    // We get all the keys we need to handle, in an array with consecutive numbers starting at 0 as the key
+    $keys = array_keys($this->batchIds);
+
+    // Next we generate an array with consecutive numbers starting at the page we are currently handleing, and for the max range of the batchsize
+    $range = range(($this->batchPage - 1) * $this->batchSize, ($this->batchPage * $this->batchSize) -1);
+    $range = array_flip($range);
+
+    // Next we generate the intersection, between the range and the keys, so we only have the keys that we need to handle in this batch
+    $nextBatchIds = array_intersect_key($keys, $range);
+
+    if(empty($nextBatchIds))
+    {
+      return [];
+    }
+
+    // Now we need to find the Id Field of the entity type, as this can be different per entity in Drupal
+    $entityTypeManager = \Drupal::entityTypeManager();
+    $entityTypeDefinition = $entityTypeManager->getDefinition($this->getEntityType());
+    $idField = $entityTypeDefinition->getKeys()['id'];
+
+    // Now we copy the current query, and add a condition for the IDS we need to handle
+    $query = $this->copy();
+    $query->addCondition(new Condition($idField, 'IN', array_values($nextBatchIds)));
+    return $query->fetch();
   }
 
+  /**
+   * Sets the size of the batch, this is needed for BatchableInterface
+   *
+   * @param integer $batchSize
+   * @return BatchableInterface
+   */
   public function setBatchSize(int $batchSize) : BatchableInterface
   {
     $this->batchSize = $batchSize;
     $this->batchPage = 1;
+    $this->batchIds = $this->fetchIds();
+
     return $this;
   }
 
@@ -257,7 +294,7 @@ abstract class Query implements BatchableInterface
     $query = $this->getBaseQuery();
 
     // add ranges and limits if needed
-    if(!empty($this->rangeLength))
+    if($this->hasLimit())
     {
       $query->range($this->rangeStart, $this->rangeLength);
     }
@@ -471,6 +508,107 @@ abstract class Query implements BatchableInterface
       $this->addConditionGroup($conditionGroup);
     }
 
+    $conditionLogic = $query->getConditionLogic();
+    if(!empty($conditionLogic))
+    {
+      $this->setConditionLogic($conditionLogic);
+    }
+
     return $this;
+  }
+
+  public function copySortOrdersFrom(Query $query) : Query
+  {
+    foreach($query->getSortOrders() as $sortOrder)
+    {
+      $this->addSortOrder($sortOrder);
+    }
+
+    return $this;
+  }
+
+  /**
+   * This function will return a copy of the current Query, it will be a new reference, with all the same Conditions, Orders, Ranges, ...
+   *
+   * @return Query
+   */
+  public function copy() : Query
+  {
+    $query = new EntityQuery($this->getEntityType()); // Doesnt matter what the subclass is, the conditions will be added below
+    $query->copyConditionsFrom($this);
+    $query->copySortOrdersFrom($this);
+
+    $tag = $this->getTag();
+    if(!empty($tag))
+    {
+      $query->setTag($tag);
+    }
+
+    if($this->hasLimit())
+    {
+      $query->setRange($this->getRangeStart(), $this->getRangeLength());
+    }
+
+    return $query;
+  }
+
+  /**
+   * Returns all the sort orders in an array
+   *
+   * @return  array
+   */
+  public function getSortOrders() : array
+  {
+    return $this->sortOrders;
+  }
+
+  /**
+   * Get potential Drupal tag you want to add to the query
+   *
+   * @return  string|null
+   */
+  public function getTag() : ?string
+  {
+    return $this->tag;
+  }
+
+  /**
+   * Get the start of the range you want to return
+   *
+   * @return  int
+   */
+  public function getRangeStart() : int
+  {
+    return $this->rangeStart;
+  }
+
+  /**
+   * Get the length of the range you want to return
+   *
+   * @return  int
+   */
+  public function getRangeLength() : int
+  {
+    return $this->rangeLength;
+  }
+
+  /**
+   * Get the logic that will be applied to the conditions (not baseConditions, and not ConditionGroups)
+   *
+   * @return  string|null
+   */
+  public function getConditionLogic() : ?string
+  {
+    return $this->conditionLogic;
+  }
+
+  /**
+   * Get the entity type you want to query
+   *
+   * @return  string
+   */
+  public function getEntityType() : string
+  {
+    return $this->entityType;
   }
 }

@@ -411,7 +411,7 @@ class ModelApiHandler extends BaseApiHandler
       }
 
       // Next we add the specific condition for the slug
-      $query->addCondition(new Condition($modelClassName::$idField, '=', $this->slug));
+      $query->addCondition(new Condition($modelClassName::getIdField(), '=', $this->slug));
       $result = $query->fetchSingleModel();
 
       $this->addSingleLink($jsonapi, 'self', $baseUrl);
@@ -784,7 +784,7 @@ class ModelApiHandler extends BaseApiHandler
       // First we'll build the root model from the json api document
       // since we're talking about a patch here, the model must already exist in the database
       $query = $modelClassName::getModelQuery();
-      $query->addCondition(new Condition($modelClassName::$idField, '=', $jsonapidocument->data->id));
+      $query->addCondition(new Condition($modelClassName::getIdField(), '=', $jsonapidocument->data->id));
 
       // We check for base conditions (these are conditions that always need to be applied, regardless of the api)
       // This can be used to limit the results based on the logged in user, when the user only has access to certain records
@@ -1091,7 +1091,7 @@ class ModelApiHandler extends BaseApiHandler
     }
 
     $query = $modelClassName::getModelQuery();
-    $query->addCondition(new Condition($modelClassName::$idField, '=', $this->slug));
+    $query->addCondition(new Condition($modelClassName::getIdField(), '=', $this->slug));
 
     // We check for base conditions (these are conditions that always need to be applied, regardless of the api)
     // This can be used to limit the results based on the logged in user, when the user only has access to certain records
@@ -1205,7 +1205,7 @@ class ModelApiHandler extends BaseApiHandler
 
                 if($deepRelationshipModelClassName::userHasReadPermission() && !empty($deepRelationshipModelClassName::$bundle))
                 {
-                  $allowedBundles = $deepRelationshipModelClassName::$bundle;
+                  $allowedBundles[] = $deepRelationshipModelClassName::$bundle;
                 }
               }
 
