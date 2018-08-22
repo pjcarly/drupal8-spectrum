@@ -65,7 +65,7 @@ class FieldRelationship extends Relationship
   public function getCondition() : Condition
   {
     $modelType = $this->firstModelType;
-    return new Condition($modelType::$idField, 'IN', null);
+    return new Condition($modelType::getIdField(), 'IN', null);
   }
 
   /**

@@ -10,13 +10,6 @@ use Drupal\image\Entity\ImageStyle;
 class Image extends File
 {
   /**
-   * THe plural of this model
-   *
-   * @var string
-   */
-  public static $plural = 'Images';
-
-  /**
    * The Relationships to other models
    *
    * @return void

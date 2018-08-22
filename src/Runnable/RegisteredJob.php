@@ -19,9 +19,6 @@ class RegisteredJob extends Model
 
   public static $entityType = 'runnable';
   public static $bundle = 'registered_job';
-  public static $idField = 'id';
-
-  public static $plural = 'Registered Jobs';
 
   public static function relationships()
   {

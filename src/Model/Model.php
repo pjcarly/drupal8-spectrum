@@ -52,13 +52,6 @@ abstract class Model
   public static $bundle;
 
   /**
-   * The name of the id field of the entity (for example "nid"), this should be defined in eery subclass
-   *
-   * @var string
-   */
-  public static $idField;
-
-  /**
    * Here are the model class mapping stored, with the entitytype/bundle as key, and the fully qualified model classname as value
    * This is to get around the shared scope of multiple Models on the abstract superclass Model
    *
@@ -595,13 +588,25 @@ abstract class Model
   }
 
   /**
+   * Returns the string name of the id field of this entity
+   * For example, node will return nid, file will return fid, user will return uid, ...
+   *
+   * @return string
+   */
+  public static function getIdField() : string
+  {
+    $entityType = static::getDrupalEntityType();
+    return $entityType->getKeys()['id'];
+  }
+
+  /**
    * Returns the Id of the Model, this correctly handles the different id-fieldnames
    *
-   * @return void
+   * @return int|string|null
    */
   public function getId()
   {
-    $idField = static::$idField;
+    $idField = static::getIdField();
     return $this->entity->$idField->value;
   }
 
@@ -613,7 +618,7 @@ abstract class Model
    */
   public function setId($id)
   {
-    $idField = static::$idField;
+    $idField = static::getIdField();
     $this->entity->$idField->value = $id;
   }
 
@@ -938,7 +943,7 @@ abstract class Model
     $entity = $this->entity;
     $clone = $entity->createDuplicate();
 
-    $idField = static::$idField;
+    $idField = static::getIdField();
     $clone->$idField->value = $this->getId();
 
     return $clone;
@@ -1161,7 +1166,7 @@ abstract class Model
 
     // We do a new entity query
     $entityQuery = static::getEntityQuery();
-    $entityQuery->addCondition(new Condition(static::$idField, '=', $this->getId()));
+    $entityQuery->addCondition(new Condition(static::getIdField(), '=', $this->getId()));
 
     $entity = $entityQuery->fetchSingle();
 
@@ -1336,7 +1341,7 @@ abstract class Model
       $query = static::getModelQuery();
 
       // add a condition on the id
-      $query->addCondition(new Condition(static::$idField, '=', $id));
+      $query->addCondition(new Condition(static::getIdField(), '=', $id));
       $model = $query->fetchSingleModel();
 
       return $model;
@@ -1648,6 +1653,18 @@ abstract class Model
   }
 
   /**
+   * Gets the EntityType from Drupal for this Entity
+   *
+   * @return \Drupal\Core\Entity\EntityTypeInterface
+   */
+  public static function getDrupalEntityType() : \Drupal\Core\Entity\EntityTypeInterface
+  {
+    $entityType = static::$entityType;
+    $entityTypeManager = \Drupal::entityTypeManager();
+    return $entityTypeManager->getDefinition($entityType);
+  }
+
+  /**
    * Returns the drupal FieldDefinition for the provided fieldName
    *
    * @param string $fieldName
@@ -1699,16 +1716,6 @@ abstract class Model
     }
 
     return $label;
-  }
-
-  /**
-   * Get the Plural Label of this Model
-   *
-   * @return string
-   */
-  public static function getPlural() : string
-  {
-    return empty(static::$plural) ? '' : static::$plural; // todo, find a way to store this aside the label of the model
   }
 
   /**

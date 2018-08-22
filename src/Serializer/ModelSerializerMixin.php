@@ -329,7 +329,7 @@ trait ModelSerializerMixin
         //$node->setType(StringUtils::dasherize($this->entity->get($fieldName)->target_id));
         continue;
       }
-      else if($fieldName === static::$idField)
+      else if($fieldName === static::getIdField())
       {
         $node->setId($this->entity->get($fieldName)->value);
         continue;

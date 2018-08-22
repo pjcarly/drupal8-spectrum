@@ -1,6 +1,7 @@
 <?php
 namespace Drupal\spectrum\Model;
 
+use Drupal\spectrum\Query\Query;
 use Drupal\spectrum\Exceptions\PolymorphicException;
 
 /**
@@ -61,7 +62,7 @@ class PolymorphicCollection extends Collection
    * @param string $relationshipName
    * @return Collection
    */
-  public function fetch(string $relationshipName) : Collection
+  public function fetch(string $relationshipName, ?Query $queryToCopyFrom = null) : Collection
   {
     throw new PolymorphicException('Fetch has no meaning for polymorphic collections');
   }

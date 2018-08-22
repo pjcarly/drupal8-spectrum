@@ -25,20 +25,6 @@ class Order extends Model
   public static $bundle = 'order';
 
   /**
-   * The Id field of this model
-   *
-   * @var string
-   */
-  public static $idField = 'id';
-
-  /**
-   * The Plural description of this Model
-   *
-   * @var string
-   */
-  public static $plural = 'Sort Orders';
-
-  /**
    * The Relationships to other Models
    *
    * @return void

@@ -565,7 +565,7 @@ class Collection implements \IteratorAggregate, \Countable
   {
     $query = new BundleQuery($modelType::$entityType, $modelType::$bundle);
 
-    $query->addCondition(new Condition($modelType::$idField, 'IN', $ids));
+    $query->addCondition(new Condition($modelType::getIdField(), 'IN', $ids));
     return $query->fetch();
   }
 

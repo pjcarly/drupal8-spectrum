@@ -28,19 +28,6 @@ class File extends Model
    * @var string
    */
   public static $bundle = '';
-  /**
-   * The idfield of this Model
-   *
-   * @var string
-   */
-  public static $idField = 'fid';
-
-  /**
-   * The plural description of this model
-   *
-   * @var string
-   */
-  public static $plural = 'Files';
 
   /**
    * The relationships to other models
@@ -51,9 +38,59 @@ class File extends Model
   {
   }
 
+  /**
+   * This function can be used in dynamic api handlers
+   *
+   * @return string
+   */
   protected function getBaseApiPath() : string
   {
     return 'file';
+  }
+
+  /**
+   * Returns an array of the references where this File is being used. These are fields that contain the file
+   *
+   * @return array
+   */
+  public function getReferences() : array
+  {
+    return file_get_file_references($this->entity);
+  }
+
+  /**
+   * Returns true if this file is referenced in other entities
+   *
+   * @return boolean
+   */
+  public function hasReferences() : bool
+  {
+    return sizeof($this->getReferences()) > 0;
+  }
+
+  /**
+   * Removes this file from all the references. So if an entity in the system refers to this file. Set that reference to NULL
+   *
+   * @return void
+   */
+  public function removeFromReferences()
+  {
+    $references = $this->getReferences();
+
+    // We loop over the references
+    foreach($references as $fieldName => $referencedEntityTypes)
+    {
+      // Next we loop over every entitytype containting the different entities
+      foreach($referencedEntityTypes as $entityType => $referencedEntities)
+      {
+        // Next we loop over every entity containing the reference
+        foreach($referencedEntities as $entityId => $entity)
+        {
+          $entity->$fieldName->target_id = null;
+          $entity->save();
+        }
+      }
+    }
   }
 
   /**

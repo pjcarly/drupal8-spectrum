@@ -15,9 +15,6 @@ class QueuedJob extends RunnableModel
 {
   public static $entityType = 'runnable';
   public static $bundle = 'queued_job';
-  public static $idField = 'id';
-
-  public static $plural = 'Queued Jobs';
 
   /**
    * An instance of AccountSwitcher. This gives you the ability to execute the Job as another user, and switch back afterwards.

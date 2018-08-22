@@ -21,20 +21,6 @@ class User extends Model
   public static $bundle = '';
 
   /**
-   * The IdField of this Model
-   *
-   * @var string
-   */
-  public static $idField = 'uid';
-
-  /**
-   * THe Plural description of this model
-   *
-   * @var string
-   */
-  public static $plural = 'Users';
-
-  /**
    * This variable will hold a cache of the current user during this transaction
    *
    * @var [type]

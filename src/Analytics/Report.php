@@ -23,20 +23,6 @@ class Report extends Model
   public static $bundle = 'report';
 
   /**
-   * The ID field of this Model
-   *
-   * @var string
-   */
-  public static $idField = 'id';
-
-  /**
-   * The plural description of this model
-   *
-   * @var string
-   */
-  public static $plural = 'Reports';
-
-  /**
    * The Relationships to other models
    *
    * @return void

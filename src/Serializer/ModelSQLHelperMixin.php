@@ -123,7 +123,7 @@ trait ModelSQLHelperMixin
       {
         continue;
       }
-      else if($fieldName === static::$idField)
+      else if($fieldName === static::getIdField())
       {
         $columns[] = static::$entityType.'.'.$fieldName.' AS id';
         continue;
@@ -226,7 +226,7 @@ trait ModelSQLHelperMixin
 
         if($type === 'field_')
         {
-          $joins[$fieldName] = 'LEFT JOIN '.static::$entityType.'__'.$fieldName. ' AS `'.$fieldNamePretty.'` ON `'.$fieldNamePretty.'`.entity_id = `'.static::$entityType.'`.'.static::$idField;
+          $joins[$fieldName] = 'LEFT JOIN '.static::$entityType.'__'.$fieldName. ' AS `'.$fieldNamePretty.'` ON `'.$fieldNamePretty.'`.entity_id = `'.static::$entityType.'`.'.static::getIdField();
         }
         else if($fieldName === 'user_picture')
         {
