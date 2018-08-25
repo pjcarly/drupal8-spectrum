@@ -63,11 +63,11 @@ class ListView extends Model
   }
 
   /**
-   * Returns the FieldDefinition for the entity type of this Listview
+   * Returns the FieldDefinitions for the entity type of this Listview
    *
-   * @return \Drupal\Core\Field\FieldDefinitionInterface
+   * @return array
    */
-  public function getDrupalFieldDefinitions() : \Drupal\Core\Field\FieldDefinitionInterface
+  public function getDrupalFieldDefinitions() : array
   {
     $entityType = $this->entity->field_entity->value;
     $bundle = $this->entity->field_bundle->value;
