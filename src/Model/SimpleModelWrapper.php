@@ -116,19 +116,6 @@ class SimpleModelWrapper
 
           $returnValue = AddressUtils::getAddress($value);
           break;
-        case 'list_string':
-          $alloweValues = $fieldDefinition->getFieldStorageDefinition()->getSetting('allowed_values');
-          $value = $model->entity->get($fieldName)->value;
-
-          if(array_key_exists($value, $alloweValues))
-          {
-            $returnValue = $alloweValues[$value];
-          }
-          else
-          {
-            $returnValue = '';
-          }
-          break;
         case 'created':
         case 'changed':
         case 'timestamp':
