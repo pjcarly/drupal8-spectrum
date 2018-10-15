@@ -134,7 +134,7 @@ trait ModelSQLHelperMixin
       {
         $type = substr($fieldName, 0, 6);
 
-        if($type === 'field_')
+        if($type === 'field_' || $fieldName === 'body')
         {
           // These are fields from a different table (throught the field API) which are joined on the base table
           if(in_array($fieldName, $fieldsFromJoin))
@@ -224,7 +224,7 @@ trait ModelSQLHelperMixin
           continue;
         }
 
-        if($type === 'field_')
+        if($type === 'field_' || $fieldName === 'body')
         {
           $joins[$fieldName] = 'LEFT JOIN '.static::entityType().'__'.$fieldName. ' AS `'.$fieldNamePretty.'` ON `'.$fieldNamePretty.'`.entity_id = `'.static::entityType().'`.'.static::getIdField();
         }
