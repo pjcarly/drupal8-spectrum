@@ -203,10 +203,21 @@ class JsonApiNode extends JsonApiBaseNode
    */
   public function getAttribute(string $name)
   {
-    if(!empty($name) && array_key_exists($name, $this->attributes))
+    if($this->hasAttribute($name))
     {
       return $this->attributes[$name];
     }
+  }
+
+  /**
+   * Checks if this node has an attribute with the provided name
+   *
+   * @param string $name
+   * @return boolean
+   */
+  public function hasAttribute(string $name) : bool
+  {
+    return !empty($name) && array_key_exists($name, $this->attributes);
   }
 
   /**

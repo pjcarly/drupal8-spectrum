@@ -275,6 +275,28 @@ trait ModelSerializerMixin
       case 'link':
         $valueToSerialize = $this->entity->get($fieldName)->uri;
         break;
+      case 'metatag':
+        $meta = $this->entity->get($fieldName)->value;
+        if(!empty($meta)){
+          $meta = unserialize($meta);
+          $value = new \stdClass();
+          // Now we render the tokens
+          $token = \Drupal::service('token');
+          $data = [
+            'node' => $this->entity
+          ];
+          // Loop over all meta information
+          foreach($meta as $key => $metaValue)
+          {
+            if(is_string($metaValue))
+            {
+              $value->$key = strip_tags($token->replace($metaValue, $data));
+            }
+          }
+        }
+
+        $valueToSerialize = $value;
+        break;
       case 'uri':
         // ignore for now, this is used in the deserialization of the file entity, we choose not to return it for now
         //$valueToSerialize = $this->entity->get($fieldName)->value;
