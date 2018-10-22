@@ -125,7 +125,7 @@ trait ModelSQLHelperMixin
       }
       else if($fieldName === static::getIdField())
       {
-        $columns[] = static::entityType().'.'.$fieldName.' AS id';
+        $columns[] = static::entityType().'_data.'.$fieldName.' AS id';
         continue;
       }
 
@@ -156,7 +156,7 @@ trait ModelSQLHelperMixin
         else
         {
           // These fields exist on the base table, we can just include them
-          $columns[] = static::entityType().'.'.$fieldName.' AS `'.$fieldNamePretty.'`';
+          $columns[] = static::entityType().'_data.'.$fieldName.' AS `'.$fieldNamePretty.'`';
         }
       }
     }
@@ -179,10 +179,10 @@ trait ModelSQLHelperMixin
     }
     else if($baseTablePrefix === 'file')
     {
-      return $baseTablePrefix . '_managed AS '.static::entityType();
+      return $baseTablePrefix . '_managed AS '.static::entityType() . '_data';
     }
 
-    return $baseTablePrefix . '_field_data AS '.static::entityType();
+    return $baseTablePrefix . '_field_data AS '.static::entityType() . '_data';
   }
 
   /**
@@ -226,11 +226,11 @@ trait ModelSQLHelperMixin
 
         if($type === 'field_' || $fieldName === 'body')
         {
-          $joins[$fieldName] = 'LEFT JOIN '.static::entityType().'__'.$fieldName. ' AS `'.$fieldNamePretty.'` ON `'.$fieldNamePretty.'`.entity_id = `'.static::entityType().'`.'.static::getIdField();
+          $joins[$fieldName] = 'LEFT JOIN '.static::entityType().'__'.$fieldName. ' AS `'.$fieldNamePretty.'` ON `'.$fieldNamePretty.'`.entity_id = `'.static::entityType().'_data`.'.static::getIdField();
         }
         else if($fieldName === 'user_picture')
         {
-          $joins[$fieldName] = 'LEFT JOIN user__user_picture AS user_picture ON user_picture.entity_id = user.uid';
+          $joins[$fieldName] = 'LEFT JOIN user__user_picture AS user_picture ON user_picture.entity_id = user_data.uid';
         }
       }
     }
@@ -251,7 +251,7 @@ trait ModelSQLHelperMixin
    */
   public static function getViewWhereClause() : ?string
   {
-    return empty(static::bundle()) ? null : static::entityType().'.type = \''. static::bundle().'\'';
+    return empty(static::bundle()) ? null : static::entityType().'_data.type = \''. static::bundle().'\'';
   }
 
   /**
