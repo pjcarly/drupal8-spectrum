@@ -67,16 +67,6 @@ class DateUtils
   }
 
   /**
-   * Returns today at midnight in Unix timestamp
-   *
-   * @return integer
-   */
-  public static function getToday() : int
-  {
-    return strtotime('today midnight');
-  }
-
-  /**
    * Generate a Pattern string for the provided date, and format
    * Dynamic portions of the pattern will be replaced by the value of the passed date
    * {{YYYY}} replaces the year of the date in 4 digits
