@@ -8,7 +8,9 @@ use Symfony\Component\HttpFoundation\Response;
 use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Query\ConditionGroup;
 use Drupal\spectrum\Query\Order;
+use Drupal\spectrum\Query\EntityQuery;
 use Drupal\spectrum\Model\Collection;
+use Drupal\spectrum\Model\Relationship;
 use Drupal\spectrum\Model\FieldRelationship;
 use Drupal\spectrum\Model\ReferencedRelationship;
 use Drupal\spectrum\Model\Model;
@@ -1184,7 +1186,7 @@ class ModelApiHandler extends BaseApiHandler
         {
           // Before anything else, we check if the user has access to the data
           $deepRelationship = $modelClassName::getDeepRelationship($relationshipNameToInclude);
-          $entityQuery = null;
+          $entityQuery = $this->getEntityQueryForIncludedRelationship($deepRelationship, $relationshipNameToInclude);
 
           // Now we check permissions
           if($deepRelationship instanceof FieldRelationship)
@@ -1198,11 +1200,6 @@ class ModelApiHandler extends BaseApiHandler
               foreach($deepRelationship->polymorphicModelTypes as $deepRelationshipModelClassName)
               {
                 // Lets preemtively create an entity query, in order to copy the conditions from later, when it turns out we dont have access to all types
-                if(empty($entityQuery))
-                {
-                  $entityQuery = $deepRelationshipModelClassName::getEntityQuery();
-                }
-
                 if($deepRelationshipModelClassName::userHasReadPermission() && !empty($deepRelationshipModelClassName::bundle()))
                 {
                   $allowedBundles[] = $deepRelationshipModelClassName::bundle();
@@ -1266,7 +1263,7 @@ class ModelApiHandler extends BaseApiHandler
               foreach($fetchedCollection as $model)
               {
                 // watch out, we can't use $relationship->modelType, because that doesn't work for polymorphic relationships
-                $relationshipType = get_class($model);
+                $relationshipType = $model->getModelName();
                 // Here we check if we already fetched data of the same type
                 if(!array_key_exists($relationshipType, $fetchedCollections))
                 {
@@ -1288,7 +1285,7 @@ class ModelApiHandler extends BaseApiHandler
             if(!empty($fetchedModel))
             {
               // watch out, we can't use $relationship->modelType, because that doesn't work for polymorphic relationships
-              $relationshipType = get_class($fetchedModel);
+              $relationshipType = $fetchedModel->getModelName();
               // now we check if we already included objects of the same type
               if(!array_key_exists($relationshipType, $fetchedCollections))
               {
@@ -1315,6 +1312,19 @@ class ModelApiHandler extends BaseApiHandler
     }
 
     return $this;
+  }
+
+  /**
+   * This function gives you the ability to overwrite the base relationship used to query certain included relationships with
+   * This gives you the opportunity to limit the results of certain relationships.
+   *
+   * @param Relationship $relationship The relationship that is being queried
+   * @param string $relationshipPath The full (deep) path of the relationship that was most likely added to the query param in the included array
+   * @return EntityQuery The returned query where all the Conditions, Base Conditions and ConditionGroups will be copied from
+   */
+  protected function getEntityQueryForIncludedRelationship(Relationship $relationship, string $relationshipPath) : EntityQuery
+  {
+    return $relationship->getRelationshipQuery();
   }
 
   /**
