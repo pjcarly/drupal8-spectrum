@@ -9,6 +9,7 @@ use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Query\ConditionGroup;
 use Drupal\spectrum\Query\Order;
 use Drupal\spectrum\Query\EntityQuery;
+use Drupal\spectrum\Query\ModelQuery;
 use Drupal\spectrum\Model\Collection;
 use Drupal\spectrum\Model\Relationship;
 use Drupal\spectrum\Model\FieldRelationship;
@@ -102,6 +103,49 @@ class ModelApiHandler extends BaseApiHandler
     return $this;
   }
 
+
+  /**
+   * Clears all the Base Conditions and Conditions that were added to the model api handler
+   *
+   * @return ModelApiHandler
+   */
+  protected final function clearAllConditions() : ModelApiHandler
+  {
+    $this->conditionGroups = [];
+    $this->baseConditions = [];
+    return $this;
+  }
+
+  /**
+   * This function will add all the Conditions in this ApiHandler to the provided Query
+   *
+   * @param ModelQuery $query The query you want to add the conditions to
+   * @return ModelQuery Returns the same query as the one provided in the parameters
+   */
+  protected final function applyAllConditionsToQuery(ModelQuery $query) : ModelQuery
+  {
+    // We check for base conditions (these are conditions that always need to be applied, regardless of the api)
+    // This can be used to limit the results based on the logged in user, when the user only has access to certain records
+    if(sizeof($this->baseConditions) > 0)
+    {
+      foreach($this->baseConditions as $condition)
+      {
+        $query->addBaseCondition($condition);
+      }
+    }
+
+    // Next we also do the same for the condition groups
+    if(sizeof($this->conditionGroups) > 0)
+    {
+      foreach($this->conditionGroups as $conditionGroup)
+      {
+        $query->addConditionGroup($conditionGroup);
+      }
+    }
+
+    return $query;
+  }
+
   /**
    * This function can be used to change the JsonApi.org result before serializing it and returned in the response.
    *
@@ -190,24 +234,8 @@ class ModelApiHandler extends BaseApiHandler
         }
       }
 
-      // We check for base conditions (these are conditions that always need to be applied, regardless of the api)
-      // This can be used to limit the results based on the logged in user, when the user only has access to certain records
-      if(sizeof($this->baseConditions) > 0)
-      {
-        foreach($this->baseConditions as $condition)
-        {
-          $query->addBaseCondition($condition);
-        }
-      }
-
-      // Next we also do the same for the condition groups
-      if(sizeof($this->conditionGroups) > 0)
-      {
-        foreach($this->conditionGroups as $conditionGroup)
-        {
-          $query->addConditionGroup($conditionGroup);
-        }
-      }
+      // We musn't forget to add all the conditions that were potentially added to this ApiHandler
+      $this->applyAllConditionsToQuery($query);
 
       // Before we fetch the collection, lets check for filters
       if($request->query->has('filter'))
@@ -393,24 +421,8 @@ class ModelApiHandler extends BaseApiHandler
     }
     else
     {
-      // We check for base conditions (these are conditions that always need to be applied, regardless of the api)
-      // This can be used to limit the results based on the logged in user, when the user only has access to certain records
-      if(sizeof($this->baseConditions) > 0)
-      {
-        foreach($this->baseConditions as $condition)
-        {
-          $query->addBaseCondition($condition);
-        }
-      }
-
-      // Next we also do the same for the condition groups
-      if(sizeof($this->conditionGroups) > 0)
-      {
-        foreach($this->conditionGroups as $conditionGroup)
-        {
-          $query->addConditionGroup($conditionGroup);
-        }
-      }
+      // We musn't forget to add all the conditions that were potentially added to this ApiHandler
+      $this->applyAllConditionsToQuery($query);
 
       // Next we add the specific condition for the slug
       $query->addCondition(new Condition($modelClassName::getIdField(), '=', $this->slug));
@@ -788,25 +800,10 @@ class ModelApiHandler extends BaseApiHandler
       $query = $modelClassName::getModelQuery();
       $query->addCondition(new Condition($modelClassName::getIdField(), '=', $jsonapidocument->data->id));
 
-      // We check for base conditions (these are conditions that always need to be applied, regardless of the api)
-      // This can be used to limit the results based on the logged in user, when the user only has access to certain records
-      if(sizeof($this->baseConditions) > 0)
-      {
-        foreach($this->baseConditions as $condition)
-        {
-          $query->addBaseCondition($condition);
-        }
-      }
+      // We musn't forget to add all the conditions that were potentially added to this ApiHandler
+      $this->applyAllConditionsToQuery($query);
 
-      // Next we also do the same for the condition groups
-      if(sizeof($this->conditionGroups) > 0)
-      {
-        foreach($this->conditionGroups as $conditionGroup)
-        {
-          $query->addConditionGroup($conditionGroup);
-        }
-      }
-
+      // Now we have applied all of the Conditions, we can fetch the Model
       $model = $query->fetchSingleModel();
 
       // Only if the model was found in the database can we continue
@@ -1095,25 +1092,10 @@ class ModelApiHandler extends BaseApiHandler
     $query = $modelClassName::getModelQuery();
     $query->addCondition(new Condition($modelClassName::getIdField(), '=', $this->slug));
 
-    // We check for base conditions (these are conditions that always need to be applied, regardless of the api)
-    // This can be used to limit the results based on the logged in user, when the user only has access to certain records
-    if(sizeof($this->baseConditions) > 0)
-    {
-      foreach($this->baseConditions as $condition)
-      {
-        $query->addBaseCondition($condition);
-      }
-    }
+    // We musn't forget to add all the conditions that were potentially added to this ApiHandler
+    $this->applyAllConditionsToQuery($query);
 
-    // Next we also do the same for the condition groups
-    if(sizeof($this->conditionGroups) > 0)
-    {
-      foreach($this->conditionGroups as $conditionGroup)
-      {
-        $query->addConditionGroup($conditionGroup);
-      }
-    }
-
+    // Now that we have applied all the conditions, we can fetch the model
     $model = $query->fetchSingleModel();
 
     // Only if the model was found in the database can we continue
