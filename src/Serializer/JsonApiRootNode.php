@@ -39,7 +39,7 @@ class JsonApiRootNode extends JsonApiDataNode
           $this->addJsonApiNodeToIncludes($jsonapiNode);
         }
       }
-      else
+      else if(!empty($jsonapi->data))
       {
         $this->addJsonApiNodeToIncludes($jsonapi->data);
       }
