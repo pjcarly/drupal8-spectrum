@@ -26,14 +26,9 @@ class JsonApiRootNode extends JsonApiDataNode
    */
   public function addInclude(JsonApiBaseNode $jsonapi) : JsonApiRootNode
   {
-    if(empty($this->included))
-    {
-      $this->included = [];
-    }
-
     if($jsonapi instanceof JsonApiNode)
     {
-      $this->included[] = $jsonapi;
+      $this->addJsonApiNodeToIncludes($jsonapi);
     }
     else if($jsonapi instanceof JsonApiDataNode)
     {
@@ -41,18 +36,37 @@ class JsonApiRootNode extends JsonApiDataNode
       {
         foreach($jsonapi->data as $jsonapiNode)
         {
-          $this->included[] = $jsonapiNode;
+          $this->addJsonApiNodeToIncludes($jsonapiNode);
         }
       }
-      else
+      else if(!empty($jsonapi->data))
       {
-        $this->included[] = $jsonapi->data;
+        $this->addJsonApiNodeToIncludes($jsonapi->data);
       }
     }
     else
     {
       throw new InvalidTypeException();
     }
+
+    return $this;
+  }
+
+  /**
+   * Adds a JsonApiNode to the Included hash. In case the Key/Type combination already exists, the existing node will be overriden. That way no records will be in the serialized hash
+   *
+   * @param JsonApiNode $node
+   * @return JsonApiRootNode
+   */
+  private function addJsonApiNodeToIncludes(JsonApiNode $node) : JsonApiRootNode
+  {
+    if(empty($this->included))
+    {
+      $this->included = [];
+    }
+
+    $key = $node->getId() . $node->getType();
+    $this->included[$key] = $node;
 
     return $this;
   }
