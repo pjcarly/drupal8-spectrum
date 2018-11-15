@@ -4,3 +4,7 @@ services:
     class: Drupal\spectrum\Template\TwigFilters
     tags:
       - { name: twig.extension }
+  spectrum.model_store:
+    class: Drupal\spectrum\Services\ModelStore
+    arguments: []
+
