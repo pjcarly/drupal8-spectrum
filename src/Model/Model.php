@@ -21,6 +21,7 @@ use Drupal\spectrum\Exceptions\InvalidFieldException;
 use Drupal\spectrum\Utils\StringUtils;
 use Drupal\spectrum\Permissions\PermissionServiceInterface;
 use Drupal\spectrum\Models\User;
+use Drupal\spectrum\Services\ModelStoreInterface;
 
 /**
  * A Model is a wrapper around a Drupal Entity, which provides extra functionality. and an easy way of fetching and saving it to the database.
@@ -1970,6 +1971,30 @@ abstract class Model
     }
 
     return $modelService;
+  }
+
+  /**
+   * Returns the registered ModelStore
+   *
+   * @return ModelStoreInterface
+   */
+  public static function getModelStore() : ModelStoreInterface
+  {
+    $modelStore = \Drupal::service('spectrum.model_store');
+    return $modelStore;
+  }
+
+  /**
+   * Find a Model in the DataStore by the fieldName and value
+   *
+   * @param string $fieldName
+   * @param string $value
+   * @return Model|null
+   */
+  public static function findInStoreByFieldValue(string $fieldName, string $value = null) : ?Model
+  {
+    $modelStore = static::getModelStore();
+    return $modelStore->getByFieldValue(get_called_class(), $fieldName, $value);
   }
 
   /**
