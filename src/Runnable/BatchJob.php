@@ -7,6 +7,42 @@ use Drupal\spectrum\Model\Model;
 
 abstract class BatchJob extends QueuedJob
 {
+  /**
+   * {@inheritdoc}
+   */
+  public static function scheduleBatch(string $jobName, string $variable = '', \DateTime $date = null, int $batchSize = null) : BatchJob
+  {
+    $registeredJob = RegisteredJob::getByKey($jobName);
+
+    if(empty($registeredJob))
+    {
+      throw new \Exception('Regisered Job ('.$jobName.') not found');
+    }
+
+    if(empty($date))
+    {
+      $utc = new \DateTimeZone('UTC');
+      $date = new \DateTime();
+      $date->setTimezone($utc);
+    }
+
+    $queuedJob = $registeredJob->createJobInstance();
+    $queuedJob->entity->title->value = $jobName;
+
+    if(!empty($variable))
+    {
+      $queuedJob->entity->field_variable->value = $variable;
+    }
+
+    $queuedJob->entity->field_batch_size->value = $batchSize;
+    $queuedJob->entity->field_minutes_to_failure->value = 10;
+    $queuedJob->entity->field_scheduled_time->value = $date->format('Y-m-d\TH:i:s');
+    $queuedJob->put('job', $registeredJob);
+    $queuedJob->save();
+
+    return $queuedJob;
+  }
+
   public final function execute() : void
   {
     $batchable = $this->getBatchable();

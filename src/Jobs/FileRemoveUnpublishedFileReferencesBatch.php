@@ -27,7 +27,7 @@ class FileRemoveUnpublishedFileReferencesBatch extends BatchJob
    */
   protected function processBatch(array $batch) : void
   {
-    $files = Collection::forgeByEntities('Drupal\spectrum\Models\File', $batch);
+    $files = Collection::forgeByEntities(File::class, $batch);
     foreach($files as $file)
     {
       $file->removeFromReferences();
