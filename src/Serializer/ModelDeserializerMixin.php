@@ -113,7 +113,7 @@ trait ModelDeserializerMixin
 
                       if(!empty($fileIds))
                       {
-                        $filesCollection = Collection::forgeByIds('\Drupal\spectrum\Models\File', $fileIds);
+                        $filesCollection = Collection::forgeByIds(File::class, $fileIds);
 
                         if(!$filesCollection->isEmpty)
                         {
