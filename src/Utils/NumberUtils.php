@@ -28,13 +28,18 @@ class NumberUtils
   }
 
   /**
-   * Returns a Decimal (float) value of the passed Money object
+   * Returns a Decimal (float) value of the passed Money object, if the passed in money object is null, then 0 will be returned
    *
    * @param Money $money
    * @return float
    */
-  public static function getDecimal(Money $money) : float
+  public static function getDecimal(?Money $money) : float
   {
+    if(empty($money))
+    {
+      return 0;
+    }
+
     $currencies = new ISOCurrencies();
     $moneyFormatter = new DecimalMoneyFormatter($currencies);
 
