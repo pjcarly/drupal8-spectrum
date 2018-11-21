@@ -97,7 +97,7 @@ class QueuedJob extends RunnableModel
 
     if(empty($registeredJob))
     {
-      throw new \Exception('Regisered Job ('.$jobName.') not found');
+      throw new \Exception('Registered Job ('.$jobName.') not found');
     }
 
     if(empty($date))

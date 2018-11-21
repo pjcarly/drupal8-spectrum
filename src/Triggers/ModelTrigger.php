@@ -22,6 +22,11 @@ class ModelTrigger
     $entityType = $entity->getEntityTypeId();
     $bundle = $entity->bundle();
 
+    if(!\Drupal::hasService('spectrum.model'))
+    {
+      return;
+    }
+
     if(Model::hasModelClassForEntityAndBundle($entityType, $bundle))
     {
       $modelClass = Model::getModelClassForEntityAndBundle($entityType, $bundle);
