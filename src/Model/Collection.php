@@ -647,11 +647,6 @@ class Collection implements \IteratorAggregate, \Countable
       }
 
       $this->addModelToModels($model);
-
-      if($includeInOriginalModels)
-      {
-        $this->addModelToOriginalModels($model);
-      }
     }
     else
     {
