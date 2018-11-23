@@ -306,7 +306,8 @@ class Collection implements \IteratorAggregate, \Countable
               // we can finally forge a new model
               $referencedModel = $referencedModelType::forgeByEntity($referencedEntity);
               // and put it in the collection created above
-              $returnValue = $referencedCollection->put($referencedModel, true);
+              $referencedCollection->putOriginal($referencedModel);
+              $returnValue = $referencedCollection->put($referencedModel);
             }
 
             static::putReferencedCollectionOnReferencingCollection($relationship, $referencedRelationship, $this, $referencedCollection);
@@ -360,7 +361,8 @@ class Collection implements \IteratorAggregate, \Countable
 
               // now that we have a model, lets put them one by one
               $referencingModel = $referencingModelType::forgeByEntity($referencingEntity);
-              $returnValue = $referencingCollection->put($referencingModel, true);
+              $referencingCollection->putOriginal($referencingModel);
+              $returnValue = $referencingCollection->put($referencingModel);
             }
           }
 
@@ -608,7 +610,8 @@ class Collection implements \IteratorAggregate, \Countable
   {
     foreach($models as $model)
     {
-      $this->put($model, TRUE);
+      $this->put($model);
+      $this->putOriginal($model);
     }
 
     return $this;
@@ -618,19 +621,24 @@ class Collection implements \IteratorAggregate, \Countable
    * Put a Model or Collection in this Collection
    *
    * @param Model|Collection $objectToPut
-   * @param boolean $includeInOriginalModels Indicate whether the Model needs to be added to the originalModels array (default false)
    * @return Collection
    */
-  public function put($objectToPut, bool $includeInOriginalModels = FALSE) : Collection
+  public function put($objectToPut) : Collection
   {
     if($objectToPut instanceof Collection)
     {
       foreach($objectToPut as $model)
       {
-        $this->put($model, $includeInOriginalModels);
+        $this->put($model);
+      }
+
+      // Lets loop over the original models as well, we can potentially have original models that arent in the model list.
+      foreach($objectToPut->originalModels as $originalModel)
+      {
+        $this->putOriginal($originalModel);
       }
     }
-    else
+    else if($objectToPut instanceof Model)
     {
       $model = $objectToPut;
       if(!($model instanceof $this->modelType))
@@ -638,11 +646,56 @@ class Collection implements \IteratorAggregate, \Countable
         throw new InvalidTypeException('Model is not of type: '.$this->modelType);
       }
 
-      $this->addModelToArrays($model, $includeInOriginalModels);
+      $this->addModelToModels($model);
+
+      if($includeInOriginalModels)
+      {
+        $this->addModelToOriginalModels($model);
+      }
+    }
+    else
+    {
+      throw new InvalidTypeException('Only objects of type Collection or Model can be put');
     }
 
     return $this; // we need this to chain fetches, when we put something, we always return the value where the model is being put on, in case of a collection, it is always the collection itself
   }
+
+  /**
+   * Put a Model or Collection in this Collection's originalModels
+   *
+   * @param Model|Collection $objectToPut
+   * @return Collection
+   */
+  public function putOriginal($objectToPut) : Collection
+  {
+    if($objectToPut instanceof Collection)
+    {
+      foreach($objectToPut as $model)
+      {
+        $this->putOriginal($model);
+      }
+    }
+    else if($objectToPut instanceof Model)
+    {
+      $model = $objectToPut;
+      if(!($model instanceof $this->modelType))
+      {
+        throw new InvalidTypeException('Model is not of type: '.$this->modelType);
+      }
+
+      $this->addModelToOriginalModels($model);
+
+    }
+    else
+    {
+      throw new InvalidTypeException('Only objects of type Collection or Model can be put');
+    }
+
+    return $this; // we need this to chain fetches, when we put something, we always return the value where the model is being put on, in case of a collection, it is always the collection itself
+  }
+
+
 
   /**
    * Create a new Model with the same type as this Collection, put it in the Collection and return it
@@ -661,19 +714,29 @@ class Collection implements \IteratorAggregate, \Countable
    * Add a Model to the model array
    *
    * @param Model $model
-   * @param boolean $includeInOriginalModels Indicate whether the Model needs to be added to the originalModels array (default false)
    * @return Collection
    */
-  protected function addModelToArrays(Model $model, bool $includeInOriginalModels = FALSE) : Collection
+  protected function addModelToModels(Model $model) : Collection
   {
     if(!array_key_exists($model->key, $this->models))
     {
       $this->models[$model->key] = $model;
+    }
 
-      if($includeInOriginalModels)
-      {
-        $this->originalModels[$model->key] = $model;
-      }
+    return $this;
+  }
+
+  /**
+   * Add the provided model to the Original Models array
+   *
+   * @param Model $model
+   * @return Collection
+   */
+  protected function addModelToOriginalModels(Model $model) : Collection
+  {
+    if(!array_key_exists($model->key, $this->originalModels))
+    {
+      $this->originalModels[$model->key] = $model;
     }
 
     return $this;

@@ -759,7 +759,13 @@ abstract class Model
 
             // we put the model on the collection
             $collection = $this->relatedViaFieldOnEntity[$relationship->relationshipName];
-            $collection->put($objectToPut, $includeInOriginalModels);
+            $collection->put($objectToPut);
+
+            if($includeInOriginalModels)
+            {
+              $collection->putOriginal($objectToPut);
+            }
+
             $returnValue = $collection;
 
             // and also append the entity field with the value (append because there can be multiple items)
@@ -799,7 +805,13 @@ abstract class Model
         }
 
         $collection = $this->relatedViaFieldOnExternalEntity[$relationship->relationshipName];
-        $collection->put($objectToPut, $includeInOriginalModels);
+        $collection->put($objectToPut);
+
+        if($includeInOriginalModels)
+        {
+          $collection->putOriginal($objectToPut);
+        }
+
         $returnValue = $collection;
       }
     }

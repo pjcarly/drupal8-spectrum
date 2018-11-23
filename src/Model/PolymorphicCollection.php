@@ -73,10 +73,9 @@ class PolymorphicCollection extends Collection
    * For Example, you can put a "node_article" and a "node_basic_page" in the same Polymorphic Collection, but no "node_article" and a "user"
    *
    * @param object $objectToPut
-   * @param boolean $includeInOriginalModels
    * @return Collection
    */
-  public function put($objectToPut, bool $includeInOriginalModels = FALSE) : Collection
+  public function put($objectToPut) : Collection
   {
     if($objectToPut instanceof Collection)
     {
@@ -100,8 +99,47 @@ class PolymorphicCollection extends Collection
 
       // due to the the shared entity constraint, the key of polymorphic collections is unique,
       // because in drupal ids are unique over different bundles withing the same entity
-      // so we can just use the parent addModelToArrays function, we won't have any conflicts there
-      $this->addModelToArrays($model, $includeInOriginalModels);
+      // so we can just use the parent addModelToModels and addModelToOriginalModels function, we won't have any conflicts there
+      $this->addModelToModels($model);
+    }
+
+    return $this;
+  }
+
+  /**
+   * Puts a new Model or a Collection in a Polymorphic Collection, these can be different model types, however they must be of the same Entity.
+   * In Drupal an Entity Reference field, can reference every bundle in the same Entity, but not different Entities.
+   * For Example, you can put a "node_article" and a "node_basic_page" in the same Polymorphic Collection, but no "node_article" and a "user"
+   *
+   * @param object $objectToPut
+   * @return Collection
+   */
+  public function putOriginal($objectToPut) : Collection
+  {
+    if($objectToPut instanceof Collection)
+    {
+      foreach($objectToPut as $model)
+      {
+        $this->putOriginal($model);
+      }
+    }
+    else
+    {
+      $model = $objectToPut;
+      // it is only possible to have models with a shared entity in a collection
+      if(empty($this->entityType))
+      {
+        $this->entityType = $model::entityType();
+      }
+      else if($this->entityType !== $model::entityType())
+      {
+        throw new PolymorphicException('Only models with a shared entity type are allowed in a polymorphic collection');
+      }
+
+      // due to the the shared entity constraint, the key of polymorphic collections is unique,
+      // because in drupal ids are unique over different bundles withing the same entity
+      // so we can just use the parent addModelToModels and addModelToOriginalModels function, we won't have any conflicts there
+      $this->addModelToOriginalModels($model);
     }
 
     return $this;
