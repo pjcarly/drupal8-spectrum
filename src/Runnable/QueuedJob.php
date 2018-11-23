@@ -240,4 +240,25 @@ class QueuedJob extends RunnableModel
 
     $this->save();
   }
+
+  public final function runtimeError(\Error $error): void
+  {
+    // Execution failed, set the status to failed
+    // Set a possible error message
+
+    $currentTime = gmdate('Y-m-d\TH:i:s');
+    $this->print('Job with ID: '.$this->getId().' generated RUNTIME ERROR at '.$currentTime . ' ('.$this->entity->title->value.')');
+
+    $this->entity->field_job_status->value = 'Failed';
+    $this->entity->field_end_time->value = $currentTime;
+
+    $message = $error->getMessage();
+    $message = '('.$message . ') ' . $error->getTraceAsString();
+
+    \Drupal::logger('spectrum_cron')->error($error->getMessage());
+    \Drupal::logger('spectrum_cron')->error($error->getTraceAsString());
+
+    $this->entity->field_error_message->value = $message;
+    $this->save();
+  }
 }

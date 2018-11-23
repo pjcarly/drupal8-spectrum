@@ -6,7 +6,7 @@ use Drupal\spectrum\Model\FieldRelationship;
 
 /**
  * The standard implementation class of All Runnable models. The scheduler will call the run() method on this class.
- * Every implementation should provide implement preExecution, execute, postExecution and failedExecution
+ * Every implementation should provide implement preExecution, execute, postExecution, failedExecution and runtimeError
  */
 abstract class RunnableModel extends Model
 {
@@ -42,6 +42,10 @@ abstract class RunnableModel extends Model
     catch(\Exception $ex)
     {
       $this->failedExecution($ex);
+    }
+    catch(\Error $error)
+    {
+      $this->runtimeError($error);
     }
   }
 
@@ -79,4 +83,5 @@ abstract class RunnableModel extends Model
   abstract function execute() : void;
   abstract function postExecution() : void;
   abstract function failedExecution(\Exception $ex = null, string $message = null) : void;
+  abstract function runtimeError(\Error $error) : void;
 }
