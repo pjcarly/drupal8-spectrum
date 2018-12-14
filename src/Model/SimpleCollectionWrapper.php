@@ -68,7 +68,7 @@ class SimpleCollectionWrapper implements \IteratorAggregate
     {
       return $this->collection->$property;
     }
-    else // lets check for pseudo properties
+    else if(in_array($property, ['size', 'isEmpty', 'entities']))// lets check for pseudo properties
     {
       switch($property)
       {
@@ -83,6 +83,11 @@ class SimpleCollectionWrapper implements \IteratorAggregate
           break;
       }
     }
+    else if($this->collection->hasRelationship($property))
+    {
+      $collection = $this->collection->get($property);
+      return new SimpleCollectionWrapper($collection);
+    }
   }
 
   /**
@@ -94,6 +99,8 @@ class SimpleCollectionWrapper implements \IteratorAggregate
   public function __isset($property)
   {
     // Needed for twig to be able to access relationship via magic getter
-    return property_exists($this->collection, $property) || in_array($property, ['size', 'isEmpty', 'entities']);
+    return property_exists($this->collection, $property)
+      || in_array($property, ['size', 'isEmpty', 'entities'])
+      || $this->collection->hasRelationship($property);
   }
 }
