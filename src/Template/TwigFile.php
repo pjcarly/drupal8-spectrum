@@ -45,6 +45,14 @@ class TwigFile
    */
   public function __construct(string $path)
   {
+
+    if (!file_exists($path)) {
+      $exception = strtr('File \'@file\' does not exist.', [
+        '@file' => $path,
+      ]);
+      throw new \InvalidArgumentException($exception);
+    }
+
     $fileContent = file_get_contents($path);
     if($fileContent)
     {
