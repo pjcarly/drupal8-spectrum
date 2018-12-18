@@ -647,11 +647,6 @@ class Collection implements \IteratorAggregate, \Countable
       }
 
       $this->addModelToModels($model);
-
-      if($includeInOriginalModels)
-      {
-        $this->addModelToOriginalModels($model);
-      }
     }
     else
     {
@@ -1017,5 +1012,18 @@ class Collection implements \IteratorAggregate, \Countable
   public function getModelType() : string
   {
     return $this->modelType;
+  }
+
+  /**
+   * Checks if the modeltype of the collection has the provided relationship
+   *
+   * @param string $relationshipName
+   * @return boolean
+   */
+  public function hasRelationship(string $relationshipName) : bool
+  {
+    $modelType = $this->getModelType();
+
+    return $modelType::hasRelationship($relationshipName);
   }
 }

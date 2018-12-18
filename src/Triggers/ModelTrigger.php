@@ -19,13 +19,14 @@ class ModelTrigger
    */
   public static function handle(EntityInterface $entity, string $trigger) : void
   {
-    $entityType = $entity->getEntityTypeId();
-    $bundle = $entity->bundle();
-
     if(!\Drupal::hasService('spectrum.model'))
     {
+      // Model Service not yet initialized, we skip the triggers, no need to check for models
       return;
     }
+
+    $entityType = $entity->getEntityTypeId();
+    $bundle = $entity->bundle();
 
     if(Model::hasModelClassForEntityAndBundle($entityType, $bundle))
     {

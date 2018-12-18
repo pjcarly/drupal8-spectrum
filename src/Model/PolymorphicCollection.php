@@ -167,4 +167,16 @@ class PolymorphicCollection extends Collection
   {
     throw new PolymorphicException('Get has no meaning for polymorphic collections');
   }
+
+  /**
+   * @deprecated
+   * Checking if a relationship exists on a Polymorphic Collection has no meaning, it will throw an Exception
+   *
+   * @param string $relationshipName
+   * @return boolean
+   */
+  public function hasRelationship(string $relationshipName) : bool
+  {
+    throw new PolymorphicException('hasRelationship has no meaning for polymorphic collections');
+  }
 }
