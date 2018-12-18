@@ -11,6 +11,18 @@ use Drupal\Component\Transliteration\PhpTransliteration;
 class StringUtils
 {
   /**
+   * Checks if a provided string has String values
+   *
+   * @param string $input
+   * @return boolean
+   */
+  public static function hasAlphaCharacters(string $input) : bool
+  {
+    // @FLW: Bart: Regexen da is toch alsan geestig he
+    return preg_match('/^[a-zA-Z]/', $input) === 1;
+  }
+
+  /**
    * Returns a PNR safe string version of the input string
    *
    * @param string $input
