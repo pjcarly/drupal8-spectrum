@@ -227,8 +227,7 @@ class QueuedJob extends RunnableModel
       {
         $message = '('.$message . ') ' . $ex->getTraceAsString();
 
-        \Drupal::logger('spectrum_cron')->error($ex->getMessage());
-        \Drupal::logger('spectrum_cron')->error($ex->getTraceAsString());
+        \Drupal::logger('spectrum_cron')->error($ex->getMessage() . ' ' . $ex->getTraceAsString());
       }
 
       $this->entity->field_error_message->value = $message;
