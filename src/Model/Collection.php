@@ -107,6 +107,23 @@ class Collection implements \IteratorAggregate, \Countable
   }
 
   /**
+   * This function loads the translation on all the models in this collection, the first found translation will be used on the model. In case no translation is found, the default language will be loaded
+   * If not all models have a translation, it is possible that you get models in different languages
+   *
+   * @param String[] $languageCodes an array containing the languagecodes you want to load on the entity
+   * @return Collection
+   */
+  public function loadTranslation(array $languageCodes) : Collection
+  {
+    foreach($this->models as $model)
+    {
+      $model->loadTranslation($languageCodes);
+    }
+
+    return $this;
+  }
+
+  /**
    * Sort the collection according to a sorting function on the implemented Models
    *
    * @param string $sortingFunction

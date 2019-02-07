@@ -1123,6 +1123,12 @@ abstract class Model
     }
 
     $fieldDefinition = static::getFieldDefinition($fieldName);
+
+    if(empty($fieldDefinition))
+    {
+      throw new \Error('Field definition for '.$fieldName.' not found, field does not exists?');
+    }
+
     $newAttribute = $this->entity->$fieldName;
     $oldAttribute = $this->entity->original->$fieldName;
 
@@ -1928,6 +1934,32 @@ abstract class Model
   }
 
   /**
+   * This function loads the translations, the first found translation will be used on the entity. In case no translation is found, the default language will be loaded
+   *
+   * @param String[] $languageCodes an array containing the languagecodes you want to load on the entity
+   * @return Model
+   */
+  public function loadTranslation(array $languageCodes) : Model
+  {
+    if(empty($languageCodes) || !$this->entity->isTranslatable())
+    {
+      return $this;
+    }
+
+    foreach($languageCodes as $languageCode)
+    {
+      if($this->entity->hasTranslation($languageCode))
+      {
+        $translatedEntity = $this->entity->getTranslation($languageCode);
+        $this->setEntity($translatedEntity);
+        break;
+      }
+    }
+
+    return $this;
+  }
+
+  /**
    * Checks if there is a Model Class defined for the Entity / Bundle
    *
    * @param string $entity
@@ -2185,5 +2217,29 @@ abstract class Model
   public static function userHasDeletePermission() : bool
   {
     return static::currentUserHasPermission('D');
+  }
+
+  /**
+   * Get the entity that was wrapped by this Model
+   *
+   * @return  EntityInterface
+   */
+  public function getEntity() : EntityInterface
+  {
+    return $this->entity;
+  }
+
+  /**
+   * Set the entity that was wrapped by this Model
+   *
+   * @param  EntityInterface  $entity  The entity that was wrapped by this Model
+   *
+   * @return  self
+   */
+  public function setEntity(EntityInterface $entity) : Model
+  {
+    $this->entity = $entity;
+
+    return $this;
   }
 }

@@ -158,6 +158,18 @@ class ModelApiHandler extends BaseApiHandler
   }
 
   /**
+   * This method adds a hook for the Get Request, where an implenentation can choose to alter the query just before the fetch is executed
+   * The query returned will be executed
+   *
+   * @param ModelQuery $query
+   * @return ModelQuery
+   */
+  protected function beforeGetFetch(ModelQuery $query) : ModelQuery
+  {
+    return $query;
+  }
+
+  /**
    * This method executes get functionality for the Rest call. If a slug is provided, 1 result will be fetched from the database
    * If no slug was provided a list of results will be returend.
    * Permissions to the API will be checked, and fields will be filtered to only include the fields where the user has access to
@@ -286,10 +298,18 @@ class ModelApiHandler extends BaseApiHandler
 
       // Here we build the links of the request
       $this->addSingleLink($jsonapi, 'self', $baseUrl, $limit, $page, $sort); // here we add the self link
+
+      // We call the GetFetch Hook, where an implementation can potentially alter the query
+      $query = $this->beforeGetFetch($query);
+
+      // And finally fetch the model
       $result = $query->fetchCollection();
 
       if(!$result->isEmpty)
       {
+        // We load the translations on the response
+        $this->loadLanguages($request, $result);
+
         // we must include pagination links when there are more than the maximum amount of results
         if($result->size === $this->maxLimit)
         {
@@ -426,11 +446,19 @@ class ModelApiHandler extends BaseApiHandler
 
       // Next we add the specific condition for the slug
       $query->addCondition(new Condition($modelClassName::getIdField(), '=', $this->slug));
+
+      // We call the GetFetch Hook, where an implementation can potentially alter the query
+      $query = $this->beforeGetFetch($query);
+
+      // And finally fetch the model
       $result = $query->fetchSingleModel();
 
       $this->addSingleLink($jsonapi, 'self', $baseUrl);
       if(!empty($result))
       {
+        // We load the translations on the result
+        $this->loadLanguages($request, $result);
+
         // Lets check for our includes
         $includes = [];
         // The url might define includes
@@ -474,6 +502,19 @@ class ModelApiHandler extends BaseApiHandler
   protected function serialize(JsonApiRootNode $jsonapi) : \stdClass
   {
     return $jsonapi->serialize();
+  }
+
+
+  /**
+   * Loads the Languages from the Request Accept-Language Headers on the Collection or Model that should be returned in the response
+   *
+   * @param Request $request
+   * @param Collection|Model $object
+   * @return void
+   */
+  protected function loadLanguages(Request $request, $object)
+  {
+    $object->loadTranslation($request->getLanguages());
   }
 
   /**
@@ -557,7 +598,7 @@ class ModelApiHandler extends BaseApiHandler
       $noneDefaultKeys = JsonApiRootNode::getNoneDefaultDataKeys($jsonapidocument);
       foreach($noneDefaultKeys as $noneDefaultKey)
       {
-        // It's not because there is a key in the json api document that isn't default,
+        // It's not because there is a key in the json api document that it isn't default,
         // that we can just assume it's in included relationship
         // The relationship must also be defined in the embeddedApiRelationships array on the model
         if(array_key_exists($noneDefaultKey, static::$embeddedApiRelationships))
@@ -809,6 +850,9 @@ class ModelApiHandler extends BaseApiHandler
       // Only if the model was found in the database can we continue
       if(!empty($model))
       {
+        // We load the translations on the result
+        $this->loadLanguages($request, $model);
+
         // We make a copy before applying changes, because we might need the original values in the hooks later on
         $originalModel = $model->getClonedModel();
         // here we fill in the attributes on the new model from the json api document

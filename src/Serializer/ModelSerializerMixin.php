@@ -28,7 +28,35 @@ trait ModelSerializerMixin
    */
   public static function getIgnoreFields() : array
   {
-    return ['type', 'revision_log', 'vid', 'revision_timestamp', 'revision_uid', 'revision_log', 'revision_translation_affected', 'revision_translation_affected', 'default_langcode', 'path', 'content_translation_source', 'content_translation_outdated', 'pass', 'uuid', 'langcode', 'metatag', 'field_meta_tags', 'menu_link', 'roles', 'preferred_langcode', 'preferred_admin_langcode', 'revision_default'];
+    return [
+      'type',
+      'revision_log',
+      'vid',
+      'revision_timestamp',
+      'revision_uid',
+      'revision_log',
+      'revision_translation_affected',
+      'revision_translation_affected',
+      'revision_default',
+      'revision_id',
+      'revision_created',
+      'path',
+      'default_langcode',
+      'content_translation_source',
+      'content_translation_outdated',
+      'content_translation_created',
+      'content_translation_uid',
+      'preferred_langcode',
+      'preferred_admin_langcode',
+      'langcode',
+      'pass',
+      'uuid',
+      'metatag',
+      'field_meta_tags',
+      'menu_link',
+      'roles',
+      'reusable'
+    ];
   }
 
   /**
