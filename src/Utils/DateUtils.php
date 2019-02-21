@@ -27,8 +27,7 @@ class DateUtils
     $month = $dateMonthAndDay[0];
     $fullDateString = static::getNextDateStringForDayAndMonth($day, $month);
 
-    $date = new DateTime($fullDateString.'T'.$time.(empty($timezone) ? '' : '+'.$timezone));
-    $date->setTimezone(new DateTimeZone('UTC'));
+    $date = new DateTime($fullDateString.'T'.$time.(empty($timezone) ? '' : '+'.$timezone), new DateTimeZone('UTC'));
     return $date;
   }
 
