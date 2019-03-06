@@ -1,4 +1,5 @@
 <?php
+
 namespace Drupal\spectrum\Template;
 
 use Drupal\spectrum\Model\SimpleModelWrapper;

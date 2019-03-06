@@ -2,8 +2,8 @@
 
 namespace Drupal\spectrum\Query;
 
-use Drupal\Core\Entity\Query\QueryInterface;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\Query\QueryInterface;
 use Drupal\spectrum\Runnable\BatchableInterface;
 
 /**

@@ -2,7 +2,9 @@
 
 namespace Drupal\spectrum\Email;
 
+use Drupal\spectrum\Model\Collection;
 use Drupal\spectrum\Model\Model;
+use Drupal\spectrum\Model\SimpleCollectionWrapper;
 use Drupal\spectrum\Query\ModelQuery;
 use Drupal\spectrum\Query\Condition;
 
@@ -73,6 +75,13 @@ class EmailTemplate extends Model
     return $this;
   }
 
+  public function addCollectionToScope(string $name, Collection $collection) : EmailTemplate
+  {
+    $this->scope[$name] = new SimpleCollectionWrapper($collection);
+
+    return $this;
+  }
+
   /**
    * Add a generic object to the scope of this email template, properties on this object can be used in the email template
    *
@@ -117,4 +126,56 @@ class EmailTemplate extends Model
     $query->addCondition(new Condition('field_key', '=', $key));
     return $query->fetchSingleModel();
   }
+
+  /**
+   * @return string
+   */
+  public function getSubject() : string
+  {
+    return $this->subject;
+  }
+
+  /**
+   * @param string $subject
+   */
+  public function setSubject(string $subject) : void
+  {
+    $this->subject = $subject;
+    $this->entity->field_subject->value = $subject;
+  }
+
+  /**
+   * @return string
+   */
+  public function getHtml() : string
+  {
+    return $this->html;
+  }
+
+  /**
+   * @param string $html
+   */
+  public function setHtml(string $html) : void
+  {
+    $this->html = $html;
+    $this->entity->field_html_body->value = $html;
+  }
+
+  /**
+   * @return string
+   */
+  public function getText() : string
+  {
+    return $this->text;
+  }
+
+  /**
+   * @param string $text
+   */
+  public function setText(string $text) : void
+  {
+    $this->text = $text;
+    $this->entity->field_text_body->value = $text;
+  }
+
 }

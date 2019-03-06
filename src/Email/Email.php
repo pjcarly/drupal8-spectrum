@@ -2,8 +2,7 @@
 
 namespace Drupal\spectrum\Email;
 
-use Drupal\spectrum\Model\Model;
-use Drupal\spectrum\Email\EmailTemplate;
+use Drupal\Core\Site\Settings;
 use Drupal\spectrum\Exceptions\EmailException;
 
 class Email
@@ -11,7 +10,7 @@ class Email
   /**
    * The template that will be used to send this email with
    *
-   * @var string
+   * @var \Drupal\spectrum\Email\EmailTemplate
    */
   private $template;
 
@@ -104,9 +103,24 @@ class Email
   }
 
   /**
-   * Send the email
-   *
-   * @return Email
+   * @return string
+   */
+  public function getHtml() : string
+  {
+    return $this->template->render()->html;
+  }
+
+  /**
+   * @return string
+   */
+  public function getText() : string
+  {
+    return $this->template->render()->text;
+  }
+
+  /**
+   * @return \Drupal\spectrum\Email\Email
+   * @throws \Drupal\spectrum\Exceptions\EmailException
    */
   public function send() : Email
   {
@@ -178,7 +192,7 @@ class Email
           ]
         ]);
 
-        $toAddresses = $this->toAddresses;
+        $toAddresses = Settings::get('spectrum_email_to') ?? $this->toAddresses;
         $fromAddress = $this->fromAddress;
         $fromName = $this->fromName;
         $replyTo = $this->replyTo;
@@ -213,7 +227,7 @@ class Email
           $payload['ReplyToAddresses'] = [$replyTo];
         }
 
-        $result = $client->sendEmail($payload);
+        $client->sendEmail($payload);
       }
       else
       {

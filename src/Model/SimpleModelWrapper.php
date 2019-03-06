@@ -43,6 +43,13 @@ class SimpleModelWrapper
   }
 
   /**
+   * @inheritDoc
+   */
+  public function __call($name, $arguments) {
+    return call_user_func_array([$this->entity, $name], $arguments);
+  }
+
+  /**
    * Get a value from the model
    *
    * @param string $underscoredField This should be the underscored field name, as twig templates cant handle dashes. use first_name instead of first-name
@@ -138,8 +145,7 @@ class SimpleModelWrapper
             }
             else if($fieldSettingsDatetimeType === 'datetime')
             {
-              $dateValue = new \DateTime($attributeValue);
-              $dateValue->setTimezone(new \DateTimeZone('UTC'));
+              $dateValue = new \DateTime($attributeValue, new \DateTimeZone('UTC'));
             }
           }
 

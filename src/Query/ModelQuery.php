@@ -2,8 +2,9 @@
 
 namespace Drupal\spectrum\Query;
 
-use Drupal\spectrum\Model\Model;
+use Drupal\gds\Data\ChunkedIterator;
 use Drupal\spectrum\Model\Collection;
+use Drupal\spectrum\Model\Model;
 
 /**
  * The ModelQuery is an extension of a regular query, with extra methods to either directly return a Model or a Collection
@@ -35,6 +36,20 @@ class ModelQuery extends BundleQuery
   {
     $entities = $this->fetch();
     return Collection::forgeByEntities($this->modelType, $entities);
+  }
+
+  /**
+   * @return \Generator
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+   */
+  public function fetchGenerator(): \Generator {
+    $storage = \Drupal::entityTypeManager()->getStorage($this->entityType);
+    $entities = new ChunkedIterator($storage, $this->fetchIds());
+
+    foreach ($entities as $entity) {
+      yield $this->modelType::forgeByEntity($entity);
+    }
   }
 
   /**
