@@ -2,6 +2,7 @@
 
 namespace Drupal\spectrum\Model;
 
+use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Model\Collection;
 use Drupal\spectrum\Model\SimpleCollectionWrapper;
@@ -109,7 +110,8 @@ class SimpleModelWrapper
           if(!empty($fileId))
           {
             $returnValue = File::forgeById($fileId);
-            $returnValue = new File($returnValue->entity); // TODO File/Image model fix
+            // TODO File/Image model fix
+            $returnValue = new File($returnValue->entity);
           }
           break;
         case 'uri':
@@ -126,7 +128,8 @@ class SimpleModelWrapper
         case 'created':
         case 'changed':
         case 'timestamp':
-          // for some reason, created and changed aren't regular datetimes, they are unix timestamps in the database
+          // For some reason, created and changed aren't regular datetimes, they
+          // are unix timestamps in the database.
           $timestamp = $model->entity->get($fieldName)->value;
           $returnValue = \DateTime::createFromFormat('U', $timestamp);
           break;
@@ -138,14 +141,19 @@ class SimpleModelWrapper
           {
             // We must figure out if this is a Date field or a datetime field
             // lets get the meta information of the field
-            $fieldSettingsDatetimeType = $fieldDefinition->getItemDefinition()->getSettings()['datetime_type'];
+            $fieldSettingsDatetimeType = $fieldDefinition
+              ->getItemDefinition()
+              ->getSettings()['datetime_type'];
             if($fieldSettingsDatetimeType === 'date')
             {
               $dateValue = new \DateTime($attributeValue);
             }
             else if($fieldSettingsDatetimeType === 'datetime')
             {
-              $dateValue = new \DateTime($attributeValue, new \DateTimeZone('UTC'));
+              $dateValue = new \DateTime(
+                $attributeValue,
+                new \DateTimeZone(DateTimeItemInterface::STORAGE_TIMEZONE)
+              );
             }
           }
 

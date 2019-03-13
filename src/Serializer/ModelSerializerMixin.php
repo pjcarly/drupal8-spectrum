@@ -21,6 +21,12 @@ use Drupal\Core\Field\FieldDefinitionInterface;
  */
 trait ModelSerializerMixin
 {
+
+  /**
+   * @var \Drupal\spectrum\Models\User
+   */
+  protected $masqueradeAsUser;
+
   /**
    * Returns an array of fields that will be ignored during serialization. These are mostly internal drupal fields that shouldnt be exposed, as we dont want to leak configuration
    *
@@ -331,8 +337,6 @@ trait ModelSerializerMixin
         //$node->addAttribute('url', file_create_url($this->entity->get($fieldName)->value));
         break;
       default:
-        $value;
-
         if($fieldCardinality !== 1)
         {
           // More than 1 value allowed in the field
@@ -564,9 +568,28 @@ trait ModelSerializerMixin
    * @param string $access What type of access ("view" or "edit")
    * @return boolean
    */
-  public static function currentUserHasFieldPermission(string $field, string $access) : bool
-  {
-    $user = User::loggedInUser();
+  public function currentUserHasFieldPermission(
+    string $field,
+    string $access
+  ) : bool {
+    $user = $this->getMasqueradeAsUser() ?? User::loggedInUser();
     return $user->hasFieldPermission(get_called_class(), $field, $access);
   }
+
+  /**
+   * @return \Drupal\spectrum\Models\User|NULL
+   */
+  public function getMasqueradeAsUser(): ?User {
+    return $this->masqueradeAsUser;
+  }
+
+  /**
+   * @param \Drupal\spectrum\Models\User $masqueradeAsUser
+   */
+  public function masqueradeAsUser(
+    User $masqueradeAsUser
+  ) {
+    $this->masqueradeAsUser = $masqueradeAsUser;
+  }
+
 }
