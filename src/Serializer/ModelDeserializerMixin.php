@@ -44,7 +44,7 @@ trait ModelDeserializerMixin
             $fieldDefinition = static::getFieldDefinition($fieldName);
             $fieldCardinality = $fieldDefinition->getFieldStorageDefinition()->getCardinality();
 
-            if(static::currentUserHasFieldPermission($fieldName, 'edit')) // Only allow fields the user has access to
+            if($this->currentUserHasFieldPermission($fieldName, 'edit')) // Only allow fields the user has access to
             {
               switch($fieldDefinition->getType())
               {
@@ -221,7 +221,7 @@ trait ModelDeserializerMixin
             {
               $fieldName = $fieldNameMapping[$relationshipFieldName];
 
-              if(static::currentUserHasFieldPermission($fieldName, 'edit')) // Only allow fields the user has access to
+              if($this->currentUserHasFieldPermission($fieldName, 'edit')) // Only allow fields the user has access to
               {
                 $relationship = static::getRelationshipByFieldName($fieldName);
 
