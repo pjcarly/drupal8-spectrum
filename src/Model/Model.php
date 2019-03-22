@@ -1357,7 +1357,7 @@ abstract class Model
   {
     if(!empty($id))
     {
-      $query = static::getModelQuery();
+      $query = static::getEntityQuery();
 
       // add a condition on the id
       $query->addCondition(new Condition(static::getIdField(), '=', $id));
@@ -1379,11 +1379,12 @@ abstract class Model
 
     if(!empty($entity))
     {
-      // Next we must use the registered modeltype, instead of the modeltype this forge was requested with.
-      // Just to make sure we always return the registered (and therefore possibly overridden) modeltype in the system.
-      $requestedModelType = get_called_class();
-      $registeredModelType = static::getRegisteredModelTypeForModelType($requestedModelType);
+      $registeredModelType = static::getModelClassForEntityAndBundle(
+        $entity->getEntityTypeId(),
+        $entity->bundle()
+      );
 
+      $requestedModelType = get_called_class();
       if(is_subclass_of($requestedModelType, $registeredModelType))
       {
         // When the requestedmodeltype is a subclass of the registeredmodeltype, we use the requestedmodeltype
@@ -1408,13 +1409,18 @@ abstract class Model
    * Per system another implementation of the Model might exist.
    *
    * @param string $requestedModelType
+   *
    * @return string
+   * @throws \Drupal\spectrum\Exceptions\ModelClassNotDefinedException
    */
   public static final function getRegisteredModelTypeForModelType(string $requestedModelType) : string
   {
     if(!array_key_exists($requestedModelType, static::$cachedModelTypes))
     {
-      static::$cachedModelTypes[$requestedModelType] = Model::getModelClassForEntityAndBundle($requestedModelType::entityType(), $requestedModelType::bundle());
+      static::$cachedModelTypes[$requestedModelType] = Model::getModelClassForEntityAndBundle(
+        $requestedModelType::entityType(),
+        $requestedModelType::bundle()
+      );
     }
 
     return static::$cachedModelTypes[$requestedModelType];
@@ -1427,15 +1433,17 @@ abstract class Model
    * be fetched from the database again
    *
    * @return void
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
   public static function clearDrupalStaticEntityCache() : void
   {
     $entityType = static::entityType();
-
-    $store = \Drupal::entityManager()->getStorage($entityType);
-    $store->resetCache();
+    \Drupal::entityTypeManager()
+      ->getStorage($entityType)
+      ->resetCache();
   }
-
 
   /**
    * This function will clear all the entity caches for every model class in the application (see Model::clearDrupalStaticEntityCache() for more details)
@@ -1537,7 +1545,9 @@ abstract class Model
    * Get a Relationship by Name
    *
    * @param string $relationshipName
-   * @return Relationship
+   *
+   * @return \Drupal\spectrum\Model\Relationship
+   * @throws \Drupal\spectrum\Exceptions\RelationshipNotDefinedException
    */
   public static function getRelationship(string $relationshipName) : Relationship
   {
