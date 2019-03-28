@@ -568,28 +568,12 @@ trait ModelSerializerMixin
    * @param string $access What type of access ("view" or "edit")
    * @return boolean
    */
-  public function currentUserHasFieldPermission(
+  public static function currentUserHasFieldPermission(
     string $field,
     string $access
   ) : bool {
-    $user = $this->getMasqueradeAsUser() ?? User::loggedInUser();
-    return $user->hasFieldPermission(get_called_class(), $field, $access);
-  }
-
-  /**
-   * @return \Drupal\spectrum\Models\User|NULL
-   */
-  public function getMasqueradeAsUser(): ?User {
-    return $this->masqueradeAsUser;
-  }
-
-  /**
-   * @param \Drupal\spectrum\Models\User $masqueradeAsUser
-   */
-  public function masqueradeAsUser(
-    User $masqueradeAsUser
-  ) {
-    $this->masqueradeAsUser = $masqueradeAsUser;
+    return User::loggedInUser()
+      ->hasFieldPermission(get_called_class(), $field, $access);
   }
 
 }
