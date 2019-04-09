@@ -1154,12 +1154,6 @@ abstract class Model
       case 'link':
         $returnValue = ($newAttribute->uri != $oldAttribute->uri);
         break;
-      case 'boolean':
-        $nValue = $newAttribute->value;
-        $oValue = $oldAttribute->value;
-
-        $returnValue = ($newAttribute->value != $oldAttribute->value);
-        break;
       default:
         $returnValue = ($newAttribute->value != $oldAttribute->value);
         break;
