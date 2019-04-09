@@ -6,7 +6,6 @@ use Drupal\spectrum\Query\BundleQuery;
 use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Exceptions\InvalidTypeException;
 use Drupal\spectrum\Serializer\JsonApiRootNode;
-use Drupal\spectrum\Serializer\JsonApiBaseNode;
 use Drupal\spectrum\Serializer\JsonApiDataNode;
 
 /**
@@ -259,7 +258,7 @@ class Collection implements \IteratorAggregate, \Countable
 
     if(empty($lastRelationshipNameIndex)) // relationship name without extra relationships
     {
-      $modelType = $this->modelType;
+      $modelType = $this->getModelType();
       $relationship = $modelType::getRelationship($relationshipName);
       $relationshipQuery = $relationship->getRelationshipQuery();
 
@@ -304,9 +303,6 @@ class Collection implements \IteratorAggregate, \Countable
                 }
                 $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
 
-                // we must also find the inverse relationship to put the current model on
-                $referencedRelationship = $referencedModelType::getReferencedRelationshipForFieldRelationship($relationship);
-
                 // lets also check if a collection has been made already, and if not, lets make one (keeping in mind polymorphic relationships)
                 if($referencedCollection == null)
                 {
@@ -327,7 +323,7 @@ class Collection implements \IteratorAggregate, \Countable
               $returnValue = $referencedCollection->put($referencedModel);
             }
 
-            static::putReferencedCollectionOnReferencingCollection($relationship, $referencedRelationship, $this, $referencedCollection);
+            $this->putInverses($relationship, $referencedCollection);
           }
         }
 
@@ -385,7 +381,7 @@ class Collection implements \IteratorAggregate, \Countable
 
           if(!empty($referencingCollection))
           {
-            static::putReferencedCollectionOnReferencingCollection($relationship->fieldRelationship, $relationship, $referencingCollection, $this);
+            $this->putInverses($relationship, $referencingCollection);
           }
         }
 
@@ -812,7 +808,7 @@ class Collection implements \IteratorAggregate, \Countable
   public function get(string $relationshipName) : Collection
   {
     $resultCollection;
-    $modelType = $this->modelType;
+    $modelType = $this->getModelType();
 
     $firstRelationshipNameIndex = strpos($relationshipName, '.');
 
@@ -945,11 +941,11 @@ class Collection implements \IteratorAggregate, \Countable
   }
 
   /**
-   * Converts the Collection to a JsonApiBaseNode
+   * Converts the Collection to a JsonApiDataNode
    *
-   * @return JsonApiBaseNode
+   * @return JsonApiDataNode
    */
-  public function getJsonApiNode() : JsonApiBaseNode
+  public function getJsonApiNode() : JsonApiDataNode
   {
     $data = new JsonApiDataNode();
 
@@ -963,62 +959,51 @@ class Collection implements \IteratorAggregate, \Countable
   }
 
   /**
-   * This Method is used to set Relationships and the Inverses of Relationships
+   * This method sets the provided collection as the inverse for the provided relationship
    *
-   * @param FieldRelationship $referencingRelationship
-   * @param [type] $referencedRelationship
-   * @param Collection $referencingCollection
-   * @param Collection $referencedCollection
+   * @param Relationship $relationship
+   * @param Collection $inverses
    * @return void
    */
-  private static function putReferencedCollectionOnReferencingCollection(FieldRelationship $referencingRelationship, $referencedRelationship, Collection $referencingCollection, Collection $referencedCollection)
+  private function putInverses(Relationship $relationship, Collection $inverses) : void
   {
+    $relationshipName = null;
+    $referencingCollection = null;
+    $referencedCollection = null;
+
+    if($relationship instanceof FieldRelationship)
+    {
+      $relationshipName = $relationship->relationshipName;
+      $referencingCollection = $this;
+      $referencedCollection = $inverses;
+    }
+    else
+    {
+      $relationshipName = $relationship->fieldRelationship->relationshipName;
+      $referencingCollection = $inverses;
+      $referencedCollection = $this;
+    }
+
+    /** @var Model $referencingModel */
     foreach($referencingCollection as $referencingModel)
     {
-      $fieldId = $referencingModel->getFieldId($referencingRelationship);
-      if(!empty($fieldId))
+      $modelFieldRelationship = $referencingModel::getRelationship($relationshipName);
+      $fieldIds = $referencingModel->getFieldId($modelFieldRelationship);
+
+      if(empty($fieldIds))
       {
-        if(is_array($fieldId)) // remember, we can also have multiple references in the same field
-        {
-          foreach($fieldId as $referencedId)
-          {
-            $referencedModel = $referencedCollection->getModel($referencedId);
-            if(!empty($referencedModel))
-            {
-              if($referencingRelationship->isPolymorphic)
-              {
-                $referencedModelType = get_class($referencedModel);
-                // we must also find the inverse relationship to put the current model on
-                $referencedRelationship = $referencedModelType::getReferencedRelationshipForFieldRelationship($referencingRelationship);
-              }
+        $fieldIds = [];
+      }
 
-              $referencingModel->put($referencingRelationship, $referencedModel);
-              if(!empty($referencedRelationship))
-              {
-                $referencedModel->put($referencedRelationship, $referencingModel);
-              }
-            }
-          }
-        }
-        else
-        {
-          $referencedModel = $referencedCollection->getModel($fieldId);
-          if(!empty($referencedModel))
-          {
-            if($referencingRelationship->isPolymorphic)
-            {
-              $referencedModelType = get_class($referencedModel);
-              // we must also find the inverse relationship to put the current model on
-              $referencedRelationship = $referencedModelType::getReferencedRelationshipForFieldRelationship($referencingRelationship);
-            }
+      if(!is_array($fieldIds))
+      {
+        $fieldIds = [$fieldIds];
+      }
 
-            $referencingModel->put($referencingRelationship, $referencedModel);
-            if(!empty($referencedRelationship))
-            {
-              $referencedModel->put($referencedRelationship, $referencingModel);
-            }
-          }
-        }
+      foreach($fieldIds as $fieldId)
+      {
+        $referencedModel = $referencedCollection->getModel($fieldId);
+        $referencingModel->put($modelFieldRelationship, $referencedModel);
       }
     }
   }

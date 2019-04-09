@@ -5,7 +5,7 @@ namespace Drupal\spectrum\Models;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Model\FieldRelationship;
 use Drupal\spectrum\Model\ReferencedRelationship;
-use Drupal\spectrum\Serializer\JsonApiBaseNode;
+use Drupal\spectrum\Serializer\JsonApiNode;
 use Drupal\spectrum\Utils\UrlUtils;
 use Drupal\Component\Render\PlainTextOutput;
 use Drupal\spectrum\Exceptions\NotImplementedException;
@@ -135,9 +135,9 @@ class File extends Model
   /**
    * Serializes the model, but also adds the URL to the file, and the hash
    *
-   * @return JsonApiBaseNode
+   * @return JsonApiNode
    */
-  public function getJsonApiNode() : JsonApiBaseNode
+  public function getJsonApiNode() : JsonApiNode
   {
     $node = parent::getJsonApiNode();
     $node->addAttribute('hash', $this->getHash());

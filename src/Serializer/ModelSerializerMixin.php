@@ -4,10 +4,8 @@ namespace Drupal\spectrum\Serializer;
 
 use Drupal\spectrum\Serializer\JsonApiRootNode;
 use Drupal\spectrum\Serializer\JsonApiNode;
-use Drupal\spectrum\Serializer\JsonApiBaseNode;
 use Drupal\spectrum\Serializer\JsonApiDataNode;
 use Drupal\spectrum\Model\Model;
-use Drupal\spectrum\Model\Collection;
 Use Drupal\spectrum\Utils\StringUtils;
 
 use Drupal\spectrum\Models\File;
@@ -21,12 +19,6 @@ use Drupal\Core\Field\FieldDefinitionInterface;
  */
 trait ModelSerializerMixin
 {
-
-  /**
-   * @var \Drupal\spectrum\Models\User
-   */
-  protected $masqueradeAsUser;
-
   /**
    * Returns an array of fields that will be ignored during serialization. These are mostly internal drupal fields that shouldnt be exposed, as we dont want to leak configuration
    *
@@ -364,9 +356,9 @@ trait ModelSerializerMixin
    * Necessary checks will be done to make sure the user has access to the fields he wants to serialize.
    * If the user doesnt have access, fields will omitted from the JsonApiNode
    *
-   * @return JsonApiBaseNode
+   * @return JsonApiNode
    */
-  public function getJsonApiNode() : JsonApiBaseNode
+  public function getJsonApiNode() : JsonApiNode
   {
     $node = new JsonApiNode();
 

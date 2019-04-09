@@ -26,8 +26,7 @@ use Drupal\spectrum\Services\ModelStoreInterface;
 /**
  * A Model is a wrapper around a Drupal Entity, which provides extra functionality. and an easy way of fetching and saving it to the database.
  * It also provides functionality to correctly fetch related records, defined by Relationships (which are linked through an EntityReference)
- * and correctly insert, update, delete and validate
- * entities by respecting the UnitOfWork design pattern.
+ * and correctly insert, update, delete and validate entities by respecting the UnitOfWork design pattern.
  *
  * Together with Collection and Relationship, this is the Core of the Spectrum framework
  * This functionality is loosly based on BookshelfJS (http://bookshelfjs.org/)
@@ -627,7 +626,7 @@ abstract class Model
    * Returns the id of the provided Relationship
    *
    * @param FieldRelationship $relationship
-   * @return int|string|null
+   * @return int|string|int[]|string[]|null
    */
   public function getFieldId(FieldRelationship $relationship)
   {
@@ -690,11 +689,11 @@ abstract class Model
   /**
    * Set the Inverse values of this Model on the provided Relationship
    *
-   * @param Relationship $relationship
+   * @param FieldRelationship $relationship
    * @param Model $referencedModel
    * @return Model
    */
-  private function putInverse(Relationship $relationship, Model $referencedModel) : Model
+  private function putInverse(FieldRelationship $fieldRelationship, Model $referencedModel) : Model
   {
     // if the relationship is polymorphic we can get multiple bundles, so we must define the modeltype based on the bundle and entity of the current looping entity
     // or if the related modeltype isn't set yet, we must set it once
@@ -703,7 +702,7 @@ abstract class Model
     $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
 
     // we must also check for an inverse relationship and, if found, put the inverse as well
-    $referencedRelationship = $referencedModelType::getReferencedRelationshipForFieldRelationship($relationship);
+    $referencedRelationship = $referencedModelType::getReferencedRelationshipForFieldRelationship($fieldRelationship);
 
     // And finally if we found an inverse relationship, lets put (this) on the inverse (defining an inverse is optional, so we can just as easily find no inverses)
     if(!empty($referencedRelationship))
@@ -1155,6 +1154,12 @@ abstract class Model
       case 'link':
         $returnValue = ($newAttribute->uri != $oldAttribute->uri);
         break;
+      case 'boolean':
+        $nValue = $newAttribute->value;
+        $oValue = $oldAttribute->value;
+
+        $returnValue = ($newAttribute->value != $oldAttribute->value);
+        break;
       default:
         $returnValue = ($newAttribute->value != $oldAttribute->value);
         break;
@@ -1220,7 +1225,6 @@ abstract class Model
    */
   public static function hasDeepRelationship(string $relationshipName) : bool
   {
-    $sourceModelType = get_called_class();
     $firstRelationshipNamePosition = strpos($relationshipName, '.');
 
     if(empty($firstRelationshipNamePosition)) // relationship name without extra relationships
@@ -1252,7 +1256,6 @@ abstract class Model
    */
   public static function getDeepRelationship(string $relationshipName) : Relationship
   {
-    $sourceModelType = get_called_class();
     $firstRelationshipNamePosition = strpos($relationshipName, '.');
 
     if(empty($firstRelationshipNamePosition)) // relationship name without extra relationships
@@ -2006,6 +2009,20 @@ abstract class Model
   }
 
   /**
+   * Returns the corresponding modelclass for an entity instance.
+   *
+   * @param EntityInterface $entityInstance
+   * @return string
+   */
+  public static function getModelClassForEntity(EntityInterface $entityInstance) : string
+  {
+    $bundle = $entityInstance->bundle();
+    $entity = $entityInstance->getEntityTypeId();
+
+    return static::getModelClassForEntityAndBundle($entity, $bundle);
+  }
+
+  /**
    * Returns the ModelService that is responsible for the registration of Model Classes in the system
    * This should be implemented by every drupal installation using Spectrum (see ModelServiceInterface for documentation)
    *
@@ -2240,9 +2257,9 @@ abstract class Model
   }
 
   /**
-   * Set the entity that was wrapped by this Model
+   * Set the entity that this model will wrap
    *
-   * @param  EntityInterface  $entity  The entity that was wrapped by this Model
+   * @param  EntityInterface  $entity Your new entity
    *
    * @return  self
    */

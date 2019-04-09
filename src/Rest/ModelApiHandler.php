@@ -428,6 +428,7 @@ class ModelApiHandler extends BaseApiHandler
           $includes = array_merge($includes, $this->defaultGetIncludes);
         }
 
+        $includes = array_filter(array_unique($includes));
         // And finally include them
         if(!empty($includes))
         {

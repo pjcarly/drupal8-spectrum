@@ -39,4 +39,34 @@ class Order
     $this->direction = $direction;
     $this->langcode = $langcode;
   }
+
+  /**
+   * Get the Drupal field name
+   *
+   * @return  string
+   */
+  public function getFieldName() : string
+  {
+    return $this->fieldName;
+  }
+
+  /**
+   * Get the sorting direction
+   *
+   * @return  string
+   */
+  public function getDirection() : string
+  {
+    return $this->direction;
+  }
+
+  /**
+   * Get the language code
+   *
+   * @return  string
+   */
+  public function getLangcode() : ?string
+  {
+    return $this->langcode;
+  }
 }

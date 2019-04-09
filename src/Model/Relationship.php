@@ -109,6 +109,16 @@ abstract class Relationship
   }
 
   /**
+   * Returns the modelType
+   *
+   * @return string
+   */
+  public function getModelType() : string
+  {
+    return $this->modelType;
+  }
+
+  /**
    * This function will be called to set the metadata of the relationship
    *
    * @return void
