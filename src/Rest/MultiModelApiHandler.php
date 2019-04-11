@@ -54,14 +54,14 @@ class MultiModelApiHandler extends BaseApiHandler
   /**
    * Base conditions that will be added to all queries done in the api handler
    *
-   * @var array
+   * @var Condition[]
    */
   protected $baseConditions = [];
 
   /**
    * condition groups that will be added to all queries done in the api handler
    *
-   * @var array
+   * @var ConditionGroup[]
    */
   protected $conditionGroups = [];
 
