@@ -744,7 +744,7 @@ abstract class Model
           {
             foreach($objectToPut as $model)
             {
-              $returnValue = $this->put($relationshp, $model, $includeInOriginalModels);
+              $returnValue = $this->put($relationship, $model, $includeInOriginalModels);
             }
           }
           else if($objectToPut instanceof Model)
