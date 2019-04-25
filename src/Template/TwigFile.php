@@ -121,4 +121,14 @@ class TwigFile
 
     return $this;
   }
+
+  /**
+   * Returns the rendered html, make sure to call render() before calling this.
+   *
+   * @return string|null
+   */
+  public function getRenderedHtml() : ?string
+  {
+    return $this->html;
+  }
 }

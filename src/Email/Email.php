@@ -107,7 +107,7 @@ class Email
    */
   public function getHtml() : string
   {
-    return $this->template->render()->html;
+    return $this->template->render()->getRenderedHtml();
   }
 
   /**
@@ -115,7 +115,7 @@ class Email
    */
   public function getText() : string
   {
-    return $this->template->render()->text;
+    return $this->template->render()->getRenderedText();
   }
 
   /**
@@ -154,9 +154,9 @@ class Email
         $sendgridMessage->setReplyTo($this->replyTo);
 
         // twig already rendered our template, lets set the values
-        $sendgridMessage->setSubject($template->subject);
-        $sendgridMessage->setText($template->text);
-        $sendgridMessage->setHtml($template->html);
+        $sendgridMessage->setSubject($template->getSubject());
+        $sendgridMessage->setText($template->getText());
+        $sendgridMessage->setHtml($template->getHtml());
 
         // And finally send the email
         $client = new \SendGrid($sendGridKey);
@@ -208,16 +208,16 @@ class Email
           'Body' => [
             'Html' => [
               'Charset' => 'UTF-8',
-              'Data' => $template->html,
+              'Data' => $template->getRenderedHtml(),
             ],
             'Text' => [
               'Charset' => 'UTF-8',
-              'Data' => $template->text,
+              'Data' => $template->getRenderedText(),
             ],
           ],
           'Subject' => [
             'Charset' => 'UTF-8',
-            'Data' => $template->subject,
+            'Data' => $template->getSubject(),
           ],
         ];
         $payload['Source'] = $from;
