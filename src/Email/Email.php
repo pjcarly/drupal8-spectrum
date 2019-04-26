@@ -217,7 +217,7 @@ class Email
           ],
           'Subject' => [
             'Charset' => 'UTF-8',
-            'Data' => $template->getSubject(),
+            'Data' => $template->getRenderedSubject(),
           ],
         ];
         $payload['Source'] = $from;
