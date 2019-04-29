@@ -91,7 +91,7 @@ abstract class Model
   /**
    * The entity that was wrapped by this Model
    *
-   * @var EntityInterface
+   * @var \Drupal\Core\Entity\FieldableEntityInterface
    */
   public $entity;
 
