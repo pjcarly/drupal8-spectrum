@@ -10,6 +10,7 @@ use Drupal\spectrum\Query\Condition;
 
 use Drupal\spectrum\Model\SimpleModelWrapper;
 use Drupal\spectrum\Template\TwigRenderer;
+use Drupal\spectrum\Model\FieldRelationship;
 
 class EmailTemplate extends Model
 {
@@ -32,6 +33,13 @@ class EmailTemplate extends Model
   {
     return 'email';
   }
+
+  public static function relationships()
+  {
+    parent::relationships();
+    static::addRelationship(new FieldRelationship('base_template', 'field_base_template.target_id'));
+  }
+
 
   /**
    * The scope that will be added to the EmailTemplate upon rendering, to fetch dynamic variables from
@@ -103,15 +111,44 @@ class EmailTemplate extends Model
    */
   public function render() : EmailTemplate
   {
+    $baseTemplate = $this->fetchBaseTemplateIfNeeded();
+
+    $subject = $this->getSubject() ?? '';
+    $html = $this->getHtml() ?? '';
+    $text = $this->getText() ?? '';
+
+    if(!empty($baseTemplate))
+    {
+      $this->addObjectToScope('baseTemplate', $baseTemplate->getHtml() ?? '');
+      $html = '{% extends baseTemplate %}' . $html;
+    }
+
     // Use the spectrum twigrenderer;
     $twig = new TwigRenderer();
 
     // Lets render the different parts of the email template
-    $this->subject = $twig->render($this->entity->field_subject->value, $this->scope);
-    $this->html = $twig->render($this->entity->field_html_body->value, $this->scope);
-    $this->text = $twig->render($this->entity->field_text_body->value, $this->scope);
+    $this->subject = $twig->render($subject, $this->scope);
+    $this->html = $twig->render($html, $this->scope);
+    $this->text = $twig->render($text, $this->scope);
 
     return $this;
+  }
+
+  public function fetchBaseTemplateIfNeeded() : ?BaseTemplate
+  {
+    if(!empty($this->getBaseTemplateId()))
+    {
+      $baseTemplate = $this->getBaseTemplate();
+
+      if(empty($baseTemplate))
+      {
+        $baseTemplate = $this->fetch('base_template');
+      }
+
+      return $baseTemplate;
+    }
+
+    return null;
   }
 
   /**
@@ -130,52 +167,136 @@ class EmailTemplate extends Model
   /**
    * @return string
    */
-  public function getSubject() : string
+  public function getSubject() : ?string
   {
-    return $this->subject;
+    return $this->entity->field_subject->value;
   }
 
   /**
    * @param string $subject
    */
-  public function setSubject(string $subject) : void
+  public function setSubject(string $subject) : EmailTemplate
   {
-    $this->subject = $subject;
     $this->entity->field_subject->value = $subject;
+
+    return $this;
   }
 
   /**
    * @return string
    */
-  public function getHtml() : string
+  public function getHtml() : ?string
   {
-    return $this->html;
+    return $this->entity->field_html_body->value;
   }
 
   /**
    * @param string $html
    */
-  public function setHtml(string $html) : void
+  public function setHtml(string $html) : EmailTemplate
   {
-    $this->html = $html;
     $this->entity->field_html_body->value = $html;
+
+    return $this;
   }
 
   /**
    * @return string
    */
-  public function getText() : string
+  public function getText() : ?string
   {
-    return $this->text;
+    return $this->entity->field_text_body->value;
   }
 
   /**
    * @param string $text
    */
-  public function setText(string $text) : void
+  public function setText(string $text) : EmailTemplate
   {
-    $this->text = $text;
     $this->entity->field_text_body->value = $text;
+    return $this;
   }
 
+  /**
+   * @return string
+   */
+  public function getKey() : ?string
+  {
+    return $this->entity->field_key->value;
+  }
+
+  /**
+   * @param string $text
+   */
+  public function setKey(string $text) : EmailTemplate
+  {
+    $this->entity->field_key->value = $text;
+    return $this;
+  }
+
+  /**
+   * @return string
+   */
+  public function getBaseTemplate() : ?BaseTemplate
+  {
+    return $this->get('base_template');
+  }
+
+  /**
+   * @param string $text
+   */
+  public function setBaseTemplate(BaseTemplate $baseTemplate) : EmailTemplate
+  {
+    $this->put('base_template', $baseTemplate);
+
+    return $this;
+  }
+
+  /**
+   * @return string
+   */
+  public function getBaseTemplateId() : ?int
+  {
+    return $this->entity->field_base_template->target_id;
+  }
+
+  /**
+   * @param string $text
+   */
+  public function setBaseTemplateId(int $id) : EmailTemplate
+  {
+    $this->entity->field_base_template->target_id = $id;
+
+    return $this;
+  }
+
+  /**
+   * Returns the rendered HTML. Make sure to call render() before calling this function.
+   *
+   * @return string
+   */
+  public function getRenderedHtml() : ?string
+  {
+    return $this->html;
+  }
+
+  /**
+   * Returns the rendered Text. Make sure to call render() before calling this function.
+   *
+   * @return string
+   */
+  public function getRenderedText() : ?string
+  {
+    return $this->text;
+  }
+
+  /**
+   * Returns the rendered Subject. Make sure to call render() before calling this function.
+   *
+   * @return string
+   */
+  public function getRenderedSubject() : ?string
+  {
+    return $this->subject;
+  }
 }

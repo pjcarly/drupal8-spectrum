@@ -297,9 +297,10 @@ abstract class Model
    * Clear the relationship from this Model
    *
    * @param string $relationshipName
+   * @param bool $unsetField (optional) when settings this true, the FieldRelationship will also unset the field on the entity (only works on field relationships)
    * @return Model
    */
-  public function clear(string $relationshipName) : Model
+  public function clear(string $relationshipName, bool $unsetField = false) : Model
   {
     $relationship = static::getRelationship($relationshipName);
     if($relationship instanceof FieldRelationship)
@@ -307,7 +308,11 @@ abstract class Model
       unset($this->relatedViaFieldOnEntity[$relationshipName]);
       $field = $relationship->getField();
       $column = $relationship->getColumn();
-      $this->entity->{$field}->{$column} = null;
+
+      if($unsetField)
+      {
+        $this->entity->{$field}->{$column} = null;
+      }
     }
     else if($relationship instanceof ReferencedRelationship)
     {
@@ -315,6 +320,17 @@ abstract class Model
     }
 
     return $this;
+  }
+
+  /**
+   * Same as clear(), but with the optional flag $unsetField set to true, causing the field relationship on the entity to be unset
+   *
+   * @param string $relationshipName
+   * @return void
+   */
+  public function clearAndUnset(string $relationshipName)
+  {
+    return $this->clear($relationshipName, true);
   }
 
   /**

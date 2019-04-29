@@ -49,6 +49,7 @@ class TwigRenderer
       $renderedContent = $twig->loadTemplate($template)->render($scope);
       return $renderedContent;
     }
+
     return '';
   }
 }

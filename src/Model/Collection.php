@@ -18,8 +18,6 @@ use Drupal\spectrum\Serializer\JsonApiDataNode;
  */
 class Collection implements \IteratorAggregate, \Countable
 {
-  private static $newKeyIndex = 0;
-
   public $modelType;
   public $models;
   public $originalModels;
@@ -28,6 +26,26 @@ class Collection implements \IteratorAggregate, \Countable
   {
     $this->models = [];
     $this->originalModels = [];
+  }
+
+  /**
+   * Returns the models of the collection
+   *
+   * @return Model[]
+   */
+  public function getModels() : array
+  {
+    return $this->models;
+  }
+
+  /**
+   * Returns the original models of the collection
+   *
+   * @return Model[]
+   */
+  public function getOriginalModels() : array
+  {
+    return $this->originalModels;
   }
 
   /**
@@ -198,6 +216,25 @@ class Collection implements \IteratorAggregate, \Countable
   }
 
   /**
+   * Loops over all the Models in this collection, and if the "selected" flag on the model is false, the model is removed from the collection
+   *
+   * @return Collection
+   */
+  public function removeNonSelectedModels() : Collection
+  {
+    /** @var Model $model */
+    foreach($this->models as $model)
+    {
+      if(!$model->selected)
+      {
+        $this->removeModel($model);
+      }
+    }
+
+    return $this;
+  }
+
+  /**
    * Validate all the models in this collection, if a relationshipName was passed get the relationship and validate that
    *
    * @param string $relationshipName
@@ -238,6 +275,7 @@ class Collection implements \IteratorAggregate, \Countable
   {
     foreach($this->models as $model)
     {
+      /** @var Model $model */
       $model->clear($relationshipName);
     }
 
@@ -436,6 +474,7 @@ class Collection implements \IteratorAggregate, \Countable
 
     foreach($this->models as $model)
     {
+      /** @var Model $model */
       $fieldId = $model->getFieldId($relationship);
       if(!empty($fieldId))
       {
@@ -565,7 +604,7 @@ class Collection implements \IteratorAggregate, \Countable
 
     if(is_array($entities) && !empty($entities))
     {
-      $models = static::getModels($modelType, $entities);
+      $models = static::transformEntitiesToModels($modelType, $entities);
     }
 
     if(is_array($models) && !empty($models))
@@ -596,14 +635,13 @@ class Collection implements \IteratorAggregate, \Countable
     {
       $id = $model->getId();
 
-      $entity = $model->entity;
       $entities[$id] = $model->entity;
     }
 
     return $entities;
   }
 
-  private static function getModels(string $modelType, array $entities) : array
+  private static function transformEntitiesToModels(string $modelType, array $entities) : array
   {
     $models = [];
     foreach($entities as $entity)
@@ -807,7 +845,7 @@ class Collection implements \IteratorAggregate, \Countable
    */
   public function get(string $relationshipName) : Collection
   {
-    $resultCollection;
+    $resultCollection = null;
     $modelType = $this->getModelType();
 
     $firstRelationshipNameIndex = strpos($relationshipName, '.');
