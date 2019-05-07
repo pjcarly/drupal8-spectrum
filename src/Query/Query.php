@@ -5,6 +5,8 @@ namespace Drupal\spectrum\Query;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\Query\QueryInterface;
 use Drupal\spectrum\Runnable\BatchableInterface;
+use Drupal\Core\Database\Query\Select as DrupalSelectQuery;
+use Drupal\Core\Database\Query\Condition as DrupalCondition;
 
 /**
  * This class provides base functionality for different query types
@@ -35,30 +37,37 @@ abstract class Query implements BatchableInterface
   /**
    * This array holds the base conditions, no matter what, they will always be applied on the query, regardless of logic or implementation
    *
-   * @var array
+   * @var Condition[]
    */
   protected $baseConditions = [];
 
   /**
    * This holds all the Conditions on the query, and will be applied in the order you add them.
    *
-   * @var array
+   * @var Condition[]
    */
   public $conditions = [];
 
   /**
    * Here the ConditionGroups are stored, the condition groups will be applied in the order you add them.
    *
-   * @var array
+   * @var ConditionGroup[]
    */
   public $conditionGroups = [];
 
   /**
    * Here the Query/Order are stored, the orders will be applied in the order you add them
    *
-   * @var array
+   * @var Order[]
    */
   public $sortOrders = [];
+
+  /**
+   * Here you can find the expressions attached to this query. They will be added in the order you add them
+   *
+   * @var Expression[]
+   */
+  protected $expressions = [];
 
   /**
    * The start of the range you want to return
@@ -103,11 +112,17 @@ abstract class Query implements BatchableInterface
     $this->entityType = $entityType;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getTotalBatchedRecords() : ?int
   {
     return sizeof($this->batchIds);
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getNextBatch() : array
   {
     $this->batchPage++;
@@ -198,6 +213,29 @@ abstract class Query implements BatchableInterface
   public function addConditionGroup(ConditionGroup $conditionGroup) : Query
   {
     $this->conditionGroups[] = $conditionGroup;
+    return $this;
+  }
+
+  /**
+   * Adds an expression to the query, that can be used in a sort order
+   *
+   * @param Expression $expression
+   * @return Query
+   */
+  public function addExpression(Expression $expression) : Query
+  {
+    $this->expressions[$expression->getName()] = $expression;
+    return $this;
+  }
+
+  /**
+   * Removes all the expressions from the Query
+   *
+   * @return Query
+   */
+  public function clearExpressions() : Query
+  {
+    $this->expressions = [];
     return $this;
   }
 
@@ -329,7 +367,10 @@ abstract class Query implements BatchableInterface
     // Base conditions must always be applied, regardless of the logic
     foreach($this->baseConditions as $condition)
     {
-      $condition->addQueryCondition($query);
+      if(!$this->hasExpression($condition->getFieldName()))
+      {
+        $condition->addQueryCondition($query);
+      }
     }
 
     // We might have a logic, lets check for it
@@ -337,7 +378,10 @@ abstract class Query implements BatchableInterface
     {
       foreach($this->conditions as $condition)
       {
-        $condition->addQueryCondition($query);
+        if(!$this->hasExpression($condition->getFieldName()))
+        {
+          $condition->addQueryCondition($query);
+        }
       }
     }
     else
@@ -364,12 +408,41 @@ abstract class Query implements BatchableInterface
     // and finally apply an order if needed
     foreach($this->sortOrders as $sortOrder)
     {
-      $query->sort($sortOrder->fieldName, $sortOrder->direction, $sortOrder->langcode);
+      // We filter out any possible fieldname that was used in an expression
+      if(!$this->hasExpression($sortOrder->getFieldName()))
+      {
+        $query->sort($sortOrder->getFieldName(), $sortOrder->getDirection(), $sortOrder->getLangcode());
+      }
     }
 
     if(!empty($this->tag))
     {
       $query->addTag($this->tag);
+    }
+
+    if(!empty($this->expressions))
+    {
+      // Here we do some hackory to get Expressions working
+      // We create a conditiongroup which contains a condition with all the fields of the expressions
+      // This makes sure that there is a JOIN added for the fields needed
+      // Then later in the Query alter hook, we remove this conditiongroup,
+      // and parse the field names in the expression with the correct database column name
+      $expressionConditionGroup = new ConditionGroup();
+
+      $logic = [];
+      foreach($this->expressions as $expression)
+      {
+        foreach($expression->getFields() as $field)
+        {
+          $logic[] = sizeof($logic)+1;
+          $expressionConditionGroup->addCondition(new Condition($field, '=', '__pseudo_placeholder'));
+        }
+      }
+
+      $expressionConditionGroup->setLogic('OR('.implode(',', $logic).')');
+      $expressionConditionGroup->applyConditionsOnQuery($query);
+
+      $query->addTag('spectrum_query')->addMetaData('spectrum_query', $this);
     }
 
     return $query;
@@ -458,7 +531,7 @@ abstract class Query implements BatchableInterface
   /**
    * Get this holds all the Conditions on the query, and will be applied in the order you add them.
    *
-   * @return  array
+   * @return  Condition[]
    */
   public function getConditions() : array
   {
@@ -468,7 +541,7 @@ abstract class Query implements BatchableInterface
   /**
    * Get this array holds the base conditions, no matter what, they will always be applied on the query, regardless of logic or implementation
    *
-   * @return  array
+   * @return  Condition[]
    */
   public function getBaseConditions() : array
   {
@@ -478,11 +551,32 @@ abstract class Query implements BatchableInterface
   /**
    * Get here the ConditionGroups are stored, the condition groups will be applied in the order you add them.
    *
-   * @return  array
+   * @return  ConditionGroup[]
    */
   public function getConditionGroups() : array
   {
     return $this->conditionGroups;
+  }
+
+  /**
+   * Returns all the expressions of this query
+   *
+   * @return Expression[]
+   */
+  public function getExpressions() : array
+  {
+    return $this->expressions;
+  }
+
+  /**
+   * Returns TRUE if this query has an expression with the provided name
+   *
+   * @param string $name
+   * @return boolean
+   */
+  public function hasExpression(string $name) : bool
+  {
+    return array_key_exists($name, $this->expressions);
   }
 
   /**
@@ -555,7 +649,7 @@ abstract class Query implements BatchableInterface
   /**
    * Returns all the sort orders in an array
    *
-   * @return  array
+   * @return Order[]
    */
   public function getSortOrders() : array
   {
@@ -610,5 +704,70 @@ abstract class Query implements BatchableInterface
   public function getEntityType() : string
   {
     return $this->entityType;
+  }
+
+  /**
+   * This function parses the Expressions into the Drupal Select Query.
+   * When an expression is added to a spectrum query, it isnt added as a sort order at first. Instead it is ignored, and later added through a alter_query hook
+   * This function is called through the hook, and parses the expression in the query
+   *
+   * @param DrupalSelectQuery $drupalQuery
+   * @return Query
+   */
+  public function parseExpressions(DrupalSelectQuery $drupalQuery) : Query
+  {
+    $index = 0;
+    $columnMapping = [];
+    $pseudoConditionGroupKey = null;
+
+    // First we find the column mapping from the drupal query and the key to unset
+    foreach($drupalQuery->conditions() as $key => $condition)
+    {
+      if($condition['field'] instanceof DrupalCondition)
+      {
+        /** @var DrupalCondition $conditionGroup */
+        $conditionGroup = $condition['field'];
+
+        foreach($conditionGroup->conditions() as $subCondition)
+        {
+          if($subCondition['value'] === '__pseudo_placeholder')
+          {
+            $pseudoConditionGroupKey = $key;
+            $columnMapping[$index] = $subCondition['field'];
+            $index++;
+          }
+        }
+      }
+    }
+
+    // We unset the conditiongroup
+    unset($drupalQuery->conditions()[$pseudoConditionGroupKey]);
+
+    // Now we have the intial colums, we match those with the fields in the expressions
+    $index = 0;
+    foreach($this->expressions as $expression)
+    {
+      $expressionString = $expression->getExpression();
+      foreach($expression->getFields() as $field)
+      {
+        $column = $columnMapping[$index];
+        $expressionString = str_replace($field, $column, $expressionString);
+
+        $index++;
+      }
+
+      $drupalQuery->addExpression($expressionString, $expression->getName());
+    }
+
+    // And now we add the conditions and sort orders from the expression
+    foreach($this->sortOrders as $sortOrder)
+    {
+      if($this->hasExpression($sortOrder->getFieldName()))
+      {
+        $drupalQuery->orderBy($sortOrder->getFieldName(), $sortOrder->getDirection());
+      }
+    }
+
+    return $this;
   }
 }

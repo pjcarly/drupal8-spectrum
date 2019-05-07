@@ -1,5 +1,8 @@
 <?php
 use Drupal\spectrum\Triggers\ModelTrigger;
+use Drupal\Core\Database\Query\AlterableInterface;
+use Drupal\spectrum\Query\Query;
+use Drupal\Core\Database\Query\Condition;
 
 function spectrum_entity_presave($entity)
 {
@@ -24,4 +27,12 @@ function spectrum_entity_predelete($entity)
 function spectrum_entity_delete($entity)
 {
   ModelTrigger::handle($entity, 'delete');
+}
+
+// We need the Alter query hook to parse expressions that were added to the Spectrum Query
+function spectrum_query_spectrum_query_alter(AlterableInterface $drupalQuery)
+{
+  /** @var Query $query */
+  $query = $drupalQuery->getMetaData('spectrum_query');
+  $query->parseExpressions($drupalQuery);
 }
