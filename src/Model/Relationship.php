@@ -29,7 +29,7 @@ abstract class Relationship
    *
    * @var string
    */
-  public $relationshipName;
+  public $name;
 
   /**
    * The fully qualified classname of the model where this relationship is defined
@@ -56,9 +56,9 @@ abstract class Relationship
    * @param string $relationshipName the name you want to give to your relationship
    * @param integer $cascade the Cascade indicator (NO_CASCADE, and CASCADE_ON_DELETE are available as static ints on Relationship)
    */
-  public function __construct(string $relationshipName, int $cascade = 0)
+  public function __construct(string $name, int $cascade = 0)
   {
-    $this->relationshipName = $relationshipName;
+    $this->name = $name;
     $this->setCascadingDelete($cascade === 1);
   }
 
@@ -103,9 +103,9 @@ abstract class Relationship
    *
    * @return string
    */
-  public function getRelationshipKey() : string
+  public function getName() : string
   {
-    return $this->relationshipName;
+    return $this->name;
   }
 
   /**
