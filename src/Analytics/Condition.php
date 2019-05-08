@@ -7,6 +7,7 @@ use Drupal\spectrum\Model\FieldRelationship;
 use Drupal\spectrum\Model\ReferencedRelationship;
 
 use Drupal\spectrum\Query\Condition as QueryCondition;
+use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface;
 
 class Condition extends Model
 {
@@ -128,12 +129,12 @@ class Condition extends Model
           if($value === 'TODAY')
           {
             $today = new \DateTime();
-            $value = $today->format(DATETIME_DATE_STORAGE_FORMAT);
+            $value = $today->format(DateTimeItemInterface::DATE_STORAGE_FORMAT);
           }
           else if($value === 'NOW')
           {
             $now = new \DateTime();
-            $value = $now->format(DATETIME_DATETIME_STORAGE_FORMAT);
+            $value = $now->format(DateTimeItemInterface::DATETIME_STORAGE_FORMAT);
           }
         }
       }

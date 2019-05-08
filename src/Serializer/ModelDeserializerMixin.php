@@ -8,6 +8,7 @@ use Drupal\spectrum\Model\ReferencedRelationship;
 use Drupal\spectrum\Model\FieldRelationship;
 use Drupal\spectrum\Serializer\JsonApiRootNode;
 use Drupal\spectrum\Models\File;
+use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface;
 
 /**
  * This trait is used to abstract deserialization functionality
@@ -66,12 +67,12 @@ trait ModelDeserializerMixin
                     if($fieldSettingsDatetimeType === 'date')
                     {
                       $dateValue = new \DateTime($attributeValue);
-                      $dateValue = $dateValue->format(DATETIME_DATE_STORAGE_FORMAT);
+                      $dateValue = $dateValue->format(DateTimeItemInterface::DATE_STORAGE_FORMAT);
                     }
                     else if($fieldSettingsDatetimeType === 'datetime')
                     {
                       $dateValue = new \DateTime($attributeValue);
-                      $dateValue = $dateValue->format(DATETIME_DATETIME_STORAGE_FORMAT);
+                      $dateValue = $dateValue->format(DateTimeItemInterface::DATETIME_STORAGE_FORMAT);
                     }
                   }
 
