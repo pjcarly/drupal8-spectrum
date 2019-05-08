@@ -1584,7 +1584,7 @@ class ModelApiHandler extends BaseApiHandler
       // Now that we have filtered out the embedded models that werent included, and flagged them for deletion
       // can we finally save the referenced relationship
       $model->save($embeddedReferencedRelationshipToSave);
-      $model->clear($embeddedReferencedRelationshipToSave);
+      // $model->clear($embeddedReferencedRelationshipToSave);
     }
 
     return $this;
