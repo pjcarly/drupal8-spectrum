@@ -369,7 +369,7 @@ abstract class Model
     {
       if($relationship instanceof ReferencedRelationship)
       {
-        $referencedRelationship = $this->get($relationship->relationshipName);
+        $referencedRelationship = $this->get($relationship->getName());
         if(!empty($referencedRelationship))
         {
           if($referencedRelationship instanceof Collection)
@@ -559,18 +559,18 @@ abstract class Model
       {
         if($relationship->isMultiple)
         {
-          if(!array_key_exists($relationship->relationshipName, $this->relatedViaFieldOnEntity))
+          if(!array_key_exists($relationship->getName(), $this->relatedViaFieldOnEntity))
           {
             $this->createNewCollection($relationship);
           }
 
-          return $this->relatedViaFieldOnEntity[$relationship->relationshipName];
+          return $this->relatedViaFieldOnEntity[$relationship->getName()];
         }
         else
         {
-          if(array_key_exists($relationship->relationshipName, $this->relatedViaFieldOnEntity))
+          if(array_key_exists($relationship->getName(), $this->relatedViaFieldOnEntity))
           {
-            return $this->relatedViaFieldOnEntity[$relationship->relationshipName];
+            return $this->relatedViaFieldOnEntity[$relationship->getName()];
           }
           else
           {
@@ -580,12 +580,12 @@ abstract class Model
       }
       else if($relationship instanceof ReferencedRelationship)
       {
-        if(!array_key_exists($relationship->relationshipName, $this->relatedViaFieldOnExternalEntity))
+        if(!array_key_exists($relationship->getName(), $this->relatedViaFieldOnExternalEntity))
         {
           $this->createNewCollection($relationship);
         }
 
-        return $this->relatedViaFieldOnExternalEntity[$relationship->relationshipName];
+        return $this->relatedViaFieldOnExternalEntity[$relationship->getName()];
       }
     }
     else
@@ -681,14 +681,14 @@ abstract class Model
       {
         if($relationship->isPolymorphic)
         {
-          $this->relatedViaFieldOnEntity[$relationship->relationshipName] = PolymorphicCollection::forgeNew(null);
+          $this->relatedViaFieldOnEntity[$relationship->getName()] = PolymorphicCollection::forgeNew(null);
         }
         else
         {
-          $this->relatedViaFieldOnEntity[$relationship->relationshipName] = Collection::forgeNew($relationship->modelType);
+          $this->relatedViaFieldOnEntity[$relationship->getName()] = Collection::forgeNew($relationship->modelType);
         }
 
-        return $this->relatedViaFieldOnEntity[$relationship->relationshipName];
+        return $this->relatedViaFieldOnEntity[$relationship->getName()];
       }
       else
       {
@@ -697,8 +697,8 @@ abstract class Model
     }
     else if($relationship instanceof ReferencedRelationship)
     {
-      $this->relatedViaFieldOnExternalEntity[$relationship->relationshipName] = Collection::forgeNew($relationship->modelType);
-      return $this->relatedViaFieldOnExternalEntity[$relationship->relationshipName];
+      $this->relatedViaFieldOnExternalEntity[$relationship->getName()] = Collection::forgeNew($relationship->modelType);
+      return $this->relatedViaFieldOnExternalEntity[$relationship->getName()];
     }
   }
 
@@ -767,13 +767,13 @@ abstract class Model
           {
             // In case we have a model, it means we have to add it to the collection, that potentially doesn't exist yet
             // lets watch out, that the relationship can be polymorphic to create the correct collection if needed
-            if(!array_key_exists($relationship->relationshipName, $this->relatedViaFieldOnEntity))
+            if(!array_key_exists($relationship->getName(), $this->relatedViaFieldOnEntity))
             {
               $this->createNewCollection($relationship);
             }
 
             // we put the model on the collection
-            $collection = $this->relatedViaFieldOnEntity[$relationship->relationshipName];
+            $collection = $this->relatedViaFieldOnEntity[$relationship->getName()];
             $collection->put($objectToPut);
 
             if($includeInOriginalModels)
@@ -799,7 +799,7 @@ abstract class Model
           // when the relationship is single (meaning only 1 reference allowed)
           // things get much easier. Namely we just put the model in the related array
           // even if the relationship is polymorphic it doesn't matter.
-          $this->relatedViaFieldOnEntity[$relationship->relationshipName] = $objectToPut;
+          $this->relatedViaFieldOnEntity[$relationship->getName()] = $objectToPut;
           $returnValue = $objectToPut;
           // we also set the new id on the current entity
           $objectToPutId = $objectToPut->getId();
@@ -814,12 +814,12 @@ abstract class Model
       }
       else if($relationship instanceof ReferencedRelationship)
       {
-        if(!array_key_exists($relationship->relationshipName, $this->relatedViaFieldOnExternalEntity))
+        if(!array_key_exists($relationship->getName(), $this->relatedViaFieldOnExternalEntity))
         {
           $this->createNewCollection($relationship);
         }
 
-        $collection = $this->relatedViaFieldOnExternalEntity[$relationship->relationshipName];
+        $collection = $this->relatedViaFieldOnExternalEntity[$relationship->getName()];
         $collection->put($objectToPut);
 
         if($includeInOriginalModels)
@@ -1674,7 +1674,7 @@ abstract class Model
     }
 
     $relationship->setRelationshipSource($sourceModelType);
-    static::$relationships[$sourceModelType][$relationship->getRelationshipKey()] = $relationship;
+    static::$relationships[$sourceModelType][$relationship->getName()] = $relationship;
   }
 
   /**
@@ -1937,7 +1937,7 @@ abstract class Model
     {
       if($relationship->cascadingDelete)
       {
-        $fetchedRelationship = $this->fetch($relationship->relationshipName);
+        $fetchedRelationship = $this->fetch($relationship->getName());
         if(!empty($fetchedRelationship))
         {
           if($fetchedRelationship instanceof Collection)

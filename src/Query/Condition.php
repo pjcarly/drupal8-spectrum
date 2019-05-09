@@ -26,7 +26,7 @@ class Condition
   /**
    * The value you want to filter by, in case the string 'null' is passed, it will be replaced by NULL
    *
-   * @var string
+   * @var string|int|float|bool|array
    */
   public $value;
 
@@ -135,5 +135,35 @@ class Condition
   public static function isValidMultipleModelsOperator(string $operator) : bool
   {
     return in_array(strtoupper($operator), Condition::$multipleValueOperators);
+  }
+
+  /**
+   * Returns the fieldName of the condition
+   *
+   * @return string
+   */
+  public function getFieldName() : string
+  {
+    return $this->fieldName;
+  }
+
+  /**
+   * Returns the operator of the Condition
+   *
+   * @return string
+   */
+  public function getOperator() : string
+  {
+    return $this->operator;
+  }
+
+  /**
+   * Returns the Value of the condition
+   *
+   * @return string|int|float|bool|array
+   */
+  public function getValue()
+  {
+    return $this->value;
   }
 }

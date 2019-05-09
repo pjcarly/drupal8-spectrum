@@ -1011,13 +1011,13 @@ class Collection implements \IteratorAggregate, \Countable
 
     if($relationship instanceof FieldRelationship)
     {
-      $relationshipName = $relationship->relationshipName;
+      $relationshipName = $relationship->getName();
       $referencingCollection = $this;
       $referencedCollection = $inverses;
     }
     else
     {
-      $relationshipName = $relationship->fieldRelationship->relationshipName;
+      $relationshipName = $relationship->fieldRelationship->getName();
       $referencingCollection = $inverses;
       $referencedCollection = $this;
     }
