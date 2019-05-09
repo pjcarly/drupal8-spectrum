@@ -603,14 +603,16 @@ class ModelApiHandler extends BaseApiHandler
       // First we'll build the root model from the json api document
       // since we're talking about a post here, it's always a create, a new model
       $model = $modelClassName::forgeNew();
+
       // here we fill in the attributes on the new model from the json api document
       $model->applyChangesFromJsonAPIDocument($jsonapidocument);
-      // we trigger the beforeValidate as we might need to trigger some functionalitity
-      // before doing the validation and potentially sending back incorrect errors
-      $model->beforeValidate();
 
       // Next we check for embedded models
       $this->parseEmbeddedRelationships($jsonapidocument, $model, null);
+
+      // we trigger the beforeValidate as we might need to trigger some functionalitity
+      // before doing the validation and potentially sending back incorrect errors
+      $model->beforeValidate();
 
       // Now the validation, first the beforeValidate hook
       $model = $this->beforePostValidate($model);
@@ -771,14 +773,22 @@ class ModelApiHandler extends BaseApiHandler
         $originalModel = $model->getClonedModel();
         // here we fill in the attributes on the new model from the json api document
         $model->applyChangesFromJsonAPIDocument($jsonapidocument);
+
+        // Next we check for embedded models
+        $this->parseEmbeddedRelationships($jsonapidocument, $model, $originalModel);
+
         // we trigger the beforeValidate as we might need to trigger some functionalitity
         // before doing the validation and potentially sending back incorrect errors
         $model->beforeValidate();
+
+        // Next we call the before validate hook on this api handler.
         $model = $this->beforePatchValidate($model);
+
         // next we do the validation, in the return object we get a potential error document
         $model->constraints();
         $validation = $model->validate();
 
+        // And now we do the validations on the embedded relationships
         $this->validateEmbeddedRelationships($jsonapidocument, $model, $validation);
 
         // Depending on the result of the validation, let's send the the proper result
