@@ -62,7 +62,7 @@ abstract class Model
   /**
    * This array will hold the defined relationships with as key the fully qualified classname of the model, and as value the different defined relationships
    *
-   * @var array
+   * @var \Drupal\spectrum\Model\Relationship[]
    */
   public static $relationships = [];
 
