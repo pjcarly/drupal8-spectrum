@@ -22,6 +22,7 @@ use Drupal\spectrum\Utils\StringUtils;
 use Drupal\spectrum\Permissions\PermissionServiceInterface;
 use Drupal\spectrum\Models\User;
 use Drupal\spectrum\Services\ModelStoreInterface;
+use Drupal\Core\Field\FieldDefinitionInterface;
 
 /**
  * A Model is a wrapper around a Drupal Entity, which provides extra functionality. and an easy way of fetching and saving it to the database.
@@ -1680,7 +1681,7 @@ abstract class Model
   /**
    * Returns the drupal field definitions for the entity of this Model
    *
-   * @return array
+   * @return FieldDefinitionInterface[]
    */
   public static function getFieldDefinitions()
   {
