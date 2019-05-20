@@ -252,6 +252,8 @@ class JsonApiNode extends JsonApiBaseNode
     {
       return $this->relationships[$name];
     }
+
+    return null;
   }
 
   /**
