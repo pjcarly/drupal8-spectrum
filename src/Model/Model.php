@@ -2091,17 +2091,17 @@ abstract class Model
   }
 
   /**
-   * Find a modelclass by its bundle
+   * Find a modelclass by its bundleKey
    *
-   * @param string $bundle
+   * @param string $bundleKey
    * @return string|null
    */
-  public static function getModelClassByBundle(string $bundle) : ?string
+  public static function getModelClassByBundleKey(string $bundleKey) : ?string
   {
     $foundModelClass = null;
     foreach(static::getModelClasses() as $modelClass)
     {
-      if($modelClass::bundle() === $bundle || (empty($modelClass::bundle()) && $modelClass::entityType() === $bundle))
+      if($modelClass::getBundleKey() === $bundleKey)
       {
         $foundModelClass = $modelClass;
       }
