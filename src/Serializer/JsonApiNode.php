@@ -59,6 +59,16 @@ class JsonApiNode extends JsonApiBaseNode
   }
 
   /**
+   * Returns a unique key that uniquely identifies this resource object
+   *
+   * @return string
+   */
+  public function getUniqueKey() : string
+  {
+    return $this->getId() . $this->getType();
+  }
+
+  /**
    * Set the type of the jsonapi node, that will match the entity that will be serialized in this node.
    * This is used in order to translate the node back to the entity upon deserialization
    *
