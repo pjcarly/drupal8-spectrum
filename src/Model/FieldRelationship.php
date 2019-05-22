@@ -27,7 +27,7 @@ class FieldRelationship extends Relationship
   /**
    * An array containing the list of fully qualified classnames of all the polymoprhic model types
    *
-   * @var array
+   * @var string[]
    */
   public $polymorphicModelTypes = [];
 
@@ -113,6 +113,7 @@ class FieldRelationship extends Relationship
       // luckally we handle this correctly in getModelClassForEntityAndBundle
       $relationshipBundle = reset($fieldSettings['handler_settings']['target_bundles']);
     }
+
     $this->firstModelType = Model::getModelClassForEntityAndBundle($relationshipEntityType, $relationshipBundle);
 
     if(isset($fieldSettings['handler_settings']['target_bundles']) && sizeof($fieldSettings['handler_settings']['target_bundles']) > 1)
@@ -154,6 +155,16 @@ class FieldRelationship extends Relationship
   {
     $positionOfDot = strpos($this->relationshipField, '.');
     return substr($this->relationshipField, $positionOfDot + 1); // exclude the "." so +1
+  }
+
+  /**
+   * Returns all the polymorphic model types
+   *
+   * @return string[]
+   */
+  public function getPolymorphicModelTypes() : array
+  {
+    return $this->polymorphicModelTypes;
   }
 
   /**

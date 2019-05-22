@@ -1249,8 +1249,36 @@ abstract class Model
       if(static::hasRelationship($firstRelationshipName))
       {
         $firstRelationship = static::getRelationship($firstRelationshipName);
-        $firstRelationshipModelType = $firstRelationship->modelType;
-        return $firstRelationshipModelType::hasDeepRelationship(substr($relationshipName, $firstRelationshipNamePosition+1));
+
+        if($firstRelationship instanceof FieldRelationship)
+        {
+          /** @var FieldRelationship $firstRelationship */
+          if($firstRelationship->isPolymorphic)
+          {
+            $hasDeepRelationship = true;
+            foreach($firstRelationship->getPolymorphicModelTypes() as $polymorphicModelType)
+            {
+              $hasDeepRelationship = $polymorphicModelType::hasDeepRelationship(substr($relationshipName, $firstRelationshipNamePosition+1));
+
+              if(!$hasDeepRelationship)
+              {
+                break;
+              }
+            }
+
+            return $hasDeepRelationship;
+          }
+          else
+          {
+            $firstRelationshipModelType = $firstRelationship->modelType;
+            return $firstRelationshipModelType::hasDeepRelationship(substr($relationshipName, $firstRelationshipNamePosition+1));
+          }
+        }
+        else
+        {
+          $firstRelationshipModelType = $firstRelationship->modelType;
+          return $firstRelationshipModelType::hasDeepRelationship(substr($relationshipName, $firstRelationshipNamePosition+1));
+        }
       }
       else
       {
@@ -1278,7 +1306,23 @@ abstract class Model
       $firstRelationshipName = substr($relationshipName, 0, $firstRelationshipNamePosition);
       $nextRelationshipNames  = substr($relationshipName, $firstRelationshipNamePosition+1, strlen($relationshipName));
       $firstRelationship = static::getRelationship($firstRelationshipName);
-      $firstRelationshipModelType = $firstRelationship->modelType;
+
+      if($firstRelationship instanceof FieldRelationship)
+      {
+        /** @var FieldRelationship $firstRelationship */
+        if($firstRelationship->isPolymorphic)
+        {
+          $firstRelationshipModelType = $firstRelationship->getPolymorphicModelTypes()[0];
+        }
+        else
+        {
+          $firstRelationshipModelType = $firstRelationship->modelType;
+        }
+      }
+      else
+      {
+        $firstRelationshipModelType = $firstRelationship->modelType;
+      }
 
       return $firstRelationshipModelType::getDeepRelationship($nextRelationshipNames);
     }
