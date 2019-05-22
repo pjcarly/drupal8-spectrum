@@ -184,6 +184,8 @@ abstract class Model
         $this->setFieldForReferencedRelationships();
         $this->updateKeys();
       }
+
+      $strategy = $this->getStrategy() ?? new NoAccess
     }
     else
     {
@@ -1535,7 +1537,7 @@ abstract class Model
   /**
    * This method is used to add relationships on every implementation of a Model
    *
-   * @return void
+   * @return \Drupal\spectrum\Model\Relationship[]
    */
   public static function relationships(){}
 

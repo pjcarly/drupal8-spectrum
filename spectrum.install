@@ -1,0 +1,136 @@
+<?php
+
+use Drupal\Core\Database\Database;
+
+/**
+ * Implements hook_schema().
+ */
+function spectrum_schema() {
+  $schema['spectrum_entity_access'] = [
+    'description' => 'A map between entities and the users that have permission to access them.',
+    'fields' => [
+      'entity_type' => [
+        'description' => 'Entity type of the entity affected.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ],
+      'entity_id' => [
+        'description' => 'ID of the entity affected.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'uid' => [
+        'description' => 'User ID',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+    ],
+    'primary key' => ['entity_type', 'entity_id', 'uid'],
+  ];
+
+  $schema['spectrum_entity_root'] = [
+    'description' => '',
+    'fields' => [
+      'entity_type' => [
+        'description' => 'Entity type of the entity affected.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ],
+      'entity_id' => [
+        'description' => 'ID of the entity affected.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'root_entity_type' => [
+        'description' => 'Entity type of the entity affected.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ],
+      'root_entity_id' => [
+        'description' => 'ID of the entity affected.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+    ],
+    'primary key' => ['entity_type', 'entity_id', 'root_entity_type', 'root_entity_id'],
+  ];
+
+  return $schema;
+}
+
+/**
+ * Installs spectrum_entity_access schema.
+ */
+function spectrum_update_8001() {
+  $spec = [
+    'description' => '',
+    'fields' => [
+      'entity_type' => [
+        'description' => 'Entity type of the entity affected.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ],
+      'entity_id' => [
+        'description' => 'ID of the entity affected.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'uid' => [
+        'description' => 'User ID',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+    ],
+    'primary key' => ['entity_type', 'entity_id', 'uid'],
+  ];
+  $schema = Database::getConnection()->schema();
+  $schema->createTable('spectrum_entity_access', $spec);
+}
+
+/**
+ * Installs spectrum_entity_root for ParentAccessPolicy.
+ */
+function spectrum_update_8002() {
+  $spec = [
+    'description' => '',
+    'fields' => [
+      'entity_type' => [
+        'description' => 'Entity type of the entity affected.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ],
+      'entity_id' => [
+        'description' => 'ID of the entity affected.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'root_entity_type' => [
+        'description' => 'Entity type of the entity affected.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ],
+      'root_entity_id' => [
+        'description' => 'ID of the entity affected.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+    ],
+    'primary key' => ['entity_type', 'entity_id', 'root_entity_type', 'root_entity_id'],
+  ];
+  $schema = Database::getConnection()->schema();
+  $schema->createTable('spectrum_entity_root', $spec);
+}

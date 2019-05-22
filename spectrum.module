@@ -33,6 +33,9 @@ function spectrum_entity_delete($entity)
 function spectrum_query_spectrum_query_alter(AlterableInterface $drupalQuery)
 {
   /** @var Query $query */
-  $query = $drupalQuery->getMetaData('spectrum_query');
-  $query->parseExpressions($drupalQuery);
+  if ($query = $drupalQuery->getMetaData('spectrum_query')) {
+    $query->parseExpressions($drupalQuery);
+  }
+
+  if ($query->getTag())
 }
