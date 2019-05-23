@@ -536,6 +536,16 @@ abstract class Model
   }
 
   /**
+   * Returns the short model name (name of the class without namespace)
+   *
+   * @return string
+   */
+  public function getShortModelName() : string
+  {
+    return (new \ReflectionClass($this))->getShortName();
+  }
+
+  /**
    * Returns the provided relationship on this Model
    *
    * @param string|Relationship $relationship
@@ -1847,16 +1857,25 @@ abstract class Model
    */
   public static function getterExists(Model $model, string $property) : bool
   {
-    $getterName = 'get'.$property;
+    $getterExists = false;
+
+    $getterName = 'get'.ucfirst($property);
     if(!empty($property) && is_callable([$model, $getterName]))
     {
-      $reflector = new \ReflectionMethod($model, $getterName);
-      $isProto = ($reflector->getDeclaringClass()->getName() !== get_class($model));
+      if($getterName === 'getShortModelName')
+      {
+        $getterExists = true;
+      }
+      else
+      {
+        $reflector = new \ReflectionMethod($model, $getterName);
+        $isProto = ($reflector->getDeclaringClass()->getName() !== get_class($model));
 
-      return !$isProto; // Meaning the function may only exist on the child class (shielding Model class functions from this)
+        $getterExists = !$isProto; // Meaning the function may only exist on the child class (shielding Model class functions from this)
+      }
     }
 
-    return false;
+    return $getterExists;
   }
 
   /**
