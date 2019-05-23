@@ -602,6 +602,7 @@ class ModelApiHandler extends BaseApiHandler
     {
       // First we'll build the root model from the json api document
       // since we're talking about a post here, it's always a create, a new model
+      /** @var Model $model */
       $model = $modelClassName::forgeNew();
 
       // here we fill in the attributes on the new model from the json api document

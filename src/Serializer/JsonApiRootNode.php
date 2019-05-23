@@ -53,6 +53,21 @@ class JsonApiRootNode extends JsonApiDataNode
   }
 
   /**
+   * Returns the Included jsonapi nodes
+   *
+   * @return JsonApiNode[]
+   */
+  public function getIncluded() : array
+  {
+    if(empty($this->included))
+    {
+      return [];
+    }
+
+    return $this->included;
+  }
+
+  /**
    * Adds a JsonApiNode to the Included hash. In case the Key/Type combination already exists, the existing node will be overriden. That way no records will be in the serialized hash
    *
    * @param JsonApiNode $node
