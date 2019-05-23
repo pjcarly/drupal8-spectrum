@@ -536,6 +536,16 @@ abstract class Model
   }
 
   /**
+   * Returns the short model name (name of the class without namespace)
+   *
+   * @return string
+   */
+  public function getShortModelName() : string
+  {
+    return (new \ReflectionClass($this))->getShortName();
+  }
+
+  /**
    * Returns the provided relationship on this Model
    *
    * @param string|Relationship $relationship
@@ -1249,8 +1259,36 @@ abstract class Model
       if(static::hasRelationship($firstRelationshipName))
       {
         $firstRelationship = static::getRelationship($firstRelationshipName);
-        $firstRelationshipModelType = $firstRelationship->modelType;
-        return $firstRelationshipModelType::hasDeepRelationship(substr($relationshipName, $firstRelationshipNamePosition+1));
+
+        if($firstRelationship instanceof FieldRelationship)
+        {
+          /** @var FieldRelationship $firstRelationship */
+          if($firstRelationship->isPolymorphic)
+          {
+            $hasDeepRelationship = true;
+            foreach($firstRelationship->getPolymorphicModelTypes() as $polymorphicModelType)
+            {
+              $hasDeepRelationship = $polymorphicModelType::hasDeepRelationship(substr($relationshipName, $firstRelationshipNamePosition+1));
+
+              if(!$hasDeepRelationship)
+              {
+                break;
+              }
+            }
+
+            return $hasDeepRelationship;
+          }
+          else
+          {
+            $firstRelationshipModelType = $firstRelationship->modelType;
+            return $firstRelationshipModelType::hasDeepRelationship(substr($relationshipName, $firstRelationshipNamePosition+1));
+          }
+        }
+        else
+        {
+          $firstRelationshipModelType = $firstRelationship->modelType;
+          return $firstRelationshipModelType::hasDeepRelationship(substr($relationshipName, $firstRelationshipNamePosition+1));
+        }
       }
       else
       {
@@ -1278,7 +1316,23 @@ abstract class Model
       $firstRelationshipName = substr($relationshipName, 0, $firstRelationshipNamePosition);
       $nextRelationshipNames  = substr($relationshipName, $firstRelationshipNamePosition+1, strlen($relationshipName));
       $firstRelationship = static::getRelationship($firstRelationshipName);
-      $firstRelationshipModelType = $firstRelationship->modelType;
+
+      if($firstRelationship instanceof FieldRelationship)
+      {
+        /** @var FieldRelationship $firstRelationship */
+        if($firstRelationship->isPolymorphic)
+        {
+          $firstRelationshipModelType = $firstRelationship->getPolymorphicModelTypes()[0];
+        }
+        else
+        {
+          $firstRelationshipModelType = $firstRelationship->modelType;
+        }
+      }
+      else
+      {
+        $firstRelationshipModelType = $firstRelationship->modelType;
+      }
 
       return $firstRelationshipModelType::getDeepRelationship($nextRelationshipNames);
     }
@@ -1803,16 +1857,25 @@ abstract class Model
    */
   public static function getterExists(Model $model, string $property) : bool
   {
-    $getterName = 'get'.$property;
+    $getterExists = false;
+
+    $getterName = 'get'.ucfirst($property);
     if(!empty($property) && is_callable([$model, $getterName]))
     {
-      $reflector = new \ReflectionMethod($model, $getterName);
-      $isProto = ($reflector->getDeclaringClass()->getName() !== get_class($model));
+      if($getterName === 'getShortModelName')
+      {
+        $getterExists = true;
+      }
+      else
+      {
+        $reflector = new \ReflectionMethod($model, $getterName);
+        $isProto = ($reflector->getDeclaringClass()->getName() !== get_class($model));
 
-      return !$isProto; // Meaning the function may only exist on the child class (shielding Model class functions from this)
+        $getterExists = !$isProto; // Meaning the function may only exist on the child class (shielding Model class functions from this)
+      }
     }
 
-    return false;
+    return $getterExists;
   }
 
   /**

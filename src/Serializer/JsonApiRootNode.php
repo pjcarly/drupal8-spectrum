@@ -68,6 +68,22 @@ class JsonApiRootNode extends JsonApiDataNode
   }
 
   /**
+   * Removes a included node by its key in the included array
+   *
+   * @param string $key
+   * @return JsonApiRootNode
+   */
+  public function removeIncluded(string $key) : JsonApiRootNode
+  {
+    if(!empty($this->included) && array_key_exists($key, $this->included))
+    {
+      unset($this->included[$key]);
+    }
+
+    return $this;
+  }
+
+  /**
    * Adds a JsonApiNode to the Included hash. In case the Key/Type combination already exists, the existing node will be overriden. That way no records will be in the serialized hash
    *
    * @param JsonApiNode $node
@@ -80,7 +96,7 @@ class JsonApiRootNode extends JsonApiDataNode
       $this->included = [];
     }
 
-    $key = $node->getId() . $node->getType();
+    $key = $node->getUniqueKey();
     $this->included[$key] = $node;
 
     return $this;
@@ -98,10 +114,12 @@ class JsonApiRootNode extends JsonApiDataNode
     if(!empty($this->included))
     {
       $serializedIncluded = [];
+
       foreach($this->included as $includedMember)
       {
         $serializedIncluded[] = $includedMember->serialize();
       }
+
       $serialized->included = $serializedIncluded;
     }
 
