@@ -1,16 +1,15 @@
 <?php
 
-namespace Drupal\spectrum\Permissions\AccessStrategy;
+namespace Drupal\spectrum\Permissions\AccessPolicy;
 
-use Drupal\Core\Database\Connection;
-use Drupal\Core\Database\Query\AlterableInterface;
-use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Database\Query\Select;
+use Drupal\mist_crm\Models\Object\Company;
 use Drupal\spectrum\Model\Model;
 
 /**
  * Class PrivateAccessPolicy
  *
- * @package Drupal\spectrum\Permissions\AccessStrategy
+ * @package Drupal\spectrum\Permissions\AccessPolicy
  */
 class PrivateAccessPolicy implements AccessPolicyInterface {
 
@@ -31,29 +30,17 @@ class PrivateAccessPolicy implements AccessPolicyInterface {
 
   /**
    * PrivateAccessPolicy constructor.
-   *
-   * @param \Drupal\Core\Database\Connection $database
-   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
-   *
-   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
-   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
-  public function __construct(
-    Connection $database,
-    EntityTypeManagerInterface $entityTypeManager
-  ) {
-    $this->database = $database;
-    $this->userStorage = $entityTypeManager->getStorage('user');
+  public function __construct() {
+    $this->database = \Drupal::database();
+    $this->userStorage = \Drupal::entityTypeManager()
+      ->getStorage('user');
   }
 
   /**
    * @inheritDoc
    */
   public function onSave(Model $model): void {
-    if (!$this->dependenciesMet($model)) {
-      return;
-    }
-
     $entityType = $model::entityType();
     $entityId = $model->getId();
 
@@ -77,34 +64,23 @@ class PrivateAccessPolicy implements AccessPolicyInterface {
     }
 
     $insertQuery->execute();
+
+    // Set the root model for all children.
+    (new ParentAccessPolicy)->onSave($model);
   }
 
   /**
    * @inheritDoc
    */
-  public function onQuery(AlterableInterface $query): AlterableInterface {
-    // TODO: Implement onQuery() method.
+  public function onQuery(Select $query): Select {
+    $type = $query->getTables()['base_table']['table'];
+    $condition = strtr('ea.entity_type = \'@type\' AND ea.entity_id = base_table.id', [
+      '@type' => $type,
+    ]);
+    $query->innerJoin(self::TABLE_ENTITY_ACCESS, 'ea', $condition);
+    $query->condition('ea.uid', \Drupal::currentUser()->id());
+
     return $query;
-  }
-
-  /**
-   * @param \Drupal\spectrum\Model\Model $model
-   *
-   * @return bool
-   */
-  protected function dependenciesMet(Model $model): bool {
-    $requiredRelationships = ['company', 'contact', 'organization'];
-    $foundRelationships = [];
-
-    foreach ($model::relationships() as $relationship) {
-      $name = $relationship->getName();
-
-      if (in_array($name, $requiredRelationships)) {
-        $foundRelationships[] = $name;
-      }
-    }
-
-    return sizeof($requiredRelationships) === sizeof($foundRelationships);
   }
 
   /**
@@ -115,32 +91,42 @@ class PrivateAccessPolicy implements AccessPolicyInterface {
   protected function getUserIds(Model $model): array {
     $users = [];
 
-    // If there is a contact related to the model, and the contact is related
-    // to a user, insert permissions for that user.
+    // Fetches the user IDs related to a company.
+    $usersFromCompany = function (Company $company): array {
+      $company->fetch('contacts');
+      return $company->fetch('contacts.users')->getIds();
+    };
+
+    // There is a contact related to the model.
     /** @var \Drupal\mist_crm\Models\Object\Contact $contact */
     if ($contact = $model->fetch('contact')) {
+
+      // If there is a company related to the contact, insert permissions for
+      // that company's employees.
+      /** @var Company $company */
+      if ($company = $contact->fetch('company')) {
+        $users = array_merge($users, $usersFromCompany($company));
+      }
+
+      // If there is no company related to the contact, but there is a user
+      // related to the contact, insert permissions for that user.
       /** @var \Drupal\mist_crm\Models\User $user */
-      if ($user = $contact->fetch('user')) {
-        $users[] = $user->getId();
+      else if ($user = $contact->fetch('user')) {
+        $users = array_merge($users, [$user->getId()]);
       }
     }
 
+    // There is a company related to the model.
     /** @var \Drupal\mist_crm\Models\Object\Company $company */
     if ($company = $model->fetch('company')) {
-      $company->fetch('contacts');
-      $userIds = $company->fetch('contacts.users')->getIds();
-      $users = array_merge($users, $userIds);
+      $users = array_merge($users, $usersFromCompany($company));
     }
 
+    // There is an organization related to the model.
     /** @var \Drupal\mist_crm\Models\Organization\Organization $organization */
     if ($organization = $model->fetch('organization')) {
-      // @todo: there's no mapping between user and organization yet.
-      // Give access to all atlas users for now.
-      $result = $this->userStorage->getQuery()
-        ->condition('status', 1)
-        ->condition('roles', 'atlas_user')
-        ->execute();
-      $users = array_merge($users, $result);
+      $employees = $organization->fetch('users')->getIds();
+      $users = array_merge($users, $employees);
     }
 
     return array_unique($users);

@@ -1,14 +1,15 @@
 <?php
 
-namespace Drupal\spectrum\Permissions\AccessStrategy;
+namespace Drupal\spectrum\Permissions\AccessPolicy;
 
 use Drupal\Core\Database\Query\AlterableInterface;
+use Drupal\Core\Database\Query\Select;
 use Drupal\spectrum\Model\Model;
 
 /**
  * Class NoAccessPolicy
  *
- * @package Drupal\spectrum\Permissions\AccessStrategy
+ * @package Drupal\spectrum\Permissions\AccessPolicy
  */
 class NoAccessPolicy implements AccessPolicyInterface {
 
@@ -22,9 +23,8 @@ class NoAccessPolicy implements AccessPolicyInterface {
   /**
    * @inheritDoc
    */
-  public function onQuery(AlterableInterface $query): AlterableInterface {
-    // TODO: Implement onQuery() method.
-    return $query->addTag('access:' . self::class);
+  public function onQuery(Select $query): Select {
+    $query->addExpression('1=0');
   }
 
 }

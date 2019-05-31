@@ -1,14 +1,14 @@
 <?php
 
-namespace Drupal\spectrum\Permissions\AccessStrategy;
+namespace Drupal\spectrum\Permissions\AccessPolicy;
 
-use Drupal\Core\Database\Query\AlterableInterface;
+use Drupal\Core\Database\Query\Select;
 use Drupal\spectrum\Model\Model;
 
 /**
  * Interface AccessPolicyInterface
  *
- * @package Drupal\spectrum\Permissions\AccessStrategy
+ * @package Drupal\spectrum\Permissions\AccessPolicy
  */
 interface AccessPolicyInterface {
 
@@ -20,10 +20,8 @@ interface AccessPolicyInterface {
   public function onSave(Model $model): void;
 
   /**
-   * @param \Drupal\Core\Database\Query\AlterableInterface $query
-   *
-   * @return \Drupal\Core\Database\Query\AlterableInterface
+   * @param \Drupal\Core\Database\Query\Select $query
    */
-  public function onQuery(AlterableInterface $query): AlterableInterface;
+  public function onQuery(Select $query): Select;
 
 }

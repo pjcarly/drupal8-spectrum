@@ -3,6 +3,8 @@
 namespace Drupal\spectrum\Models;
 
 use Drupal\spectrum\Model\Model;
+use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
+use Drupal\spectrum\Permissions\AccessPolicy\PublicAccessPolicy;
 
 class User extends Model
 {
@@ -41,6 +43,13 @@ class User extends Model
   public static function relationships()
   {
 
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public static function getAccessPolicy(): AccessPolicyInterface {
+    return new PublicAccessPolicy;
   }
 
   /**

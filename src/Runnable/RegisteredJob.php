@@ -2,6 +2,8 @@
 namespace Drupal\spectrum\Runnable;
 
 use Drupal\spectrum\Model\Model;
+use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
+use Drupal\spectrum\Permissions\AccessPolicy\PublicAccessPolicy;
 use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Model\ReferencedRelationship;
 
@@ -41,6 +43,13 @@ class RegisteredJob extends Model
   {
     parent::relationships();
     static::addRelationship(new ReferencedRelationship('queued_jobs', 'Drupal\spectrum\Runnable\QueuedJob', 'job'));
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public static function getAccessPolicy(): AccessPolicyInterface {
+    return new PublicAccessPolicy;
   }
 
   /**

@@ -3,6 +3,8 @@ namespace Drupal\spectrum\Runnable;
 
 use Drupal\Core\Session\AnonymousUserSession;
 use Drupal\Core\Session\AccountSwitcher;
+use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
+use Drupal\spectrum\Permissions\AccessPolicy\PublicAccessPolicy;
 use Drupal\spectrum\Runnable\RegisteredJob;
 use Drupal\spectrum\Exceptions\JobTerminateException;
 
@@ -31,6 +33,13 @@ class QueuedJob extends RunnableModel
   public static function bundle() : string
   {
     return 'queued_job';
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public static function getAccessPolicy(): AccessPolicyInterface {
+    return new PublicAccessPolicy;
   }
 
   /**

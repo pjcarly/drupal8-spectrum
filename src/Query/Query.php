@@ -2,12 +2,11 @@
 
 namespace Drupal\spectrum\Query;
 
+use Drupal\Core\Database\Query\Condition as DrupalCondition;
+use Drupal\Core\Database\Query\Select as DrupalSelectQuery;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\Query\QueryInterface;
-use Drupal\spectrum\Permissions\AccessStrategy\AccessPolicyInterface;
 use Drupal\spectrum\Runnable\BatchableInterface;
-use Drupal\Core\Database\Query\Select as DrupalSelectQuery;
-use Drupal\Core\Database\Query\Condition as DrupalCondition;
 
 /**
  * This class provides base functionality for different query types
@@ -358,7 +357,7 @@ abstract class Query implements BatchableInterface
    *
    * @return QueryInterface
    */
-  private function getBaseQuery() : QueryInterface
+  protected function getBaseQuery() : QueryInterface
   {
     // We abstracted the getQuery and getTotalCountQuery functions in this function, to avoid duplicate code
     $query = \Drupal::entityQuery($this->entityType);
@@ -465,7 +464,7 @@ abstract class Query implements BatchableInterface
     }
     else
     {
-      $store = \Drupal::entityManager()->getStorage($this->entityType);
+      $store = \Drupal::entityTypeManager()->getStorage($this->entityType);
       return empty($ids) ? [] : $store->loadMultiple($ids);
     }
   }
@@ -511,7 +510,7 @@ abstract class Query implements BatchableInterface
     }
     else
     {
-      $store = \Drupal::entityManager()->getStorage($this->entityType);
+      $store = \Drupal::entityTypeManager()->getStorage($this->entityType);
       return empty($id) ? null : $store->load($id);
     }
   }
@@ -774,11 +773,4 @@ abstract class Query implements BatchableInterface
     return $this;
   }
 
-  /**
-   * Uses spectrum access policies.
-   */
-  public function useAccessPolicy() : void
-  {
-    $this->setTag(AccessPolicyInterface::class);
-  }
 }

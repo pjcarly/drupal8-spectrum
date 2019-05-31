@@ -5,6 +5,8 @@ namespace Drupal\spectrum\Models;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Model\FieldRelationship;
 use Drupal\spectrum\Model\ReferencedRelationship;
+use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
+use Drupal\spectrum\Permissions\AccessPolicy\PublicAccessPolicy;
 use Drupal\spectrum\Serializer\JsonApiNode;
 use Drupal\spectrum\Utils\UrlUtils;
 use Drupal\Component\Render\PlainTextOutput;
@@ -42,6 +44,13 @@ class File extends Model
    */
   public static function relationships()
   {
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public static function getAccessPolicy(): AccessPolicyInterface {
+    return new PublicAccessPolicy;
   }
 
   /**

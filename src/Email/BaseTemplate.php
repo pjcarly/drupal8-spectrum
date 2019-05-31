@@ -3,13 +3,19 @@
 namespace Drupal\spectrum\Email;
 
 use Drupal\spectrum\Model\Model;
+use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
+use Drupal\spectrum\Permissions\AccessPolicy\NoAccessPolicy;
 
+/**
+ * Class BaseTemplate
+ *
+ * @package Drupal\spectrum\Email
+ */
 class BaseTemplate extends Model
 {
+
   /**
-   * The Entitytype of this model
-   *
-   * @return string
+   * @inheritDoc
    */
   public static function entityType() : string
   {
@@ -17,13 +23,18 @@ class BaseTemplate extends Model
   }
 
   /**
-   * The Bundle of this model
-   *
-   * @return string
+   * @inheritDoc
    */
   public static function bundle() : string
   {
     return 'base';
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public static function getAccessPolicy(): AccessPolicyInterface {
+    return new NoAccessPolicy;
   }
 
   /**

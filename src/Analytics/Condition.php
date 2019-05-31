@@ -6,6 +6,8 @@ use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Model\FieldRelationship;
 use Drupal\spectrum\Model\ReferencedRelationship;
 
+use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
+use Drupal\spectrum\Permissions\AccessPolicy\PublicAccessPolicy;
 use Drupal\spectrum\Query\Condition as QueryCondition;
 use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface;
 
@@ -73,7 +75,17 @@ class Condition extends Model
    */
   public static function relationships()
   {
-    static::addRelationship(new FieldRelationship('parent', 'field_parent.target_id'));
+    static::addRelationship(new FieldRelationship(
+      'parent',
+      'field_parent.target_id'
+    ));
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public static function getAccessPolicy(): AccessPolicyInterface {
+    return new PublicAccessPolicy;
   }
 
   /**

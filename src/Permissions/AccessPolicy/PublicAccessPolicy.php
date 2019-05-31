@@ -1,14 +1,14 @@
 <?php
 
-namespace Drupal\spectrum\Permissions\AccessStrategy;
+namespace Drupal\spectrum\Permissions\AccessPolicy;
 
-use Drupal\Core\Database\Query\AlterableInterface;
+use Drupal\Core\Database\Query\Select;
 use Drupal\spectrum\Model\Model;
 
 /**
  * Class PublicAccessPolicy
  *
- * @package Drupal\spectrum\Permissions\AccessStrategy
+ * @package Drupal\spectrum\Permissions\AccessPolicy
  */
 class PublicAccessPolicy implements AccessPolicyInterface {
 
@@ -16,14 +16,14 @@ class PublicAccessPolicy implements AccessPolicyInterface {
    * @inheritDoc
    */
   public function onSave(Model $model): void {
-    // Do nothing.
+    // Set the root model for all children.
+    (new ParentAccessPolicy)->onSave($model);
   }
 
   /**
    * @inheritDoc
    */
-  public function onQuery(AlterableInterface $query): AlterableInterface {
-    // Do nothing.
+  public function onQuery(Select $query): Select {
     return $query;
   }
 
