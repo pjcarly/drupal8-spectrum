@@ -212,7 +212,9 @@ class ModelApiHandler extends BaseApiHandler
   public function get(Request $request) : Response
   {
     $modelClassName = $this->modelClassName;
+    /** @var \Drupal\spectrum\Query\ModelQuery $query */
     $query = $modelClassName::getModelQuery();
+    $query->setUseAccessPolicy(TRUE);
     $limit = 0;
     $page = 0;
     $sort = '';

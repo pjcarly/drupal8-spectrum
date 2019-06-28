@@ -21,6 +21,8 @@ interface AccessPolicyInterface {
 
   /**
    * @param \Drupal\Core\Database\Query\Select $query
+   *
+   * @return \Drupal\Core\Database\Query\Select
    */
   public function onQuery(Select $query): Select;
 

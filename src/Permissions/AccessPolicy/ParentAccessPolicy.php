@@ -4,7 +4,6 @@ namespace Drupal\spectrum\Permissions\AccessPolicy;
 
 use Drupal\Core\Database\Query\Select;
 use Drupal\groupflights\Services\ModelService;
-use Drupal\groupflights\Services\PermissionService;
 use Drupal\spectrum\Model\FieldRelationship;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Model\Relationship;
@@ -26,21 +25,27 @@ class ParentAccessPolicy implements AccessPolicyInterface {
     $class = get_class($model);
     $tree = $this->childrenForClass($class, []);
 
-    $insertQueryValues = $this->foo($tree, $class, $model, $root, []);
-
-    if (!empty($insertQueryValues)) {
-      $insertQuery = \Drupal::database()->insert('spectrum_entity_root');
-      $insertQuery->fields(['entity_type', 'entity_id', 'root_entity_type', 'root_entity_id']);
-
-      foreach ($insertQueryValues as $values) {
-        $insertQuery->values($values);
-      }
-
-      $insertQuery->execute();
+    if ($values = $this->insertQueryValues($tree, $class, $model, $root, [])) {
+      $columns = ['entity_type', 'entity_id', 'root_entity_type', 'root_entity_id'];
+      $query = strtr('INSERT IGNORE INTO @table (@columns) VALUES @values', [
+        '@table' => 'spectrum_entity_root',
+        '@columns' => implode(', ', $columns),
+        '@values' => implode(', ', $values)
+      ]);
+      \Drupal::database()->query($query)->execute();
     }
   }
 
-  protected function foo(
+  /**
+   * @param array $tree
+   * @param string $class
+   * @param \Drupal\spectrum\Model\Model $model
+   * @param \Drupal\spectrum\Model\Model $root
+   * @param array $insertQueryValues
+   *
+   * @return array
+   */
+  protected function insertQueryValues(
     array $tree,
     string $class,
     Model $model,
@@ -51,28 +56,36 @@ class ParentAccessPolicy implements AccessPolicyInterface {
      * @var Model $childModel
      * @var FieldRelationship $relationship
      */
-    foreach ($tree[$class] as $childModel => $relationship) {
-      $query = $childModel::getModelQuery();
-      $query->addCondition(new Condition(
-        $relationship->relationshipField,
-        '=',
-        $model->getId()
-      ));
-      $collection = $query->fetchCollection();
+    if (array_key_exists($class, $tree)) {
+      foreach ($tree[$class] as $childModel => $relationship) {
+        $query = $childModel::getModelQuery();
+        $query->addCondition(new Condition(
+          $relationship->relationshipField,
+          '=',
+          $model->getId()
+        ));
+        $collection = $query->fetchCollection();
 
-      if ($collection->size() > 0) {
-        /** @var Model $item */
-        foreach ($collection as $item) {
-          $insertQueryValues[] = [
-            'entity_type' => $item->entity->getEntityType()->id(),
-            'entity_id' => $item->getId(),
-            'root_entity_type' => $root->entity->getEntityType()->id(),
-            'root_entity_id' => $root->getId(),
-          ];
-          $insertQueryValues = $this->foo($tree, $childModel, $item, $root, $insertQueryValues);
+        if ($collection->size() > 0) {
+          /** @var Model $item */
+          foreach ($collection as $item) {
+            $insertQueryValues[] = strtr('(\'@entity_type\', @entity_id, \'@root_entity_type\', @root_entity_id)', [
+              '@entity_type' => $item->entity->getEntityType()->id(),
+              '@entity_id' => $item->getId(),
+              '@root_entity_type' => $root->entity->getEntityType()->id(),
+              '@root_entity_id' => $root->getId(),
+            ]);
+            $insertQueryValues = $this->insertQueryValues(
+              $tree,
+              $childModel,
+              $item,
+              $root,
+              $insertQueryValues
+            );
+          }
         }
-      }
 
+      }
     }
 
     return $insertQueryValues;
@@ -91,8 +104,13 @@ class ParentAccessPolicy implements AccessPolicyInterface {
     $condition = 'sea.entity_type = ser.root_entity_type AND sea.entity_id = ser.root_entity_id';
     $query->innerJoin('spectrum_entity_access', 'sea', $condition);
 
-    $query->condition('sea.uid', \Drupal::currentUser()->id());
-    $x = $query->__toString();
+    $condition = new \Drupal\Core\Database\Query\Condition('OR');
+    // Private access, see PrivateAccessPolicy.
+    $condition->condition('sea.uid', \Drupal::currentUser()->id());
+    // Public access, see PublicAccessPolicy.
+    $condition->condition('sea.uid', 0);
+    $query->condition($condition);
+
     return $query;
   }
 

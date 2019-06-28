@@ -195,14 +195,14 @@ abstract class Model
         $this->updateKeys();
       }
 
-      if($isNew
-        || $this->fieldChanged('field_organization')
-        || $this->fieldChanged('field_contact')
-        || $this->fieldChanged('field_company'))
-      {
+//      if($isNew
+//        || $this->fieldChanged('field_organization')
+//        || $this->fieldChanged('field_contact')
+//        || $this->fieldChanged('field_company'))
+//      {
         // Recalculate permissions.
         static::getAccessPolicy()->onSave($this);
-      }
+//      }
     }
     else
     {

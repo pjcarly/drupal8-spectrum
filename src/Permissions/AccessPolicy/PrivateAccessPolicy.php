@@ -4,6 +4,8 @@ namespace Drupal\spectrum\Permissions\AccessPolicy;
 
 use Drupal\Core\Database\Query\Select;
 use Drupal\mist_crm\Models\Object\Company;
+use Drupal\spectrum\Exceptions\RelationshipNotDefinedException;
+use Drupal\spectrum\Model\Collection;
 use Drupal\spectrum\Model\Model;
 
 /**
@@ -94,39 +96,53 @@ class PrivateAccessPolicy implements AccessPolicyInterface {
     // Fetches the user IDs related to a company.
     $usersFromCompany = function (Company $company): array {
       $company->fetch('contacts');
-      return $company->fetch('contacts.users')->getIds();
+      return $company->fetch('contacts.user')->getIds();
     };
 
-    // There is a contact related to the model.
-    /** @var \Drupal\mist_crm\Models\Object\Contact $contact */
-    if ($contact = $model->fetch('contact')) {
+    try {
+      // There is a contact related to the model.
+      /** @var \Drupal\mist_crm\Models\Object\Contact $contact */
+      if ($contact = $model->fetch('contact')) {
 
-      // If there is a company related to the contact, insert permissions for
-      // that company's employees.
-      /** @var Company $company */
-      if ($company = $contact->fetch('company')) {
+        // If there is a company related to the contact, insert permissions for
+        // that company's employees.
+        /** @var Company $company */
+        if ($company = $contact->fetch('company')) {
+          $users = array_merge($users, $usersFromCompany($company));
+        }
+
+        // If there is no company related to the contact, but there is a user
+        // related to the contact, insert permissions for that user.
+        /** @var \Drupal\mist_crm\Models\User $user */
+        else if ($user = $contact->fetch('user')) {
+          $users = array_merge($users, [$user->getId()]);
+        }
+      }
+    }
+    catch (RelationshipNotDefinedException $e) {
+    }
+
+    try {
+      // There is a company related to the model.
+      /** @var \Drupal\mist_crm\Models\Object\Company $company */
+      if ($company = $model->fetch('company')) {
         $users = array_merge($users, $usersFromCompany($company));
       }
+    }
+    catch (RelationshipNotDefinedException $e) {
+    }
 
-      // If there is no company related to the contact, but there is a user
-      // related to the contact, insert permissions for that user.
-      /** @var \Drupal\mist_crm\Models\User $user */
-      else if ($user = $contact->fetch('user')) {
-        $users = array_merge($users, [$user->getId()]);
+    try {
+      // There is an organization related to the model.
+      /** @var \Drupal\mist_crm\Models\Organization\Organization $organization */
+      if ($organization = $model->fetch('organization')) {
+        $employees = $organization->fetch('users');
+        if (is_a($employees, Collection::class)) {
+          $users = array_merge($users, $employees->getIds());
+        }
       }
     }
-
-    // There is a company related to the model.
-    /** @var \Drupal\mist_crm\Models\Object\Company $company */
-    if ($company = $model->fetch('company')) {
-      $users = array_merge($users, $usersFromCompany($company));
-    }
-
-    // There is an organization related to the model.
-    /** @var \Drupal\mist_crm\Models\Organization\Organization $organization */
-    if ($organization = $model->fetch('organization')) {
-      $employees = $organization->fetch('users')->getIds();
-      $users = array_merge($users, $employees);
+    catch (RelationshipNotDefinedException $e) {
     }
 
     return array_unique($users);
