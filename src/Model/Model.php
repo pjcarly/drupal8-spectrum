@@ -3,6 +3,7 @@
 namespace Drupal\spectrum\Model;
 
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
 use Drupal\spectrum\Query\Query;
 use Drupal\spectrum\Query\EntityQuery;
 use Drupal\spectrum\Query\BundleQuery;
@@ -53,6 +54,11 @@ abstract class Model
   public abstract static function bundle() : string;
 
   /**
+   * @return \Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface
+   */
+  public abstract static function getAccessPolicy() : AccessPolicyInterface;
+
+  /**
    * Here are the model class mapping stored, with the entitytype/bundle as key, and the fully qualified model classname as value
    * This is to get around the shared scope of multiple Models on the abstract superclass Model
    *
@@ -61,7 +67,9 @@ abstract class Model
   public static $modelClassMapping = null;
 
   /**
-   * This array will hold the defined relationships with as key the fully qualified classname of the model, and as value the different defined relationships
+   * This array will hold the defined relationships with as key the fully
+   * qualified classname of the model, and as value the different defined
+   * relationships.
    *
    * @var \Drupal\spectrum\Model\Relationship[]
    */
@@ -170,8 +178,10 @@ abstract class Model
   /**
    * Save the model, or if a relationshipName was passed, get the relationship and save it
    *
-   * @param string $relationshipName
-   * @return Model
+   * @param string|NULL $relationshipName
+   *
+   * @return \Drupal\spectrum\Model\Model
+   * @throws \Drupal\Core\Entity\EntityStorageException
    */
   public function save(string $relationshipName = NULL) : Model
   {
@@ -185,6 +195,15 @@ abstract class Model
         $this->setFieldForReferencedRelationships();
         $this->updateKeys();
       }
+
+//      if($isNew
+//        || $this->fieldChanged('field_organization')
+//        || $this->fieldChanged('field_contact')
+//        || $this->fieldChanged('field_company'))
+//      {
+        // Recalculate permissions.
+        static::getAccessPolicy()->onSave($this);
+//      }
     }
     else
     {
@@ -1590,7 +1609,7 @@ abstract class Model
   /**
    * This method is used to add relationships on every implementation of a Model
    *
-   * @return void
+   * @return \Drupal\spectrum\Model\Relationship[]
    */
   public static function relationships(){}
 

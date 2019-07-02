@@ -6,6 +6,8 @@ use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Model\FieldRelationship;
 use Drupal\spectrum\Model\ReferencedRelationship;
 
+use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
+use Drupal\spectrum\Permissions\AccessPolicy\PublicAccessPolicy;
 use Drupal\spectrum\Query\Order as QueryOrder;
 
 class Order extends Model
@@ -38,6 +40,13 @@ class Order extends Model
   public static function relationships()
   {
     static::addRelationship(new FieldRelationship('parent', 'field_parent.target_id'));
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public static function getAccessPolicy(): AccessPolicyInterface {
+    return new PublicAccessPolicy;
   }
 
   /**

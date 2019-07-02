@@ -94,13 +94,20 @@ class ModelApiHandler extends BaseApiHandler
   protected $embeddedModels = [];
 
   /**
-   * @param string $modelClassName The fully qualified classname of the model you want to use in this apihandler
-   * @param string|int|null $slug
+   * ModelApiHandler constructor.
+   *
+   * @param string $modelClassName
+   * @param null $slug
+   *
+   * @throws \Drupal\spectrum\Exceptions\ModelClassNotDefinedException
    */
   public function __construct(string $modelClassName, $slug = null)
   {
     parent::__construct($slug);
-    $this->modelClassName = Model::getModelClassForEntityAndBundle($modelClassName::entityType(), $modelClassName::bundle());
+    $this->modelClassName = Model::getModelClassForEntityAndBundle(
+      $modelClassName::entityType(),
+      $modelClassName::bundle()
+    );
     $this->defaultHeaders['Content-Type'] = 'application/vnd.api+json';
   }
 
@@ -205,7 +212,9 @@ class ModelApiHandler extends BaseApiHandler
   public function get(Request $request) : Response
   {
     $modelClassName = $this->modelClassName;
+    /** @var \Drupal\spectrum\Query\ModelQuery $query */
     $query = $modelClassName::getModelQuery();
+    $query->setUseAccessPolicy(TRUE);
     $limit = 0;
     $page = 0;
     $sort = '';
