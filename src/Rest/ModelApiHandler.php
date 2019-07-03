@@ -303,6 +303,14 @@ class ModelApiHandler extends BaseApiHandler
       $query = $this->beforeGetFetch($query);
 
       // And finally fetch the model
+
+      // When the _single queryParam is set, we force returning a single model
+      if($request->query->has('_single'))
+      {
+        $query->setLimit(1);
+        $jsonapi->asArray(false);
+      }
+
       $result = $query->fetchCollection();
 
       if(!$result->isEmpty)
