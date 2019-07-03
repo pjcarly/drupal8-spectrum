@@ -351,6 +351,30 @@ trait ModelSerializerMixin
     return $valueToSerialize;
   }
 
+  protected function serializeField(string $fieldName, string $fieldNamePretty, FieldDefinitionInterface $fieldDefinition, JsonApiNode $node)
+  {
+    $fieldType = $fieldDefinition->getType();
+    $fieldObjectSettings = $fieldDefinition->getSettings();
+
+    $valueToSerialize = $this->getValueToSerialize($fieldName, $fieldDefinition);
+
+    if($fieldType === 'entity_reference')
+    {
+      if(!empty($fieldObjectSettings) && array_key_exists('target_type', $fieldObjectSettings) && $fieldObjectSettings['target_type'] === 'currency')
+      {
+        $node->addAttribute($fieldNamePretty, $valueToSerialize);
+      }
+      else
+      {
+        $node->addRelationship($fieldNamePretty, $valueToSerialize);
+      }
+    }
+    else
+    {
+      $node->addAttribute($fieldNamePretty, $valueToSerialize);
+    }
+  }
+
   /**
    * This function will return a JsonApiNode representation of the current model.
    * Necessary checks will be done to make sure the user has access to the fields he wants to serialize.
@@ -385,26 +409,7 @@ trait ModelSerializerMixin
       if(!in_array($fieldName, $ignoreFields) && static::currentUserHasFieldPermission($fieldName, 'view'))
       {
         $fieldNamePretty = $fieldToPrettyMapping[$fieldName];
-        $fieldType = $fieldDefinition->getType();
-        $fieldObjectSettings = $fieldDefinition->getSettings();
-
-        $valueToSerialize = $this->getValueToSerialize($fieldName, $fieldDefinition);
-
-        if($fieldType === 'entity_reference')
-        {
-          if(!empty($fieldObjectSettings) && array_key_exists('target_type', $fieldObjectSettings) && $fieldObjectSettings['target_type'] === 'currency')
-          {
-            $node->addAttribute($fieldNamePretty, $valueToSerialize);
-          }
-          else
-          {
-            $node->addRelationship($fieldNamePretty, $valueToSerialize);
-          }
-        }
-        else
-        {
-          $node->addAttribute($fieldNamePretty, $valueToSerialize);
-        }
+        $this->serializeField($fieldName, $fieldNamePretty, $fieldDefinition, $node);
       }
     }
 
@@ -498,6 +503,7 @@ trait ModelSerializerMixin
       {
         $fieldnamepretty = 'name';
       }
+
       $mapping[$fieldnamepretty] = $key;
     }
 
@@ -539,6 +545,25 @@ trait ModelSerializerMixin
     }
 
     return $field;
+  }
+
+  /**
+   * Returns the pretty field for a drupal field
+   *
+   * @param string $field
+   * @return string|null
+   */
+  public static function getPrettyFieldForField(string $field) : ? string
+  {
+    $prettymapping = static::getFieldsToPrettyFieldsMapping();
+    $prettyField = null;
+
+    if(array_key_exists($field, $prettymapping))
+    {
+      $prettyField = $prettymapping[$field];
+    }
+
+    return $prettyField;
   }
 
   /**

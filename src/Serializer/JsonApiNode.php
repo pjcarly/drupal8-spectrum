@@ -9,6 +9,21 @@ namespace Drupal\spectrum\Serializer;
 class JsonApiNode extends JsonApiBaseNode
 {
   /**
+   * Defines the timezone that dates will be serialized/deserialized to/from in when no timezone is set
+   */
+  const DEFAULT_TIMEZONE = 'UTC';
+
+  /**
+   * Defines the format that date and time will be serialized/deserialized to/from
+   */
+  const DATETIME_FORMAT = 'Y-m-d\TH:i:s';
+
+  /**
+   * Defines the format that dates should be serialized/deserialized to/from.
+   */
+  const DATE_FORMAT = 'Y-m-d';
+
+  /**
    * The Id of the entity represented by this node
    *
    * @var string|int
@@ -56,6 +71,16 @@ class JsonApiNode extends JsonApiBaseNode
   public function getId()
   {
     return $this->id;
+  }
+
+  /**
+   * Returns a unique key that uniquely identifies this resource object
+   *
+   * @return string
+   */
+  public function getUniqueKey() : string
+  {
+    return $this->getId() . $this->getType();
   }
 
   /**
@@ -252,6 +277,8 @@ class JsonApiNode extends JsonApiBaseNode
     {
       return $this->relationships[$name];
     }
+
+    return null;
   }
 
   /**

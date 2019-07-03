@@ -22,6 +22,7 @@ use Drupal\spectrum\Utils\StringUtils;
 use Drupal\spectrum\Permissions\PermissionServiceInterface;
 use Drupal\spectrum\Models\User;
 use Drupal\spectrum\Services\ModelStoreInterface;
+use Drupal\Core\Field\FieldDefinitionInterface;
 
 /**
  * A Model is a wrapper around a Drupal Entity, which provides extra functionality. and an easy way of fetching and saving it to the database.
@@ -62,7 +63,7 @@ abstract class Model
   /**
    * This array will hold the defined relationships with as key the fully qualified classname of the model, and as value the different defined relationships
    *
-   * @var array
+   * @var \Drupal\spectrum\Model\Relationship[]
    */
   public static $relationships = [];
 
@@ -91,7 +92,7 @@ abstract class Model
   /**
    * The entity that was wrapped by this Model
    *
-   * @var EntityInterface
+   * @var \Drupal\Core\Entity\FieldableEntityInterface
    */
   public $entity;
 
@@ -369,7 +370,7 @@ abstract class Model
     {
       if($relationship instanceof ReferencedRelationship)
       {
-        $referencedRelationship = $this->get($relationship->relationshipName);
+        $referencedRelationship = $this->get($relationship->getName());
         if(!empty($referencedRelationship))
         {
           if($referencedRelationship instanceof Collection)
@@ -535,6 +536,16 @@ abstract class Model
   }
 
   /**
+   * Returns the short model name (name of the class without namespace)
+   *
+   * @return string
+   */
+  public function getShortModelName() : string
+  {
+    return (new \ReflectionClass($this))->getShortName();
+  }
+
+  /**
    * Returns the provided relationship on this Model
    *
    * @param string|Relationship $relationship
@@ -559,18 +570,18 @@ abstract class Model
       {
         if($relationship->isMultiple)
         {
-          if(!array_key_exists($relationship->relationshipName, $this->relatedViaFieldOnEntity))
+          if(!array_key_exists($relationship->getName(), $this->relatedViaFieldOnEntity))
           {
             $this->createNewCollection($relationship);
           }
 
-          return $this->relatedViaFieldOnEntity[$relationship->relationshipName];
+          return $this->relatedViaFieldOnEntity[$relationship->getName()];
         }
         else
         {
-          if(array_key_exists($relationship->relationshipName, $this->relatedViaFieldOnEntity))
+          if(array_key_exists($relationship->getName(), $this->relatedViaFieldOnEntity))
           {
-            return $this->relatedViaFieldOnEntity[$relationship->relationshipName];
+            return $this->relatedViaFieldOnEntity[$relationship->getName()];
           }
           else
           {
@@ -580,12 +591,12 @@ abstract class Model
       }
       else if($relationship instanceof ReferencedRelationship)
       {
-        if(!array_key_exists($relationship->relationshipName, $this->relatedViaFieldOnExternalEntity))
+        if(!array_key_exists($relationship->getName(), $this->relatedViaFieldOnExternalEntity))
         {
           $this->createNewCollection($relationship);
         }
 
-        return $this->relatedViaFieldOnExternalEntity[$relationship->relationshipName];
+        return $this->relatedViaFieldOnExternalEntity[$relationship->getName()];
       }
     }
     else
@@ -681,14 +692,14 @@ abstract class Model
       {
         if($relationship->isPolymorphic)
         {
-          $this->relatedViaFieldOnEntity[$relationship->relationshipName] = PolymorphicCollection::forgeNew(null);
+          $this->relatedViaFieldOnEntity[$relationship->getName()] = PolymorphicCollection::forgeNew(null);
         }
         else
         {
-          $this->relatedViaFieldOnEntity[$relationship->relationshipName] = Collection::forgeNew($relationship->modelType);
+          $this->relatedViaFieldOnEntity[$relationship->getName()] = Collection::forgeNew($relationship->modelType);
         }
 
-        return $this->relatedViaFieldOnEntity[$relationship->relationshipName];
+        return $this->relatedViaFieldOnEntity[$relationship->getName()];
       }
       else
       {
@@ -697,8 +708,8 @@ abstract class Model
     }
     else if($relationship instanceof ReferencedRelationship)
     {
-      $this->relatedViaFieldOnExternalEntity[$relationship->relationshipName] = Collection::forgeNew($relationship->modelType);
-      return $this->relatedViaFieldOnExternalEntity[$relationship->relationshipName];
+      $this->relatedViaFieldOnExternalEntity[$relationship->getName()] = Collection::forgeNew($relationship->modelType);
+      return $this->relatedViaFieldOnExternalEntity[$relationship->getName()];
     }
   }
 
@@ -767,13 +778,13 @@ abstract class Model
           {
             // In case we have a model, it means we have to add it to the collection, that potentially doesn't exist yet
             // lets watch out, that the relationship can be polymorphic to create the correct collection if needed
-            if(!array_key_exists($relationship->relationshipName, $this->relatedViaFieldOnEntity))
+            if(!array_key_exists($relationship->getName(), $this->relatedViaFieldOnEntity))
             {
               $this->createNewCollection($relationship);
             }
 
             // we put the model on the collection
-            $collection = $this->relatedViaFieldOnEntity[$relationship->relationshipName];
+            $collection = $this->relatedViaFieldOnEntity[$relationship->getName()];
             $collection->put($objectToPut);
 
             if($includeInOriginalModels)
@@ -799,7 +810,7 @@ abstract class Model
           // when the relationship is single (meaning only 1 reference allowed)
           // things get much easier. Namely we just put the model in the related array
           // even if the relationship is polymorphic it doesn't matter.
-          $this->relatedViaFieldOnEntity[$relationship->relationshipName] = $objectToPut;
+          $this->relatedViaFieldOnEntity[$relationship->getName()] = $objectToPut;
           $returnValue = $objectToPut;
           // we also set the new id on the current entity
           $objectToPutId = $objectToPut->getId();
@@ -814,12 +825,12 @@ abstract class Model
       }
       else if($relationship instanceof ReferencedRelationship)
       {
-        if(!array_key_exists($relationship->relationshipName, $this->relatedViaFieldOnExternalEntity))
+        if(!array_key_exists($relationship->getName(), $this->relatedViaFieldOnExternalEntity))
         {
           $this->createNewCollection($relationship);
         }
 
-        $collection = $this->relatedViaFieldOnExternalEntity[$relationship->relationshipName];
+        $collection = $this->relatedViaFieldOnExternalEntity[$relationship->getName()];
         $collection->put($objectToPut);
 
         if($includeInOriginalModels)
@@ -1248,8 +1259,36 @@ abstract class Model
       if(static::hasRelationship($firstRelationshipName))
       {
         $firstRelationship = static::getRelationship($firstRelationshipName);
-        $firstRelationshipModelType = $firstRelationship->modelType;
-        return $firstRelationshipModelType::hasDeepRelationship(substr($relationshipName, $firstRelationshipNamePosition+1));
+
+        if($firstRelationship instanceof FieldRelationship)
+        {
+          /** @var FieldRelationship $firstRelationship */
+          if($firstRelationship->isPolymorphic)
+          {
+            $hasDeepRelationship = true;
+            foreach($firstRelationship->getPolymorphicModelTypes() as $polymorphicModelType)
+            {
+              $hasDeepRelationship = $polymorphicModelType::hasDeepRelationship(substr($relationshipName, $firstRelationshipNamePosition+1));
+
+              if(!$hasDeepRelationship)
+              {
+                break;
+              }
+            }
+
+            return $hasDeepRelationship;
+          }
+          else
+          {
+            $firstRelationshipModelType = $firstRelationship->modelType;
+            return $firstRelationshipModelType::hasDeepRelationship(substr($relationshipName, $firstRelationshipNamePosition+1));
+          }
+        }
+        else
+        {
+          $firstRelationshipModelType = $firstRelationship->modelType;
+          return $firstRelationshipModelType::hasDeepRelationship(substr($relationshipName, $firstRelationshipNamePosition+1));
+        }
       }
       else
       {
@@ -1277,7 +1316,23 @@ abstract class Model
       $firstRelationshipName = substr($relationshipName, 0, $firstRelationshipNamePosition);
       $nextRelationshipNames  = substr($relationshipName, $firstRelationshipNamePosition+1, strlen($relationshipName));
       $firstRelationship = static::getRelationship($firstRelationshipName);
-      $firstRelationshipModelType = $firstRelationship->modelType;
+
+      if($firstRelationship instanceof FieldRelationship)
+      {
+        /** @var FieldRelationship $firstRelationship */
+        if($firstRelationship->isPolymorphic)
+        {
+          $firstRelationshipModelType = $firstRelationship->getPolymorphicModelTypes()[0];
+        }
+        else
+        {
+          $firstRelationshipModelType = $firstRelationship->modelType;
+        }
+      }
+      else
+      {
+        $firstRelationshipModelType = $firstRelationship->modelType;
+      }
 
       return $firstRelationshipModelType::getDeepRelationship($nextRelationshipNames);
     }
@@ -1674,13 +1729,13 @@ abstract class Model
     }
 
     $relationship->setRelationshipSource($sourceModelType);
-    static::$relationships[$sourceModelType][$relationship->getRelationshipKey()] = $relationship;
+    static::$relationships[$sourceModelType][$relationship->getName()] = $relationship;
   }
 
   /**
    * Returns the drupal field definitions for the entity of this Model
    *
-   * @return array
+   * @return FieldDefinitionInterface[]
    */
   public static function getFieldDefinitions()
   {
@@ -1802,16 +1857,25 @@ abstract class Model
    */
   public static function getterExists(Model $model, string $property) : bool
   {
-    $getterName = 'get'.$property;
+    $getterExists = false;
+
+    $getterName = 'get'.ucfirst($property);
     if(!empty($property) && is_callable([$model, $getterName]))
     {
-      $reflector = new \ReflectionMethod($model, $getterName);
-      $isProto = ($reflector->getDeclaringClass()->getName() !== get_class($model));
+      if($getterName === 'getShortModelName')
+      {
+        $getterExists = true;
+      }
+      else
+      {
+        $reflector = new \ReflectionMethod($model, $getterName);
+        $isProto = ($reflector->getDeclaringClass()->getName() !== get_class($model));
 
-      return !$isProto; // Meaning the function may only exist on the child class (shielding Model class functions from this)
+        $getterExists = !$isProto; // Meaning the function may only exist on the child class (shielding Model class functions from this)
+      }
     }
 
-    return false;
+    return $getterExists;
   }
 
   /**
@@ -1937,7 +2001,7 @@ abstract class Model
     {
       if($relationship->cascadingDelete)
       {
-        $fetchedRelationship = $this->fetch($relationship->relationshipName);
+        $fetchedRelationship = $this->fetch($relationship->getName());
         if(!empty($fetchedRelationship))
         {
           if($fetchedRelationship instanceof Collection)
@@ -2090,17 +2154,17 @@ abstract class Model
   }
 
   /**
-   * Find a modelclass by its bundle
+   * Find a modelclass by its bundleKey
    *
-   * @param string $bundle
+   * @param string $bundleKey
    * @return string|null
    */
-  public static function getModelClassByBundle(string $bundle) : ?string
+  public static function getModelClassByBundleKey(string $bundleKey) : ?string
   {
     $foundModelClass = null;
     foreach(static::getModelClasses() as $modelClass)
     {
-      if($modelClass::bundle() === $bundle || (empty($modelClass::bundle()) && $modelClass::entityType() === $bundle))
+      if($modelClass::getBundleKey() === $bundleKey)
       {
         $foundModelClass = $modelClass;
       }
