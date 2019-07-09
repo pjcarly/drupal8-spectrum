@@ -195,15 +195,6 @@ abstract class Model
         $this->setFieldForReferencedRelationships();
         $this->updateKeys();
       }
-
-//      if($isNew
-//        || $this->fieldChanged('field_organization')
-//        || $this->fieldChanged('field_contact')
-//        || $this->fieldChanged('field_company'))
-//      {
-        // Recalculate permissions.
-        static::getAccessPolicy()->onSave($this);
-//      }
     }
     else
     {
@@ -227,6 +218,20 @@ abstract class Model
     }
 
     return $this;
+  }
+
+  /**
+   *
+   */
+  public function setAccessPolicy(): void
+  {
+    if($this->fieldChanged('field_organization', TRUE)
+      || $this->fieldChanged('field_contact', TRUE)
+      || $this->fieldChanged('field_company', TRUE))
+    {
+      // Recalculate permissions.
+      static::getAccessPolicy()->onSave($this);
+    }
   }
 
   /**
@@ -1156,9 +1161,11 @@ abstract class Model
    * This can be used to only execute certain code when a field changes. (For Example when setting the Title of a User based on the first and lastname, only execute the method when the first of the lastname changes)
    *
    * @param string $fieldName
-   * @return boolean
+   * @param bool $ignoreFieldDoesNotExist
+   *
+   * @return bool
    */
-  protected function fieldChanged(string $fieldName) : bool
+  protected function fieldChanged(string $fieldName, bool $ignoreFieldDoesNotExist = FALSE) : bool
   {
     $returnValue = $this->isNewlyInserted();
 
@@ -1168,6 +1175,10 @@ abstract class Model
     }
 
     $fieldDefinition = static::getFieldDefinition($fieldName);
+
+    if ($ignoreFieldDoesNotExist && empty($fieldDefinition)) {
+      return false;
+    }
 
     if(empty($fieldDefinition))
     {
