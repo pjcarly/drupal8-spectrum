@@ -13,6 +13,11 @@ use Drupal\spectrum\Model\Model;
 interface AccessPolicyInterface {
 
   /**
+   * @var string
+   */
+  const TABLE_ENTITY_ACCESS = 'spectrum_entity_access';
+
+  /**
    * Called when a model is saved.
    *
    * @param \Drupal\spectrum\Model\Model $model

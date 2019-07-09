@@ -16,11 +16,6 @@ use Drupal\spectrum\Model\Model;
 class PrivateAccessPolicy implements AccessPolicyInterface {
 
   /**
-   * @var string
-   */
-  const TABLE_ENTITY_ACCESS = 'spectrum_entity_access';
-
-  /**
    * @var \Drupal\Core\Database\Connection
    */
   protected $database;
