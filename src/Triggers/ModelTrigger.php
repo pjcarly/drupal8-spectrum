@@ -56,6 +56,7 @@ class ModelTrigger
         break;
         case 'predelete':
           $model->beforeDelete();
+          $model->unsetAccessPolicy();
         break;
         case 'delete':
           $model->afterDelete();

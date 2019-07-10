@@ -23,6 +23,13 @@ class NoAccessPolicy implements AccessPolicyInterface {
   /**
    * @inheritDoc
    */
+  public function onDelete(Model $model): void {
+    // Do nothing.
+  }
+
+  /**
+   * @inheritDoc
+   */
   public function onQuery(Select $query): Select {
     $query->addExpression('1=0');
   }

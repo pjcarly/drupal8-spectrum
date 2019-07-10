@@ -25,6 +25,11 @@ interface AccessPolicyInterface {
   public function onSave(Model $model): void;
 
   /**
+   * @param \Drupal\spectrum\Model\Model $model
+   */
+  public function onDelete(Model $model): void;
+
+  /**
    * @param \Drupal\Core\Database\Query\Select $query
    *
    * @return \Drupal\Core\Database\Query\Select

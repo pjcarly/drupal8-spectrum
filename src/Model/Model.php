@@ -234,6 +234,11 @@ abstract class Model
     }
   }
 
+  public function unsetAccessPolicy(): void
+  {
+    static::getAccessPolicy()->onDelete($this);
+  }
+
   /**
    * Update the Key of this Model with the ID, and update the key in every Relationship (and inverse) where this Model was already put
    * This is used when a temporary Key is generated, the Model is saved, and the Key is updated to the ID of the model

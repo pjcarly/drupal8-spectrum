@@ -8,6 +8,14 @@ use Drupal\spectrum\Permissions\AccessPolicy\PublicAccessPolicy;
 
 class User extends Model
 {
+
+  /**
+   * This variable will hold a cache of the current user during this transaction
+   *
+   * @var [type]
+   */
+  public static $currentUser = null;
+
   /**
    * The Entitytype of this model
    *
@@ -29,20 +37,12 @@ class User extends Model
   }
 
   /**
-   * This variable will hold a cache of the current user during this transaction
-   *
-   * @var [type]
-   */
-  public static $currentUser = null;
-
-  /**
    * THe relationships to other models
    *
    * @return void
    */
   public static function relationships()
   {
-
   }
 
   /**

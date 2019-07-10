@@ -17,6 +17,11 @@ use Drupal\spectrum\Query\Condition;
 class ParentAccessPolicy implements AccessPolicyInterface {
 
   /**
+   * @var string
+   */
+  const TABLE_ENTITY_ROOT = 'spectrum_entity_root';
+
+  /**
    * @inheritDoc
    */
   public function onSave(Model $model): void {
@@ -25,10 +30,28 @@ class ParentAccessPolicy implements AccessPolicyInterface {
     $class = get_class($model);
     $tree = $this->childrenForClass($class, []);
 
-    if ($values = $this->insertQueryValues($tree, $class, $model, $root, [])) {
+    if ($values = $this->queryValues($tree, $class, $model, $root, [])) {
       $columns = ['entity_type', 'entity_id', 'root_entity_type', 'root_entity_id'];
       $query = strtr('INSERT IGNORE INTO @table (@columns) VALUES @values', [
-        '@table' => 'spectrum_entity_root',
+        '@table' => self::TABLE_ENTITY_ROOT,
+        '@columns' => implode(', ', $columns),
+        '@values' => implode(', ', $values)
+      ]);
+      \Drupal::database()->query($query)->execute();
+    }
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public function onDelete(Model $model): void {
+    $class = get_class($model);
+    $tree = $this->childrenForClass($class, []);
+
+    if ($values = $this->queryValues($tree, $class, $model, $model, [])) {
+      $columns = ['entity_type', 'entity_id', 'root_entity_type', 'root_entity_id'];
+      $query = strtr('DELETE FROM @table WHERE (@columns) IN (@values)', [
+        '@table' => self::TABLE_ENTITY_ROOT,
         '@columns' => implode(', ', $columns),
         '@values' => implode(', ', $values)
       ]);
@@ -41,16 +64,16 @@ class ParentAccessPolicy implements AccessPolicyInterface {
    * @param string $class
    * @param \Drupal\spectrum\Model\Model $model
    * @param \Drupal\spectrum\Model\Model $root
-   * @param array $insertQueryValues
+   * @param array $queryValues
    *
    * @return array
    */
-  protected function insertQueryValues(
+  protected function queryValues(
     array $tree,
     string $class,
     Model $model,
     Model $root,
-    array $insertQueryValues
+    array $queryValues
   ): array {
     /**
      * @var Model $childModel
@@ -69,18 +92,18 @@ class ParentAccessPolicy implements AccessPolicyInterface {
         if ($collection->size() > 0) {
           /** @var Model $item */
           foreach ($collection as $item) {
-            $insertQueryValues[] = strtr('(\'@entity_type\', @entity_id, \'@root_entity_type\', @root_entity_id)', [
+            $queryValues[] = strtr('(\'@entity_type\', @entity_id, \'@root_entity_type\', @root_entity_id)', [
               '@entity_type' => $item->entity->getEntityType()->id(),
               '@entity_id' => $item->getId(),
               '@root_entity_type' => $root->entity->getEntityType()->id(),
               '@root_entity_id' => $root->getId(),
             ]);
-            $insertQueryValues = $this->insertQueryValues(
+            $queryValues = $this->queryValues(
               $tree,
               $childModel,
               $item,
               $root,
-              $insertQueryValues
+              $queryValues
             );
           }
         }
@@ -88,7 +111,7 @@ class ParentAccessPolicy implements AccessPolicyInterface {
       }
     }
 
-    return $insertQueryValues;
+    return $queryValues;
   }
 
   /**
@@ -99,7 +122,7 @@ class ParentAccessPolicy implements AccessPolicyInterface {
     $condition = strtr('ser.entity_type = \'@type\' AND ser.entity_id = base_table.id', [
       '@type' => $table,
     ]);
-    $query->innerJoin('spectrum_entity_root', 'ser', $condition);
+    $query->innerJoin(self::TABLE_ENTITY_ROOT, 'ser', $condition);
 
     $condition = 'sea.entity_type = ser.root_entity_type AND sea.entity_id = ser.root_entity_id';
     $query->innerJoin('spectrum_entity_access', 'sea', $condition);
