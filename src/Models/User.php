@@ -2,10 +2,16 @@
 
 namespace Drupal\spectrum\Models;
 
+use Drupal\groupflights\Services\PermissionService;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
 use Drupal\spectrum\Permissions\AccessPolicy\PublicAccessPolicy;
 
+/**
+ * Class User
+ *
+ * @package Drupal\spectrum\Models
+ */
 class User extends Model
 {
 
@@ -50,6 +56,14 @@ class User extends Model
    */
   public static function getAccessPolicy(): AccessPolicyInterface {
     return new PublicAccessPolicy;
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public function beforeDelete() {
+    parent::beforeDelete();
+    (new PermissionService)->removeUserInAccessPolicy($this->getId());
   }
 
   /**
