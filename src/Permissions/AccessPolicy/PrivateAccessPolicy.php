@@ -7,6 +7,8 @@ use Drupal\mist_crm\Models\Object\Company;
 use Drupal\spectrum\Exceptions\RelationshipNotDefinedException;
 use Drupal\spectrum\Model\Collection;
 use Drupal\spectrum\Model\Model;
+use Drupal\spectrum\Models\User;
+use Drupal\spectrum\Query\Condition;
 
 /**
  * Class PrivateAccessPolicy
@@ -151,6 +153,12 @@ class PrivateAccessPolicy implements AccessPolicyInterface {
     }
     catch (RelationshipNotDefinedException $e) {
     }
+
+    $administrators = User::getEntityQuery()
+      ->addCondition(new Condition('status', '=', 1))
+      ->addCondition(new Condition('roles', '=', 'administrator'))
+      ->fetchIds();
+    $users = array_merge($users, $administrators);
 
     return array_unique($users);
   }
