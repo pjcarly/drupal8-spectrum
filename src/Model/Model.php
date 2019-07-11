@@ -4,6 +4,7 @@ namespace Drupal\spectrum\Model;
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
+use Drupal\spectrum\Permissions\AccessPolicy\PrivateAccessPolicy;
 use Drupal\spectrum\Query\Query;
 use Drupal\spectrum\Query\EntityQuery;
 use Drupal\spectrum\Query\BundleQuery;
@@ -225,7 +226,8 @@ abstract class Model
    */
   public function setAccessPolicy(): void
   {
-    if($this->fieldChanged('field_organization', TRUE)
+    if(($this->isNew() && !is_a($this::getAccessPolicy(), PrivateAccessPolicy::class))
+      || $this->fieldChanged('field_organization', TRUE)
       || $this->fieldChanged('field_contact', TRUE)
       || $this->fieldChanged('field_company', TRUE))
     {
