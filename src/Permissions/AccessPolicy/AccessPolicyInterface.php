@@ -36,4 +36,12 @@ interface AccessPolicyInterface {
    */
   public function onQuery(Select $query): Select;
 
+  /**
+   * @param \Drupal\spectrum\Model\Model $model
+   * @param int $uid
+   *
+   * @return bool
+   */
+  public function userHasAccess(Model $model, int $uid): bool;
+
 }

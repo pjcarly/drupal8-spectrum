@@ -30,7 +30,18 @@ class ParentAccessPolicy implements AccessPolicyInterface {
     $class = get_class($model);
     $tree = $this->childrenForClass($class, []);
 
-    if ($values = $this->queryValues($tree, $class, $model, $root, [])) {
+    $values = [];
+
+    if ($root !== NULL) {
+      $values[] = strtr('\'@entity_type\', @entity_id, \'@root_entity_type\', @root_entity_id)', [
+        '@entity_type' => $model::entityType(),
+        '@entity_id' => $model->getId(),
+        '@root_entity_type' => $root::entityType(),
+        '@root_entity_id' => $root->getId(),
+      ]);
+    }
+
+    if ($values = $this->queryValues($tree, $class, $model, $root, $values)) {
       $columns = ['entity_type', 'entity_id', 'root_entity_type', 'root_entity_id'];
       $query = strtr('INSERT IGNORE INTO @table (@columns) VALUES @values', [
         '@table' => self::TABLE_ENTITY_ROOT,
@@ -57,6 +68,14 @@ class ParentAccessPolicy implements AccessPolicyInterface {
       ]);
       \Drupal::database()->query($query)->execute();
     }
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public function userHasAccess(Model $model, int $uid): bool {
+    $root = $this->getRootForModel($model);
+    return $root::getAccessPolicy()->userHasAccess($root, $uid);
   }
 
   /**

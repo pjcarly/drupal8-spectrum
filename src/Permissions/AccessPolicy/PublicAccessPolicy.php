@@ -76,4 +76,11 @@ class PublicAccessPolicy implements AccessPolicyInterface {
     return $query;
   }
 
+  /**
+   * @inheritDoc
+   */
+  public function userHasAccess(Model $model, int $uid): bool {
+    return TRUE;
+  }
+
 }

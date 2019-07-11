@@ -2,7 +2,6 @@
 
 namespace Drupal\spectrum\Permissions\AccessPolicy;
 
-use Drupal\Core\Database\Query\AlterableInterface;
 use Drupal\Core\Database\Query\Select;
 use Drupal\spectrum\Model\Model;
 
@@ -33,6 +32,13 @@ class NoAccessPolicy implements AccessPolicyInterface {
   public function onQuery(Select $query): Select {
     $query->addExpression('1=0');
     return $query;
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public function userHasAccess(Model $model, int $uid): bool {
+    return FALSE;
   }
 
 }

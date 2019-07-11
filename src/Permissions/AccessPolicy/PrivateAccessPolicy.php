@@ -62,6 +62,7 @@ class PrivateAccessPolicy implements AccessPolicyInterface {
     (new ParentAccessPolicy)->onSave($model);
   }
 
+
   /**
    * @inheritDoc
    */
@@ -92,6 +93,16 @@ class PrivateAccessPolicy implements AccessPolicyInterface {
     $query->condition('ea.uid', \Drupal::currentUser()->id());
 
     return $query;
+  }
+
+  /**
+   * @param \Drupal\spectrum\Model\Model $model
+   * @param int $uid
+   *
+   * @return bool
+   */
+  public function userHasAccess(Model $model, int $uid): bool {
+    return in_array($uid, $this->getUserIds($model));
   }
 
   /**
