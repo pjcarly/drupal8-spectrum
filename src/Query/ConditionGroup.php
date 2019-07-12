@@ -76,7 +76,9 @@ class ConditionGroup
   }
 
   /**
-   * Sets the conditionlogic of this conditiongroup. The numbers in the logic should correspond to the order in which you added conditions to the conditiongroup
+   * Sets the conditionlogic of this conditiongroup. The numbers in the logic
+   * should correspond to the order in which you added conditions to the
+   * conditiongroup.
    * You can reuse the same index multiple times, then the condition will be applied multiple times
    * For example 'AND(1,2,OR(1,3,4))'
    *
