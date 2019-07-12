@@ -3,28 +3,25 @@
 namespace Drupal\spectrum\Model;
 
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
-use Drupal\spectrum\Permissions\AccessPolicy\PrivateAccessPolicy;
-use Drupal\spectrum\Query\Query;
-use Drupal\spectrum\Query\EntityQuery;
-use Drupal\spectrum\Query\BundleQuery;
-use Drupal\spectrum\Query\ModelQuery;
-use Drupal\spectrum\Query\Condition;
-
+use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\spectrum\Exceptions\InvalidFieldException;
 use Drupal\spectrum\Exceptions\InvalidTypeException;
-use Drupal\spectrum\Exceptions\NotImplementedException;
 use Drupal\spectrum\Exceptions\ModelClassNotDefinedException;
 use Drupal\spectrum\Exceptions\ModelNotFoundException;
-use Drupal\spectrum\Exceptions\InvalidRelationshipTypeException;
-use Drupal\spectrum\Exceptions\RelationshipNotDefinedException;
+use Drupal\spectrum\Exceptions\NotImplementedException;
 use Drupal\spectrum\Exceptions\PolymorphicException;
-use Drupal\spectrum\Exceptions\InvalidFieldException;
-
-use Drupal\spectrum\Utils\StringUtils;
-use Drupal\spectrum\Permissions\PermissionServiceInterface;
+use Drupal\spectrum\Exceptions\RelationshipNotDefinedException;
 use Drupal\spectrum\Models\User;
+use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
+use Drupal\spectrum\Permissions\AccessPolicy\PrivateAccessPolicy;
+use Drupal\spectrum\Permissions\PermissionServiceInterface;
+use Drupal\spectrum\Query\BundleQuery;
+use Drupal\spectrum\Query\Condition;
+use Drupal\spectrum\Query\EntityQuery;
+use Drupal\spectrum\Query\ModelQuery;
+use Drupal\spectrum\Query\Query;
 use Drupal\spectrum\Services\ModelStoreInterface;
-use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\spectrum\Utils\StringUtils;
 
 /**
  * A Model is a wrapper around a Drupal Entity, which provides extra functionality. and an easy way of fetching and saving it to the database.
