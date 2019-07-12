@@ -226,10 +226,32 @@ abstract class Model
    */
   public function setAccessPolicy(): void
   {
+    $checkFields = [];
+    $checkFields[] = 'field_organization';
+    $checkFields[] = 'field_contact';
+    $checkFields[] = 'field_company';
+
+    foreach (self::getRelationships() as $relationship) {
+      /** @var \Drupal\spectrum\Model\FieldRelationship $relationship */
+      if (is_a($relationship, FieldRelationship::class)
+        && $relationship->getClass() !== NULL) {
+        $checkFields[] = $relationship->getField();
+      }
+    }
+
+    $checkFields = array_unique($checkFields);
+
+    $fieldChanged = FALSE;
+
+    foreach ($checkFields as $field) {
+      if ($this->fieldChanged($field, TRUE)) {
+        $fieldChanged = TRUE;
+        break;
+      }
+    }
+
     if(($this->isNew() && !is_a($this::getAccessPolicy(), PrivateAccessPolicy::class))
-      || $this->fieldChanged('field_organization', TRUE)
-      || $this->fieldChanged('field_contact', TRUE)
-      || $this->fieldChanged('field_company', TRUE))
+      || $fieldChanged)
     {
       // Recalculate permissions.
       static::getAccessPolicy()->onSave($this);
@@ -1738,7 +1760,7 @@ abstract class Model
   /**
    * Returns an array with all the relationships of the current Model
    *
-   * @return array
+   * @return \Drupal\spectrum\Model\Relationship[]
    */
   public static function getRelationships() : array
   {

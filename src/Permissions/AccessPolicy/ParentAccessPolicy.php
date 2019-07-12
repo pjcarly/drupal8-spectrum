@@ -58,18 +58,23 @@ class ParentAccessPolicy implements AccessPolicyInterface {
    * @inheritDoc
    */
   public function onDelete(Model $model): void {
-    $class = get_class($model);
-    $tree = $this->childrenForClass($class, []);
-
-    if ($values = $this->queryValues($tree, $class, $model, $model, [])) {
-      $columns = ['entity_type', 'entity_id', 'root_entity_type', 'root_entity_id'];
-      $query = strtr('DELETE FROM @table WHERE (@columns) IN (@values)', [
-        '@table' => self::TABLE_ENTITY_ROOT,
-        '@columns' => implode(', ', $columns),
-        '@values' => implode(', ', $values)
-      ]);
-      \Drupal::database()->query($query)->execute();
-    }
+//    $class = get_class($model);
+//    $tree = $this->childrenForClass($class, []);
+//
+//    if ($values = $this->queryValues($tree, $class, $model, $model, [])) {
+//      $columns = ['entity_type', 'entity_id', 'root_entity_type', 'root_entity_id'];
+//      $query = strtr('DELETE FROM @table WHERE (@columns) IN (@values)', [
+//        '@table' => self::TABLE_ENTITY_ROOT,
+//        '@columns' => implode(', ', $columns),
+//        '@values' => implode(', ', $values)
+//      ]);
+//      \Drupal::database()->query($query)->execute();
+//    }
+    \Drupal::database()
+      ->delete(self::TABLE_ENTITY_ROOT)
+      ->condition('root_entity_type', $model::entityType())
+      ->condition('root_entity_id', (int)$model->getId())
+      ->execute();
   }
 
   /**
