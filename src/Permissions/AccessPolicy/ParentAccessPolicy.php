@@ -25,30 +25,32 @@ class ParentAccessPolicy implements AccessPolicyInterface {
    * @inheritDoc
    */
   public function onSave(Model $model): void {
-    $root = $this->getRootForModel($model);
+    $roots = $this->getRootsForModel($model);
 
     $class = get_class($model);
     $tree = $this->childrenForClass($class, []);
 
     $values = [];
 
-    if ($root !== NULL) {
-      $values[] = strtr('\'@entity_type\', @entity_id, \'@root_entity_type\', @root_entity_id)', [
-        '@entity_type' => $model::entityType(),
-        '@entity_id' => $model->getId(),
-        '@root_entity_type' => $root::entityType(),
-        '@root_entity_id' => $root->getId(),
-      ]);
-    }
+    foreach ($roots as $root) {
+      if ($root::entityType() !== $model::entityType() || $root->getId() !== $model->getId()) {
+        $values[] = strtr('(\'@entity_type\', @entity_id, \'@root_entity_type\', @root_entity_id)', [
+          '@entity_type' => $model::entityType(),
+          '@entity_id' => $model->getId(),
+          '@root_entity_type' => $root::entityType(),
+          '@root_entity_id' => $root->getId(),
+        ]);
+      }
 
-    if ($values = $this->queryValues($tree, $class, $model, $root, $values)) {
-      $columns = ['entity_type', 'entity_id', 'root_entity_type', 'root_entity_id'];
-      $query = strtr('INSERT IGNORE INTO @table (@columns) VALUES @values', [
-        '@table' => self::TABLE_ENTITY_ROOT,
-        '@columns' => implode(', ', $columns),
-        '@values' => implode(', ', $values)
-      ]);
-      \Drupal::database()->query($query)->execute();
+      if ($values = $this->queryValues($tree, $class, $model, $root, $values)) {
+        $columns = ['entity_type', 'entity_id', 'root_entity_type', 'root_entity_id'];
+        $query = strtr('INSERT IGNORE INTO @table (@columns) VALUES @values', [
+          '@table' => self::TABLE_ENTITY_ROOT,
+          '@columns' => implode(', ', $columns),
+          '@values' => implode(', ', $values)
+        ]);
+        \Drupal::database()->query($query)->execute();
+      }
     }
   }
 
@@ -74,8 +76,17 @@ class ParentAccessPolicy implements AccessPolicyInterface {
    * @inheritDoc
    */
   public function userHasAccess(Model $model, int $uid): bool {
-    $root = $this->getRootForModel($model);
-    return $root::getAccessPolicy()->userHasAccess($root, $uid);
+    $access = FALSE;
+
+    $roots = $this->getRootsForModel($model);
+    foreach ($roots as $root) {
+      if ($root::getAccessPolicy()->userHasAccess($root, $uid)) {
+        $access = TRUE;
+        break;
+      }
+    }
+
+    return $access;
   }
 
   /**
@@ -159,61 +170,63 @@ class ParentAccessPolicy implements AccessPolicyInterface {
   /**
    * @param \Drupal\spectrum\Model\Model $model
    *
-   * @return \Drupal\spectrum\Model\Model|null
+   * @return array
    */
-  protected function getRootForModel(Model $model): ?Model {
+  protected function getRootsForModel(Model $model): array {
+    $roots = [];
+
     $accessPolicy = $model::getAccessPolicy();
     if (!is_a($accessPolicy, ParentAccessPolicy::class)) {
-      return $model;
+      return [$model];
     }
 
-    $parent = $this->parentModelForModel($model);
-
-    if ($parent !== NULL) {
-      $parent = $this->getRootForModel($parent);
+    if ($parents = $this->parentModelsForModel($model)) {
+      foreach ($parents as $parent) {
+        $roots = array_merge($roots, $this->getRootsForModel($parent));
+      }
     }
     else {
       new \RuntimeException;
     }
 
-    return $parent;
+    return $roots;
   }
 
   /**
    * @param \Drupal\spectrum\Model\Model $model
    *
-   * @return \Drupal\spectrum\Model\Model|null
+   * @return \Drupal\spectrum\Model\Model[]|null
    */
-  protected function parentModelForModel(Model $model): ?Model {
-    $parents = array_filter($model::getRelationships(), function (Relationship $relationship) {
+  protected function parentModelsForModel(Model $model): array {
+    $parents = [];
+
+    $parentRelationships = array_filter($model::getRelationships(), function (Relationship $relationship) {
       /** @var FieldRelationship $relationship */
       return is_a($relationship, FieldRelationship::class)
         && $relationship->getClass() !== NULL;
     });
 
-    usort($parents, function (FieldRelationship $a, FieldRelationship $b) {
-      return $a->getParentPriority() <=> $b->getParentPriority();
-    });
-
-    if (empty($parents)) {
+    if (empty($parentRelationships)) {
       throw new \RuntimeException('No parent relationship found.');
     }
-    else if (sizeof($parents) === 1) {
-      return $model->fetch($parents[0]->getName());
+    else if (sizeof($parentRelationships) === 1) {
+      if ($parent = $model->fetch($parentRelationships[0]->getName())) {
+        $parents = [$parent];
+      }
     }
-    // In case there is more than one parent, check the parents in
+    // In case there is more than one parent, check the parentRelationships in
     // descending order and take the first one. Let's always take the second
     // one here.
     else {
-      $parents = array_reverse($parents);
-      foreach ($parents as $p) {
-        if ($m = $model->fetch($p->getName())) {
-          return $m;
+      $parentRelationships = array_reverse($parentRelationships);
+      foreach ($parentRelationships as $p) {
+        if ($parent = $model->fetch($p->getName())) {
+          $parents[] = $parent;
         }
       }
     }
 
-    return NULL;
+    return $parents;
   }
 
   /**

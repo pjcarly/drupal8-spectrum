@@ -43,12 +43,12 @@ class PrivateAccessPolicy implements AccessPolicyInterface {
     // Create an insert query. This query will be used to insert all
     // permissions at once.
     $insertQuery = $this->database->insert(self::TABLE_ENTITY_ACCESS);
-    $insertQuery->fields(['entity_type', 'entity_id', 'uid']);
+    $insertQuery = $insertQuery->fields(['entity_type', 'entity_id', 'uid']);
 
     foreach ($this->getUserIds($model) as $uid) {
-      $insertQuery->values([
+      $insertQuery = $insertQuery->values([
         'entity_type' => $model::entityType(),
-        'entity_id' => $model->getId(),
+        'entity_id' => (int)$model->getId(),
         'uid' => $uid,
       ]);
     }
@@ -61,7 +61,6 @@ class PrivateAccessPolicy implements AccessPolicyInterface {
     // Set the root model for all children.
     (new ParentAccessPolicy)->onSave($model);
   }
-
 
   /**
    * @inheritDoc
@@ -77,7 +76,7 @@ class PrivateAccessPolicy implements AccessPolicyInterface {
   protected function removeAccess(Model $model): void {
     $this->database->delete(self::TABLE_ENTITY_ACCESS)
       ->condition('entity_type', $model::entityType())
-      ->condition('entity_id', $model->getId())
+      ->condition('entity_id', (int)$model->getId())
       ->execute();
   }
 

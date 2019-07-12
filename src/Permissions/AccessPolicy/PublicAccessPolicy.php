@@ -28,23 +28,23 @@ class PublicAccessPolicy implements AccessPolicyInterface {
    * @inheritDoc
    */
   public function onSave(Model $model): void {
-    // Insert permissions.
-    $insertQuery = $this->database->insert(self::TABLE_ENTITY_ACCESS);
-    $insertQuery->fields([
-      'entity_type',
-      'entity_id',
-      'uid',
-    ]);
-    $insertQuery->values([
-      'entity_type' => $model::entityType(),
-      'entity_id' => $model->getId(),
-      // We use UID 0 for public access.
-      'uid' => 0,
-    ]);
+    $insertQuery = $this->database->insert(self::TABLE_ENTITY_ACCESS)
+      ->fields([
+        'entity_type',
+        'entity_id',
+        'uid',
+      ])
+      ->values([
+        'entity_type' => $model::entityType(),
+        'entity_id' => (int)$model->getId(),
+        // We use UID 0 for public access.
+        'uid' => 0,
+      ]);
 
     // Delete all current permissions.
     $this->removeAccess($model);
 
+    // Insert permissions.
     $insertQuery->execute();
 
     // Set the root model for all children.
@@ -65,7 +65,7 @@ class PublicAccessPolicy implements AccessPolicyInterface {
   protected function removeAccess(Model $model): void {
     $this->database->delete(self::TABLE_ENTITY_ACCESS)
       ->condition('entity_type', $model::entityType())
-      ->condition('entity_id', $model->getId())
+      ->condition('entity_id', (int)$model->getId())
       ->execute();
   }
 
