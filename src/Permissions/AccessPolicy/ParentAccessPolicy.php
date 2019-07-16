@@ -211,6 +211,8 @@ class ParentAccessPolicy implements AccessPolicyInterface {
         && $relationship->getClass() !== NULL;
     });
 
+    $parentRelationships = array_values($parentRelationships);
+
     if (empty($parentRelationships)) {
       throw new \RuntimeException('No parent relationship found.');
     }
