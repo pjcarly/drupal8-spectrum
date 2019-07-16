@@ -211,6 +211,8 @@ class ModelApiHandler extends BaseApiHandler
    */
   public function get(Request $request) : Response
   {
+    $debugId = uniqid();
+
     $modelClassName = $this->modelClassName;
     /** @var \Drupal\spectrum\Query\ModelQuery $query */
     $query = $modelClassName::getModelQuery();
@@ -338,7 +340,7 @@ class ModelApiHandler extends BaseApiHandler
 
       // And finally fetch the model
       $result = $query->fetchCollection();
-
+      \Drupal::logger('access-policy')->debug($debugId . '-n: ' . $result->size());
       if(!$result->isEmpty)
       {
         // We load the translations on the response
@@ -524,6 +526,10 @@ class ModelApiHandler extends BaseApiHandler
         $responseCode = 404;
       }
     }
+
+    $query->setUseAccessPolicy(FALSE);
+    $check = $query->fetchCollection();
+    \Drupal::logger('access-policy')->debug($debugId . '-o: ' . $check->size());
 
     return new Response(json_encode($this->serialize($jsonapi)), $responseCode, []);
   }
