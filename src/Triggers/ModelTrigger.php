@@ -31,6 +31,7 @@ class ModelTrigger
     if(Model::hasModelClassForEntityAndBundle($entityType, $bundle))
     {
       $modelClass = Model::getModelClassForEntityAndBundle($entityType, $bundle);
+      /** @var Model $model */
       $model = $modelClass::forgeByEntity($entity);
 
       switch($trigger)
@@ -46,13 +47,16 @@ class ModelTrigger
           }
         break;
         case 'insert':
+          $model->setAccessPolicy();
           $model->afterInsert();
         break;
         case 'update':
+          $model->setAccessPolicy();
           $model->afterUpdate();
         break;
         case 'predelete':
           $model->beforeDelete();
+          $model->unsetAccessPolicy();
         break;
         case 'delete':
           $model->afterDelete();

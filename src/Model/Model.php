@@ -3,26 +3,25 @@
 namespace Drupal\spectrum\Model;
 
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\spectrum\Query\Query;
-use Drupal\spectrum\Query\EntityQuery;
-use Drupal\spectrum\Query\BundleQuery;
-use Drupal\spectrum\Query\ModelQuery;
-use Drupal\spectrum\Query\Condition;
-
+use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\spectrum\Exceptions\InvalidFieldException;
 use Drupal\spectrum\Exceptions\InvalidTypeException;
-use Drupal\spectrum\Exceptions\NotImplementedException;
 use Drupal\spectrum\Exceptions\ModelClassNotDefinedException;
 use Drupal\spectrum\Exceptions\ModelNotFoundException;
-use Drupal\spectrum\Exceptions\InvalidRelationshipTypeException;
-use Drupal\spectrum\Exceptions\RelationshipNotDefinedException;
+use Drupal\spectrum\Exceptions\NotImplementedException;
 use Drupal\spectrum\Exceptions\PolymorphicException;
-use Drupal\spectrum\Exceptions\InvalidFieldException;
-
-use Drupal\spectrum\Utils\StringUtils;
-use Drupal\spectrum\Permissions\PermissionServiceInterface;
+use Drupal\spectrum\Exceptions\RelationshipNotDefinedException;
 use Drupal\spectrum\Models\User;
+use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
+use Drupal\spectrum\Permissions\AccessPolicy\PrivateAccessPolicy;
+use Drupal\spectrum\Permissions\PermissionServiceInterface;
+use Drupal\spectrum\Query\BundleQuery;
+use Drupal\spectrum\Query\Condition;
+use Drupal\spectrum\Query\EntityQuery;
+use Drupal\spectrum\Query\ModelQuery;
+use Drupal\spectrum\Query\Query;
 use Drupal\spectrum\Services\ModelStoreInterface;
-use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\spectrum\Utils\StringUtils;
 
 /**
  * A Model is a wrapper around a Drupal Entity, which provides extra functionality. and an easy way of fetching and saving it to the database.
@@ -53,6 +52,11 @@ abstract class Model
   public abstract static function bundle() : string;
 
   /**
+   * @return \Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface
+   */
+  public abstract static function getAccessPolicy() : AccessPolicyInterface;
+
+  /**
    * Here are the model class mapping stored, with the entitytype/bundle as key, and the fully qualified model classname as value
    * This is to get around the shared scope of multiple Models on the abstract superclass Model
    *
@@ -61,7 +65,9 @@ abstract class Model
   public static $modelClassMapping = null;
 
   /**
-   * This array will hold the defined relationships with as key the fully qualified classname of the model, and as value the different defined relationships
+   * This array will hold the defined relationships with as key the fully
+   * qualified classname of the model, and as value the different defined
+   * relationships.
    *
    * @var \Drupal\spectrum\Model\Relationship[]
    */
@@ -170,8 +176,10 @@ abstract class Model
   /**
    * Save the model, or if a relationshipName was passed, get the relationship and save it
    *
-   * @param string $relationshipName
-   * @return Model
+   * @param string|NULL $relationshipName
+   *
+   * @return \Drupal\spectrum\Model\Model
+   * @throws \Drupal\Core\Entity\EntityStorageException
    */
   public function save(string $relationshipName = NULL) : Model
   {
@@ -208,6 +216,48 @@ abstract class Model
     }
 
     return $this;
+  }
+
+  /**
+   *
+   */
+  public function setAccessPolicy(): void
+  {
+    $checkFields = [];
+    $checkFields[] = 'field_organization';
+    $checkFields[] = 'field_contact';
+    $checkFields[] = 'field_company';
+
+    foreach (self::getRelationships() as $relationship) {
+      /** @var \Drupal\spectrum\Model\FieldRelationship $relationship */
+      if (is_a($relationship, FieldRelationship::class)
+        && $relationship->getClass() !== NULL) {
+        $checkFields[] = $relationship->getField();
+      }
+    }
+
+    $checkFields = array_unique($checkFields);
+
+    $fieldChanged = FALSE;
+
+    foreach ($checkFields as $field) {
+      if ($this->fieldChanged($field, TRUE)) {
+        $fieldChanged = TRUE;
+        break;
+      }
+    }
+
+    if(($this->isNew() && !is_a($this::getAccessPolicy(), PrivateAccessPolicy::class))
+      || $fieldChanged)
+    {
+      // Recalculate permissions.
+      static::getAccessPolicy()->onSave($this);
+    }
+  }
+
+  public function unsetAccessPolicy(): void
+  {
+    static::getAccessPolicy()->onDelete($this);
   }
 
   /**
@@ -1137,9 +1187,11 @@ abstract class Model
    * This can be used to only execute certain code when a field changes. (For Example when setting the Title of a User based on the first and lastname, only execute the method when the first of the lastname changes)
    *
    * @param string $fieldName
-   * @return boolean
+   * @param bool $ignoreFieldDoesNotExist
+   *
+   * @return bool
    */
-  protected function fieldChanged(string $fieldName) : bool
+  protected function fieldChanged(string $fieldName, bool $ignoreFieldDoesNotExist = FALSE) : bool
   {
     $returnValue = $this->isNewlyInserted();
 
@@ -1149,6 +1201,10 @@ abstract class Model
     }
 
     $fieldDefinition = static::getFieldDefinition($fieldName);
+
+    if ($ignoreFieldDoesNotExist && empty($fieldDefinition)) {
+      return false;
+    }
 
     if(empty($fieldDefinition))
     {
@@ -1590,7 +1646,7 @@ abstract class Model
   /**
    * This method is used to add relationships on every implementation of a Model
    *
-   * @return void
+   * @return \Drupal\spectrum\Model\Relationship[]
    */
   public static function relationships(){}
 
@@ -1701,7 +1757,7 @@ abstract class Model
   /**
    * Returns an array with all the relationships of the current Model
    *
-   * @return array
+   * @return \Drupal\spectrum\Model\Relationship[]
    */
   public static function getRelationships() : array
   {

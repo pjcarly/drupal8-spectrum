@@ -46,15 +46,35 @@ class FieldRelationship extends Relationship
   public $fieldCardinality;
 
   /**
+   * @var int
+   */
+  protected $parentPriority;
+
+  /**
+   * @var string
+   */
+  protected $class;
+
+  /**
+   * FieldRelationship constructor.
    *
    * @param string $relationshipName
    * @param string $relationshipField
-   * @param integer $cascade
+   * @param int $cascade
+   * @param string|NULL $class
+   * @param int $parentPriority
    */
-  public function __construct(string $relationshipName, string $relationshipField, int $cascade = 0)
-  {
+  public function __construct(
+    string $relationshipName,
+    string $relationshipField,
+    int $cascade = 0,
+    string $class = NULL,
+    int $parentPriority = 0
+  ) {
     parent::__construct($relationshipName, $cascade);
     $this->relationshipField = $relationshipField;
+    $this->class = $class;
+    $this->parentPriority = $parentPriority;
   }
 
   /**
@@ -65,7 +85,7 @@ class FieldRelationship extends Relationship
   public function getCondition() : Condition
   {
     $modelType = $this->firstModelType;
-    return new Condition($modelType::getIdField(), 'IN', null);
+    return new Condition($modelType::getIdField(), 'IN', NULL);
   }
 
   /**
@@ -105,7 +125,7 @@ class FieldRelationship extends Relationship
 
     // Here we decide if our relationship is polymorphic or for a single entity/bundle type
     $relationshipEntityType = $fieldSettings['target_type'];
-    $relationshipBundle = null;
+    $relationshipBundle = NULL;
 
     if(!empty($fieldSettings['handler_settings']['target_bundles']))
     {
@@ -119,7 +139,7 @@ class FieldRelationship extends Relationship
     if(isset($fieldSettings['handler_settings']['target_bundles']) && sizeof($fieldSettings['handler_settings']['target_bundles']) > 1)
     {
       $this->isPolymorphic = true;
-      $this->modelType = null;
+      $this->modelType = NULL;
 
       foreach($fieldSettings['handler_settings']['target_bundles'] as $targetBundle)
       {
@@ -201,4 +221,19 @@ class FieldRelationship extends Relationship
       }
     }
   }
+
+  /**
+   * @return int
+   */
+  public function getParentPriority(): int {
+    return $this->parentPriority;
+  }
+
+  /**
+   * @return string
+   */
+  public function getClass(): ?string {
+    return $this->class;
+  }
+
 }

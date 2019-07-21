@@ -2,11 +2,11 @@
 
 namespace Drupal\spectrum\Query;
 
+use Drupal\Core\Database\Query\Condition as DrupalCondition;
+use Drupal\Core\Database\Query\Select as DrupalSelectQuery;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\Query\QueryInterface;
 use Drupal\spectrum\Runnable\BatchableInterface;
-use Drupal\Core\Database\Query\Select as DrupalSelectQuery;
-use Drupal\Core\Database\Query\Condition as DrupalCondition;
 
 /**
  * This class provides base functionality for different query types
@@ -357,7 +357,7 @@ abstract class Query implements BatchableInterface
    *
    * @return QueryInterface
    */
-  private function getBaseQuery() : QueryInterface
+  protected function getBaseQuery() : QueryInterface
   {
     // We abstracted the getQuery and getTotalCountQuery functions in this function, to avoid duplicate code
     $query = \Drupal::entityQuery($this->entityType);
@@ -464,7 +464,7 @@ abstract class Query implements BatchableInterface
     }
     else
     {
-      $store = \Drupal::entityManager()->getStorage($this->entityType);
+      $store = \Drupal::entityTypeManager()->getStorage($this->entityType);
       return empty($ids) ? [] : $store->loadMultiple($ids);
     }
   }
@@ -510,7 +510,7 @@ abstract class Query implements BatchableInterface
     }
     else
     {
-      $store = \Drupal::entityManager()->getStorage($this->entityType);
+      $store = \Drupal::entityTypeManager()->getStorage($this->entityType);
       return empty($id) ? null : $store->load($id);
     }
   }
@@ -708,8 +708,10 @@ abstract class Query implements BatchableInterface
 
   /**
    * This function parses the Expressions into the Drupal Select Query.
-   * When an expression is added to a spectrum query, it isnt added as a sort order at first. Instead it is ignored, and later added through a alter_query hook
-   * This function is called through the hook, and parses the expression in the query
+   * When an expression is added to a spectrum query, it isn't added as a sort
+   * order at first. Instead it is ignored, and later added through a
+   * alter_query hook. This function is called through the hook, and parses the
+   * expression in the query.
    *
    * @param DrupalSelectQuery $drupalQuery
    * @return Query
@@ -743,7 +745,7 @@ abstract class Query implements BatchableInterface
     // We unset the conditiongroup
     unset($drupalQuery->conditions()[$pseudoConditionGroupKey]);
 
-    // Now we have the intial colums, we match those with the fields in the expressions
+    // Now we have the initial colums, we match those with the fields in the expressions
     $index = 0;
     foreach($this->expressions as $expression)
     {
@@ -770,4 +772,5 @@ abstract class Query implements BatchableInterface
 
     return $this;
   }
+
 }

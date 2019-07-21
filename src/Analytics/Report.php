@@ -5,6 +5,8 @@ namespace Drupal\spectrum\Analytics;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Model\FieldRelationship;
 use Drupal\spectrum\Model\ReferencedRelationship;
+use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
+use Drupal\spectrum\Permissions\AccessPolicy\PublicAccessPolicy;
 
 class Report extends Model
 {
@@ -37,4 +39,12 @@ class Report extends Model
   {
 
   }
+
+  /**
+   * @inheritDoc
+   */
+  public static function getAccessPolicy(): AccessPolicyInterface {
+    return new PublicAccessPolicy;
+  }
+
 }

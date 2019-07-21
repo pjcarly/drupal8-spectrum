@@ -2,17 +2,31 @@
 
 namespace Drupal\spectrum\Models;
 
+use Drupal\groupflights\Services\PermissionService;
 use Drupal\spectrum\Model\Model;
+use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
+use Drupal\spectrum\Permissions\AccessPolicy\PublicAccessPolicy;
 
-class User extends Model
-{
+/**
+ * Class User
+ *
+ * @package Drupal\spectrum\Models
+ */
+class User extends Model {
+
+  /**
+   * This variable will hold a cache of the current user during this transaction
+   *
+   * @var [type]
+   */
+  public static $currentUser = NULL;
+
   /**
    * The Entitytype of this model
    *
    * @return string
    */
-  public static function entityType() : string
-  {
+  public static function entityType(): string {
     return 'user';
   }
 
@@ -21,52 +35,75 @@ class User extends Model
    *
    * @return string
    */
-  public static function bundle() : string
-  {
+  public static function bundle(): string {
     return '';
   }
 
   /**
-   * This variable will hold a cache of the current user during this transaction
-   *
-   * @var [type]
-   */
-  public static $currentUser = null;
-
-  /**
-   * THe relationships to other models
+   * The relationships to other models.
    *
    * @return void
    */
-  public static function relationships()
-  {
-
+  public static function relationships() {
   }
 
   /**
-   * alias of loggedInUser()
-   *
-   * @return User
+   * @inheritDoc
    */
-  public static function currentUser() : User
-  {
+  public function afterInsert() {
+    parent::afterInsert();
+    (new PermissionService)->updateUserAccessPolicy($this->getId());
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public function afterUpdate() {
+    parent::afterUpdate();
+    (new PermissionService)->updateUserAccessPolicy($this->getId());
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public function beforeDelete() {
+    parent::beforeDelete();
+    (new PermissionService)->removeUserFromAccessPolicy($this->getId());
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public static function getAccessPolicy(): AccessPolicyInterface {
+    return new PublicAccessPolicy;
+  }
+
+  /**
+   * @return \Drupal\spectrum\Models\User
+   * @throws \Drupal\spectrum\Exceptions\ModelClassNotDefinedException
+   */
+  public static function currentUser(): User {
     return static::loggedInUser();
   }
 
   /**
    * Returns the logged in User build with the registered Model Class
    *
-   * @return User
+   * @return \Drupal\spectrum\Models\User
+   * @throws \Drupal\spectrum\Exceptions\ModelClassNotDefinedException
    */
-  public static function loggedInUser() : User
-  {
-    // We cant just use static, because we want the User Model which can potentially be overridden in the Model Service
-    // This must extend the current class, so we can be sure that the return type will be the current class
+  public static function loggedInUser(): User {
+    // We cant just use static, because we want the User Model which can
+    // potentially be overridden in the Model Service.
+    // This must extend the current class, so we can be sure that the return
+    // type will be the current class.
     $currentUser = static::$currentUser;
 
-    if(empty($currentUser))
-    {
-      $userType = Model::getModelClassForEntityAndBundle(static::entityType(), static::bundle());
+    if (empty($currentUser)) {
+      $userType = Model::getModelClassForEntityAndBundle(
+        static::entityType(),
+        static::bundle()
+      );
       $currentUser = $userType::forgeById(\Drupal::currentUser()->id());
       static::$currentUser = $currentUser;
     }
@@ -79,8 +116,7 @@ class User extends Model
    *
    * @return array
    */
-  public function getRoles() : array
-  {
+  public function getRoles(): array {
     return $this->entity->getRoles();
   }
 
@@ -89,8 +125,7 @@ class User extends Model
    *
    * @return boolean
    */
-  public function isAnonymous() : bool
-  {
+  public function isAnonymous(): bool {
     return $this->entity->isAnonymous();
   }
 
@@ -100,10 +135,8 @@ class User extends Model
    * @param string $role
    * @return boolean
    */
-  public function hasRole(string $role) : bool
-  {
+  public function hasRole(string $role): bool {
     $roles = $this->getRoles();
-
     return in_array($role, $roles);
   }
 
@@ -112,8 +145,7 @@ class User extends Model
    *
    * @return boolean
    */
-  public function isActive() : bool
-  {
+  public function isActive(): bool {
     return $this->entity->isActive();
   }
 
@@ -122,9 +154,8 @@ class User extends Model
    *
    * @return User
    */
-  public function activate() : User
-  {
-    $this->entity->status->value = true;
+  public function activate(): User {
+    $this->entity->status->value = TRUE;
     return $this;
   }
 
@@ -133,31 +164,33 @@ class User extends Model
    *
    * @return User
    */
-  public function block() : User
-  {
-    $this->entity->status->value = false;
+  public function block(): User {
+    $this->entity->status->value = FALSE;
     return $this;
   }
 
   /**
-   * Checks whether the user has access to a certain field on a model
+   * Checks whether the user has access to a certain field on a model.
    *
    * @param string $modelClass This is a fully qualified Class name of the model (for Example Drupal\spectrum\Models\User)
    * @param string $field The field on the model (for example "field_body")
    * @param string $access What type of access ("view" or "edit")
-   * @return boolean
+   *
+   * @return bool
+   * @throws \Drupal\spectrum\Exceptions\NotImplementedException
    */
-  public function hasFieldPermission(string $modelClass, string $field, string $access) : bool
-  {
+  public function hasFieldPermission(
+    string $modelClass,
+    string $field,
+    string $access
+  ): bool {
     $permissionService = Model::getPermissionsService();
-    $permissionGranted = false;
+    $permissionGranted = FALSE;
 
     $entity = $modelClass::getBasePermissionKey();
-    foreach($this->getRoles() as $userRole)
-    {
-      if($permissionService->roleHasFieldPermission($userRole, $entity, $field, $access))
-      {
-        $permissionGranted = true;
+    foreach ($this->getRoles() as $userRole) {
+      if ($permissionService->roleHasFieldPermission($userRole, $entity, $field, $access)) {
+        $permissionGranted = TRUE;
         break;
       }
     }
@@ -171,43 +204,21 @@ class User extends Model
    * @param string $route The Symfony route, that points to your BaseApiController implementation (for example "spectrum.content")
    * @param string $api The api string in your ApiController that matches your ApiHandler (for example "nodes")
    * @param string $action The action defined on the ApiHandler (for example "publish")
-   * @return boolean
-   */
-  public function hasApiActionPermission(string $route, string $api, string $action) : bool
-  {
-    $permissionService = Model::getPermissionsService();
-    $permissionGranted = false;
-
-    foreach($this->getRoles() as $userRole)
-    {
-      if($permissionService->roleHasApiActionPermission($userRole, $route, $api, $action))
-      {
-        $permissionGranted = true;
-        break;
-      }
-    }
-
-    return $permissionGranted;
-  }
-
-    /**
-   * Checks whether the logged in user has access to the provided API
    *
-   * @param string $route The Symfony route, that points to your BaseApiController implementation (for example "spectrum.content")
-   * @param string $api The api string in your ApiController that matches your ApiHandler (for example "nodes")
-   * @param string $access C, R, U or D
-   * @return boolean
+   * @return bool
+   * @throws \Drupal\spectrum\Exceptions\NotImplementedException
    */
-  public function hasApiPermission(string $route, string $api, string $access) : bool
-  {
+  public function hasApiActionPermission(
+    string $route,
+    string $api,
+    string $action
+  ): bool {
     $permissionService = Model::getPermissionsService();
-    $permissionGranted = false;
+    $permissionGranted = FALSE;
 
-    foreach($this->getRoles() as $userRole)
-    {
-      if($permissionService->roleHasApiPermission($userRole, $route, $api, $access))
-      {
-        $permissionGranted = true;
+    foreach ($this->getRoles() as $userRole) {
+      if ($permissionService->roleHasApiActionPermission($userRole, $route, $api, $action)) {
+        $permissionGranted = TRUE;
         break;
       }
     }
@@ -216,23 +227,54 @@ class User extends Model
   }
 
   /**
-   * Check if the user has permission for a model
+   * Checks whether the logged in user has access to the provided API.
    *
-   * @param string $modelClass This is a fully qualified Class name of the model (for Example Drupal\spectrum\Models\User)
-   * @param string $access (either C, R, U or D)
-   * @return boolean
+   * @param string $route The Symfony route, that points to your BaseApiController implementation (for example "spectrum.content")
+   * @param string $api The api string in your ApiController that matches your ApiHandler (for example "nodes")
+   * @param string $access C, R, U or D
+   *
+   * @return bool
+   * @throws \Drupal\spectrum\Exceptions\NotImplementedException
    */
-  public function hasModelPermission(string $modelClass, string $access) : bool
-  {
+  public function hasApiPermission(
+    string $route,
+    string $api,
+    string $access
+  ): bool {
     $permissionService = Model::getPermissionsService();
-    $permissionGranted = false;
+    $permissionGranted = FALSE;
+
+    foreach ($this->getRoles() as $userRole) {
+      if ($permissionService->roleHasApiPermission($userRole, $route, $api, $access)) {
+        $permissionGranted = TRUE;
+        break;
+      }
+    }
+
+    return $permissionGranted;
+  }
+
+  /**
+   * Check if the user has permission for a model.
+   *
+   * @param string $modelClass This is a fully qualified Class name of the model
+   * (for Example Drupal\spectrum\Models\User)
+   * @param string $access (either C, R, U or D)
+   *
+   * @return bool
+   * @throws \Drupal\spectrum\Exceptions\NotImplementedException
+   */
+  public function hasModelPermission(
+    string $modelClass,
+    string $access
+  ): bool {
+    $permissionService = Model::getPermissionsService();
+    $permissionGranted = FALSE;
     $modelPermissionKey = $modelClass::getBasePermissionKey();
 
-    foreach($this->getRoles() as $userRole)
-    {
-      if($permissionService->roleHasModelPermission($userRole, $modelPermissionKey, $access))
-      {
-        $permissionGranted = true;
+    foreach ($this->getRoles() as $userRole) {
+      if ($permissionService->roleHasModelPermission($userRole, $modelPermissionKey, $access)) {
+        $permissionGranted = TRUE;
         break;
       }
     }
@@ -240,26 +282,27 @@ class User extends Model
     return $permissionGranted;
   }
 
-    /**
-   * Checks the permission service for the oauth scope permission of the current user
+  /**
+   * Checks the permission service for the oauth scope permission of the current
+   * user.
    *
    * @param string $scope
-   * @return boolean
+   *
+   * @return bool
+   * @throws \Drupal\spectrum\Exceptions\NotImplementedException
    */
-  public function hasOAuthScopePermission(string $scope) : bool
-  {
+  public function hasOAuthScopePermission(string $scope): bool {
     $permissionService = Model::getPermissionsService();
-    $permissionGranted = false;
+    $permissionGranted = FALSE;
 
-    foreach($this->getRoles() as $role)
-    {
-      if($permissionService->roleHasOAuthScopePermission($role, $scope))
-      {
-        $permissionGranted = true;
+    foreach ($this->getRoles() as $role) {
+      if ($permissionService->roleHasOAuthScopePermission($role, $scope)) {
+        $permissionGranted = TRUE;
         break;
       }
     }
 
     return $permissionGranted;
   }
+
 }

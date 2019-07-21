@@ -3,21 +3,25 @@
 namespace Drupal\spectrum\Email;
 
 use Drupal\spectrum\Model\Collection;
+use Drupal\spectrum\Model\FieldRelationship;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Model\SimpleCollectionWrapper;
-use Drupal\spectrum\Query\ModelQuery;
-use Drupal\spectrum\Query\Condition;
-
 use Drupal\spectrum\Model\SimpleModelWrapper;
+use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
+use Drupal\spectrum\Permissions\AccessPolicy\NoAccessPolicy;
+use Drupal\spectrum\Query\Condition;
+use Drupal\spectrum\Query\ModelQuery;
 use Drupal\spectrum\Template\TwigRenderer;
-use Drupal\spectrum\Model\FieldRelationship;
 
+/**
+ * Class EmailTemplate
+ *
+ * @package Drupal\spectrum\Email
+ */
 class EmailTemplate extends Model
 {
   /**
-   * The Entitytype of this model
-   *
-   * @return string
+   * @inheritDoc
    */
   public static function entityType() : string
   {
@@ -25,24 +29,35 @@ class EmailTemplate extends Model
   }
 
   /**
-   * The Bundle of this model
-   *
-   * @return string
+   * @inheritDoc
    */
   public static function bundle() : string
   {
     return 'email';
   }
 
+  /**
+   * @inheritDoc
+   */
   public static function relationships()
   {
     parent::relationships();
-    static::addRelationship(new FieldRelationship('base_template', 'field_base_template.target_id'));
+    static::addRelationship(new FieldRelationship(
+      'base_template',
+      'field_base_template.target_id'
+    ));
   }
 
+  /**
+   * @inheritDoc
+   */
+  public static function getAccessPolicy(): AccessPolicyInterface {
+    return new NoAccessPolicy;
+  }
 
   /**
-   * The scope that will be added to the EmailTemplate upon rendering, to fetch dynamic variables from
+   * The scope that will be added to the EmailTemplate upon rendering, to fetch
+   * dynamic variables from.
    *
    * @var array
    */
