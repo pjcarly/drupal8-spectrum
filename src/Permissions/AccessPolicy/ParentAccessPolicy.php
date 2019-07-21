@@ -3,7 +3,6 @@
 namespace Drupal\spectrum\Permissions\AccessPolicy;
 
 use Drupal\Core\Database\Query\Select;
-use Drupal\groupflights\Services\ModelService;
 use Drupal\spectrum\Model\FieldRelationship;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Model\Relationship;
@@ -232,7 +231,7 @@ class ParentAccessPolicy implements AccessPolicyInterface {
         }
       }
     }
-
+s
     return $parents;
   }
 
@@ -256,7 +255,7 @@ class ParentAccessPolicy implements AccessPolicyInterface {
    * @return array
    */
   protected function childrenForClass(string $class, array $children): array {
-    $models = (new ModelService)->getRegisteredModelClasses();
+    $models = Model::getModelService()->getRegisteredModelClasses();
 
     /** @var Model $model */
     foreach ($models as $model) {

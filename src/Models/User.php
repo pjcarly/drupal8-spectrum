@@ -2,7 +2,6 @@
 
 namespace Drupal\spectrum\Models;
 
-use Drupal\groupflights\Services\PermissionService;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
 use Drupal\spectrum\Permissions\AccessPolicy\PublicAccessPolicy;
@@ -12,7 +11,8 @@ use Drupal\spectrum\Permissions\AccessPolicy\PublicAccessPolicy;
  *
  * @package Drupal\spectrum\Models
  */
-class User extends Model {
+class User extends Model
+{
 
   /**
    * This variable will hold a cache of the current user during this transaction
@@ -26,7 +26,8 @@ class User extends Model {
    *
    * @return string
    */
-  public static function entityType(): string {
+  public static function entityType(): string
+  {
     return 'user';
   }
 
@@ -35,7 +36,8 @@ class User extends Model {
    *
    * @return string
    */
-  public static function bundle(): string {
+  public static function bundle(): string
+  {
     return '';
   }
 
@@ -44,37 +46,41 @@ class User extends Model {
    *
    * @return void
    */
-  public static function relationships() {
-  }
+  public static function relationships()
+  { }
 
   /**
    * @inheritDoc
    */
-  public function afterInsert() {
+  public function afterInsert()
+  {
     parent::afterInsert();
-    (new PermissionService)->updateUserAccessPolicy($this->getId());
+    Model::getPermissionsService()->updateUserAccessPolicy($this->getId());
   }
 
   /**
    * @inheritDoc
    */
-  public function afterUpdate() {
+  public function afterUpdate()
+  {
     parent::afterUpdate();
-    (new PermissionService)->updateUserAccessPolicy($this->getId());
+    Model::getPermissionsService()->updateUserAccessPolicy($this->getId());
   }
 
   /**
    * @inheritDoc
    */
-  public function beforeDelete() {
+  public function beforeDelete()
+  {
     parent::beforeDelete();
-    (new PermissionService)->removeUserFromAccessPolicy($this->getId());
+    Model::getPermissionsService()->removeUserFromAccessPolicy($this->getId());
   }
 
   /**
    * @inheritDoc
    */
-  public static function getAccessPolicy(): AccessPolicyInterface {
+  public static function getAccessPolicy(): AccessPolicyInterface
+  {
     return new PublicAccessPolicy;
   }
 
@@ -82,7 +88,8 @@ class User extends Model {
    * @return \Drupal\spectrum\Models\User
    * @throws \Drupal\spectrum\Exceptions\ModelClassNotDefinedException
    */
-  public static function currentUser(): User {
+  public static function currentUser(): User
+  {
     return static::loggedInUser();
   }
 
@@ -92,7 +99,8 @@ class User extends Model {
    * @return \Drupal\spectrum\Models\User
    * @throws \Drupal\spectrum\Exceptions\ModelClassNotDefinedException
    */
-  public static function loggedInUser(): User {
+  public static function loggedInUser(): User
+  {
     // We cant just use static, because we want the User Model which can
     // potentially be overridden in the Model Service.
     // This must extend the current class, so we can be sure that the return
@@ -116,7 +124,8 @@ class User extends Model {
    *
    * @return array
    */
-  public function getRoles(): array {
+  public function getRoles(): array
+  {
     return $this->entity->getRoles();
   }
 
@@ -125,7 +134,8 @@ class User extends Model {
    *
    * @return boolean
    */
-  public function isAnonymous(): bool {
+  public function isAnonymous(): bool
+  {
     return $this->entity->isAnonymous();
   }
 
@@ -135,7 +145,8 @@ class User extends Model {
    * @param string $role
    * @return boolean
    */
-  public function hasRole(string $role): bool {
+  public function hasRole(string $role): bool
+  {
     $roles = $this->getRoles();
     return in_array($role, $roles);
   }
@@ -145,7 +156,8 @@ class User extends Model {
    *
    * @return boolean
    */
-  public function isActive(): bool {
+  public function isActive(): bool
+  {
     return $this->entity->isActive();
   }
 
@@ -154,7 +166,8 @@ class User extends Model {
    *
    * @return User
    */
-  public function activate(): User {
+  public function activate(): User
+  {
     $this->entity->status->value = TRUE;
     return $this;
   }
@@ -164,7 +177,8 @@ class User extends Model {
    *
    * @return User
    */
-  public function block(): User {
+  public function block(): User
+  {
     $this->entity->status->value = FALSE;
     return $this;
   }
@@ -291,7 +305,8 @@ class User extends Model {
    * @return bool
    * @throws \Drupal\spectrum\Exceptions\NotImplementedException
    */
-  public function hasOAuthScopePermission(string $scope): bool {
+  public function hasOAuthScopePermission(string $scope): bool
+  {
     $permissionService = Model::getPermissionsService();
     $permissionGranted = FALSE;
 
@@ -304,5 +319,4 @@ class User extends Model {
 
     return $permissionGranted;
   }
-
 }
