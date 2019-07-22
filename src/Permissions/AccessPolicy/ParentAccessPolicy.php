@@ -13,7 +13,8 @@ use Drupal\spectrum\Query\Condition;
  *
  * @package Drupal\spectrum\Permissions\AccessPolicy
  */
-class ParentAccessPolicy implements AccessPolicyInterface {
+class ParentAccessPolicy implements AccessPolicyInterface
+{
 
   /**
    * @var string
@@ -23,7 +24,8 @@ class ParentAccessPolicy implements AccessPolicyInterface {
   /**
    * @inheritDoc
    */
-  public function onSave(Model $model): void {
+  public function onSave(Model $model): void
+  {
     $roots = $this->getRootsForModel($model);
 
     $class = get_class($model);
@@ -56,30 +58,32 @@ class ParentAccessPolicy implements AccessPolicyInterface {
   /**
    * @inheritDoc
    */
-  public function onDelete(Model $model): void {
-//    $class = get_class($model);
-//    $tree = $this->childrenForClass($class, []);
-//
-//    if ($values = $this->queryValues($tree, $class, $model, $model, [])) {
-//      $columns = ['entity_type', 'entity_id', 'root_entity_type', 'root_entity_id'];
-//      $query = strtr('DELETE FROM @table WHERE (@columns) IN (@values)', [
-//        '@table' => self::TABLE_ENTITY_ROOT,
-//        '@columns' => implode(', ', $columns),
-//        '@values' => implode(', ', $values)
-//      ]);
-//      \Drupal::database()->query($query)->execute();
-//    }
+  public function onDelete(Model $model): void
+  {
+    //    $class = get_class($model);
+    //    $tree = $this->childrenForClass($class, []);
+    //
+    //    if ($values = $this->queryValues($tree, $class, $model, $model, [])) {
+    //      $columns = ['entity_type', 'entity_id', 'root_entity_type', 'root_entity_id'];
+    //      $query = strtr('DELETE FROM @table WHERE (@columns) IN (@values)', [
+    //        '@table' => self::TABLE_ENTITY_ROOT,
+    //        '@columns' => implode(', ', $columns),
+    //        '@values' => implode(', ', $values)
+    //      ]);
+    //      \Drupal::database()->query($query)->execute();
+    //    }
     \Drupal::database()
       ->delete(self::TABLE_ENTITY_ROOT)
       ->condition('root_entity_type', $model::entityType())
-      ->condition('root_entity_id', (int)$model->getId())
+      ->condition('root_entity_id', (int) $model->getId())
       ->execute();
   }
 
   /**
    * @inheritDoc
    */
-  public function userHasAccess(Model $model, int $uid): bool {
+  public function userHasAccess(Model $model, int $uid): bool
+  {
     $access = FALSE;
 
     $roots = $this->getRootsForModel($model);
@@ -141,7 +145,6 @@ class ParentAccessPolicy implements AccessPolicyInterface {
             );
           }
         }
-
       }
     }
 
@@ -151,7 +154,8 @@ class ParentAccessPolicy implements AccessPolicyInterface {
   /**
    * @inheritDoc
    */
-  public function onQuery(Select $query): Select {
+  public function onQuery(Select $query): Select
+  {
     $table = $query->getTables()['base_table']['table'];
     $condition = strtr('ser.entity_type = \'@type\' AND ser.entity_id = base_table.id', [
       '@type' => $table,
@@ -176,7 +180,8 @@ class ParentAccessPolicy implements AccessPolicyInterface {
    *
    * @return array
    */
-  protected function getRootsForModel(Model $model): array {
+  protected function getRootsForModel(Model $model): array
+  {
     $roots = [];
 
     $accessPolicy = $model::getAccessPolicy();
@@ -188,8 +193,7 @@ class ParentAccessPolicy implements AccessPolicyInterface {
       foreach ($parents as $parent) {
         $roots = array_merge($roots, $this->getRootsForModel($parent));
       }
-    }
-    else {
+    } else {
       new \RuntimeException;
     }
 
@@ -201,7 +205,8 @@ class ParentAccessPolicy implements AccessPolicyInterface {
    *
    * @return \Drupal\spectrum\Model\Model[]|null
    */
-  protected function parentModelsForModel(Model $model): array {
+  protected function parentModelsForModel(Model $model): array
+  {
     $parents = [];
 
     $parentRelationships = array_filter($model::getRelationships(), function (Relationship $relationship) {
@@ -214,8 +219,7 @@ class ParentAccessPolicy implements AccessPolicyInterface {
 
     if (empty($parentRelationships)) {
       throw new \RuntimeException('No parent relationship found.');
-    }
-    else if (sizeof($parentRelationships) === 1) {
+    } else if (sizeof($parentRelationships) === 1) {
       if ($parent = $model->fetch($parentRelationships[0]->getName())) {
         $parents = [$parent];
       }
@@ -231,7 +235,7 @@ class ParentAccessPolicy implements AccessPolicyInterface {
         }
       }
     }
-s
+
     return $parents;
   }
 
@@ -240,7 +244,8 @@ s
    *
    * @return array
    */
-  public function getChildren(string $class, array $children): array {
+  public function getChildren(string $class, array $children): array
+  {
     foreach ($children[$class] as $child => $relationship) {
       $children[$child] = $this->childrenForClass($child, $children);
     }
@@ -254,7 +259,8 @@ s
    *
    * @return array
    */
-  protected function childrenForClass(string $class, array $children): array {
+  protected function childrenForClass(string $class, array $children): array
+  {
     $models = Model::getModelService()->getRegisteredModelClasses();
 
     /** @var Model $model */
@@ -266,7 +272,7 @@ s
 
       foreach ($model::getRelationships() as $relationship) {
         if (is_a($relationship, FieldRelationship::class)) {
-        /** @var FieldRelationship $relationship*/
+          /** @var FieldRelationship $relationship*/
           $parent = $relationship->getClass();
           if (is_a($class, $parent, TRUE)) {
             $children[$class][$model] = $relationship;
@@ -278,5 +284,4 @@ s
 
     return $children;
   }
-
 }
