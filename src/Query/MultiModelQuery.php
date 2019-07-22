@@ -2,7 +2,6 @@
 
 namespace Drupal\spectrum\Query;
 
-use Drupal\gds\Data\ChunkedIterator;
 use Drupal\spectrum\Model\Collection;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Model\PolymorphicCollection;
@@ -17,13 +16,12 @@ class MultiModelQuery extends EntityQuery
    *
    * @return Collection
    */
-  public function fetchCollection() : PolymorphicCollection
+  public function fetchCollection(): PolymorphicCollection
   {
     $collection = PolymorphicCollection::forgeNew(null);
     $entities = $this->fetch();
 
-    foreach($entities as $entity)
-    {
+    foreach ($entities as $entity) {
       $modelClass = Model::getModelClassForEntity($entity);
       $model = $modelClass::forgeByEntity($entity);
 

@@ -184,6 +184,28 @@ class User extends Model
   }
 
   /**
+   * @param string $value
+   *
+   * @return User
+   */
+  public function setEmail(string $value): User
+  {
+    $this->entity->mail->value = $value;
+    return $this;
+  }
+
+  /**
+   * @param string $value
+   *
+   * @return User
+   */
+  public function setName(string $value): User
+  {
+    $this->entity->name->value = $value;
+    return $this;
+  }
+
+  /**
    * Checks whether the user has access to a certain field on a model.
    *
    * @param string $modelClass This is a fully qualified Class name of the model (for Example Drupal\spectrum\Models\User)

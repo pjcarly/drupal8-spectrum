@@ -3,6 +3,7 @@
 namespace Drupal\spectrum\Query;
 
 use Drupal\spectrum\Model\Model;
+use Drupal\spectrum\Data\ChunkedIterator;
 
 /**
  * Class EntityQuery
@@ -18,10 +19,24 @@ class EntityQuery extends Query
    *
    * @return \Drupal\spectrum\Model\Model|null
    */
-  public function fetchSingleModel() : ?Model
+  public function fetchSingleModel(): ?Model
   {
     $entity = $this->fetchSingle();
     return isset($entity) ? Model::forgeByEntity($entity) : NULL;
   }
 
+  /**
+   * @return \Generator
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+   */
+  public function fetchGenerator(): \Generator
+  {
+    $storage = \Drupal::entityTypeManager()->getStorage($this->entityType);
+    $entities = new ChunkedIterator($storage, $this->fetchIds());
+
+    foreach ($entities as $entity) {
+      yield $entity;
+    }
+  }
 }

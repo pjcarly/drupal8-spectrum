@@ -4,7 +4,6 @@ namespace Drupal\spectrum\Query;
 
 use Drupal\Core\Database\Query\AlterableInterface;
 use Drupal\Core\Entity\Query\QueryInterface;
-use Drupal\gds\Data\ChunkedIterator;
 use Drupal\spectrum\Model\Collection;
 use Drupal\spectrum\Model\Model;
 
@@ -46,7 +45,7 @@ class ModelQuery extends BundleQuery
    *
    * @return Collection
    */
-  public function fetchCollection() : Collection
+  public function fetchCollection(): Collection
   {
     $entities = $this->fetch();
     return Collection::forgeByEntities($this->modelType, $entities);
@@ -57,11 +56,9 @@ class ModelQuery extends BundleQuery
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
-  public function fetchGenerator(): \Generator {
-    $storage = \Drupal::entityTypeManager()->getStorage($this->entityType);
-    $entities = new ChunkedIterator($storage, $this->fetchIds());
-
-    foreach ($entities as $entity) {
+  public function fetchGenerator(): \Generator
+  {
+    foreach (parent::fetchGenerator() as $entity) {
       yield $this->modelType::forgeByEntity($entity);
     }
   }
@@ -72,17 +69,14 @@ class ModelQuery extends BundleQuery
    *
    * @return Model|NULL
    */
-  public function fetchSingleModel() : ?Model
+  public function fetchSingleModel(): ?Model
   {
     $entity = $this->fetchSingle();
 
-    if($entity != null)
-    {
+    if ($entity != null) {
       $modelType = $this->modelType;
       return $modelType::forgeByEntity($entity);
-    }
-    else
-    {
+    } else {
       return null;
     }
   }
@@ -90,7 +84,7 @@ class ModelQuery extends BundleQuery
   /**
    * @return bool
    */
-  public function useAccessPolicy() : bool
+  public function useAccessPolicy(): bool
   {
     return $this->useAccessPolicy;
   }
@@ -100,7 +94,7 @@ class ModelQuery extends BundleQuery
    *
    * @return Query
    */
-  public function setUseAccessPolicy(bool $useAccessPolicy) : Query
+  public function setUseAccessPolicy(bool $useAccessPolicy): Query
   {
     $this->useAccessPolicy = $useAccessPolicy;
     return $this;
@@ -109,7 +103,8 @@ class ModelQuery extends BundleQuery
   /**
    * @inheritDoc
    */
-  protected function getBaseQuery(): QueryInterface {
+  protected function getBaseQuery(): QueryInterface
+  {
     $query = parent::getBaseQuery();
 
     if ($this->useAccessPolicy) {
@@ -123,10 +118,10 @@ class ModelQuery extends BundleQuery
   /**
    * @param \Drupal\Core\Database\Query\AlterableInterface $query
    */
-  public function executeAccessPolicy(AlterableInterface $query) {
+  public function executeAccessPolicy(AlterableInterface $query)
+  {
     /** @var \Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface $accessPolicy */
     $accessPolicy = $this->modelType::getAccessPolicy();
     $accessPolicy->onQuery($query);
   }
-
 }
