@@ -6,6 +6,7 @@ use Money\Money;
 use Money\Currencies\ISOCurrencies;
 use Money\Parser\DecimalMoneyParser;
 use Money\Formatter\DecimalMoneyFormatter;
+use Money\Formatter\IntlMoneyFormatter;
 
 /**
  * This class provides Url helper functions used throughout the application
@@ -19,7 +20,7 @@ class NumberUtils
    * @param string $currency
    * @return Money
    */
-  public static function getMoney(string $value, string $currency) : Money
+  public static function getMoney(string $value, string $currency): Money
   {
     $currencies = new ISOCurrencies();
     $moneyParser = new DecimalMoneyParser($currencies);
@@ -33,15 +34,30 @@ class NumberUtils
    * @param Money $money
    * @return float
    */
-  public static function getDecimal(?Money $money) : float
+  public static function getDecimal(?Money $money): float
   {
-    if(empty($money))
-    {
+    if (empty($money)) {
       return 0;
     }
 
     $currencies = new ISOCurrencies();
     $moneyFormatter = new DecimalMoneyFormatter($currencies);
+
+    return $moneyFormatter->format($money);
+  }
+
+  /**
+   * Returns a string Representation of the provided $money according to the provided locale
+   *
+   * @param Money $money
+   * @param string $locale
+   * @return string
+   */
+  public static function getString(Money $money, string $locale = 'nl_BE'): string
+  {
+    $currencies = new ISOCurrencies();
+    $numberFormatter = new \NumberFormatter($locale, \NumberFormatter::CURRENCY);
+    $moneyFormatter = new IntlMoneyFormatter($numberFormatter, $currencies);
 
     return $moneyFormatter->format($money);
   }
