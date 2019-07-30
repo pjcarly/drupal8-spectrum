@@ -48,7 +48,7 @@ class ReferencedRelationship extends Relationship
    *
    * @return Condition
    */
-  public function getCondition() : Condition
+  public function getCondition(): Condition
   {
     return new Condition($this->fieldRelationship->relationshipField, 'IN', null);
   }
@@ -58,9 +58,29 @@ class ReferencedRelationship extends Relationship
    *
    * @return ModelQuery
    */
-  public function getRelationshipQuery() : EntityQuery
+  public function getRelationshipQuery(): EntityQuery
   {
     $modelType = $this->modelType;
     return $modelType::getModelQuery();
+  }
+
+  /**
+   * Returns the inverse FieldRelationship of this ReferencedRelationship
+   *
+   * @return FieldRelationship
+   */
+  public function getFieldRelationship(): FieldRelationship
+  {
+    return $this->fieldRelationship;
+  }
+
+  /**
+   * Returns the inverse FieldRelationship name of this ReferencedRelationship
+   *
+   * @return string
+   */
+  public function getFieldRelationshipName(): string
+  {
+    return $this->fieldRelationshipName;
   }
 }

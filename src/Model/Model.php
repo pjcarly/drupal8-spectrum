@@ -811,6 +811,7 @@ abstract class Model
 
       if($relationship instanceof FieldRelationship)
       {
+        /** @var FieldRelationship $relationship */
         $relationshipField = $relationship->getField();
         $relationshipColumn = $relationship->getColumn();
 
@@ -875,6 +876,7 @@ abstract class Model
       }
       else if($relationship instanceof ReferencedRelationship)
       {
+        /** @var ReferencedRelationship $relationship */
         if(!array_key_exists($relationship->getName(), $this->relatedViaFieldOnExternalEntity))
         {
           $this->createNewCollection($relationship);
@@ -882,6 +884,14 @@ abstract class Model
 
         $collection = $this->relatedViaFieldOnExternalEntity[$relationship->getName()];
         $collection->put($objectToPut);
+
+        $currentId = $this->getId();
+        if(!empty($currentId))
+        {
+          $fieldRelationshipField = $relationship->getFieldRelationship()->getField();
+          $fieldRelationshipColumn = $relationship->getFieldRelationship()->getColumn();
+          $objectToPut->entity->$fieldRelationshipField->$fieldRelationshipColumn = $currentId;
+        }
 
         if($includeInOriginalModels)
         {
