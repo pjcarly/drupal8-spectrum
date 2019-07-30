@@ -27,7 +27,7 @@ abstract class JsonApiBaseNode
    *
    * @return JsonApiBaseNode
    */
-  public function clearMeta() : JsonApiBaseNode
+  public function clearMeta(): JsonApiBaseNode
   {
     unset($this->meta);
     return $this;
@@ -40,10 +40,9 @@ abstract class JsonApiBaseNode
    * @param int|string|mixed $value
    * @return JsonApiBaseNode
    */
-  public function addMeta(string $key, $value) : JsonApiBaseNode
+  public function addMeta(string $key, $value): JsonApiBaseNode
   {
-    if($this->meta === null)
-    {
+    if ($this->meta === null) {
       $this->meta = [];
     }
 
@@ -58,10 +57,9 @@ abstract class JsonApiBaseNode
    * @param JsonApiLink $link
    * @return JsonApiBaseNode
    */
-  public function addLink(string $name, JsonApiLink $link) : JsonApiBaseNode
+  public function addLink(string $name, JsonApiLink $link): JsonApiBaseNode
   {
-    if($this->links === null)
-    {
+    if ($this->links === null) {
       $this->links = [];
     }
 
@@ -75,7 +73,7 @@ abstract class JsonApiBaseNode
    * @param string $name
    * @return JsonApiLink
    */
-  public function getLink(string $name) : JsonApiLink
+  public function getLink(string $name): JsonApiLink
   {
     return $this->links[$name];
   }
@@ -85,11 +83,10 @@ abstract class JsonApiBaseNode
    *
    * @return array
    */
-  public function getSerializedLinks() : array
+  public function getSerializedLinks(): array
   {
     $serializedLinks = [];
-    foreach($this->links as $key => $link)
-    {
+    foreach ($this->links as $key => $link) {
       $serializedLinks[$key] = $link->getUrl();
     }
 
@@ -101,7 +98,7 @@ abstract class JsonApiBaseNode
    *
    * @return array
    */
-  public function getMeta() : array
+  public function getMeta(): array
   {
     return empty($this->meta) ? [] : $this->meta;
   }
@@ -111,5 +108,5 @@ abstract class JsonApiBaseNode
    *
    * @return \stdClass
    */
-  public abstract function serialize() : \stdClass;
+  public abstract function serialize(): \stdClass;
 }

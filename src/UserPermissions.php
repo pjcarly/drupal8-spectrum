@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Contains \Drupal\spectrum\TaxonomyViewsIntegratorPermissions.
@@ -45,7 +46,7 @@ class UserPermissions implements ContainerInjectionInterface
    * @param ContainerInterface $container
    * @return UserPermissions
    */
-  public static function create(ContainerInterface $container) : UserPermissions
+  public static function create(ContainerInterface $container): UserPermissions
   {
     return new static($container->get('entity.manager'));
   }
@@ -56,7 +57,7 @@ class UserPermissions implements ContainerInjectionInterface
    * @return array
    *   Permissions array.
    */
-  public function permissions() : array
+  public function permissions(): array
   {
     $permissions = [];
 

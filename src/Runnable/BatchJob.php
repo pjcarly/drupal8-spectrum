@@ -10,17 +10,15 @@ abstract class BatchJob extends QueuedJob
   /**
    * {@inheritdoc}
    */
-  public static function scheduleBatch(string $jobName, string $variable = '', \DateTime $date = null, int $batchSize = null) : BatchJob
+  public static function scheduleBatch(string $jobName, string $variable = '', \DateTime $date = null, int $batchSize = null): BatchJob
   {
     $registeredJob = RegisteredJob::getByKey($jobName);
 
-    if(empty($registeredJob))
-    {
-      throw new \Exception('Regisered Job ('.$jobName.') not found');
+    if (empty($registeredJob)) {
+      throw new \Exception('Regisered Job (' . $jobName . ') not found');
     }
 
-    if(empty($date))
-    {
+    if (empty($date)) {
       $utc = new \DateTimeZone('UTC');
       $date = new \DateTime();
       $date->setTimezone($utc);
@@ -29,8 +27,7 @@ abstract class BatchJob extends QueuedJob
     $queuedJob = $registeredJob->createJobInstance();
     $queuedJob->entity->title->value = $jobName;
 
-    if(!empty($variable))
-    {
+    if (!empty($variable)) {
       $queuedJob->entity->field_variable->value = $variable;
     }
 
@@ -43,7 +40,7 @@ abstract class BatchJob extends QueuedJob
     return $queuedJob;
   }
 
-  public final function execute() : void
+  public final function execute(): void
   {
     $batchable = $this->getBatchable();
     $batchSize = $this->getBatchSize();
@@ -55,22 +52,18 @@ abstract class BatchJob extends QueuedJob
     $loop = Factory::create();
 
     $loopCycle = 0;
-    $loop->addPeriodicTimer($sleep, function() use (&$loop, &$batchable, &$batchSize, &$totalRecords, &$loopCycle) {
+    $loop->addPeriodicTimer($sleep, function () use (&$loop, &$batchable, &$batchSize, &$totalRecords, &$loopCycle) {
       $batch = $batchable->getNextBatch();
       $loopCycle++;
 
-      if(!empty($batch))
-      {
-        $recordsProcessed = (($loopCycle-1) * $batchSize) + sizeof($batch);
+      if (!empty($batch)) {
+        $recordsProcessed = (($loopCycle - 1) * $batchSize) + sizeof($batch);
         $memory = memory_get_usage() / 1024;
-        $memoryUsage = ($memory < 1024) ? number_format($memory, 2, ',', ' ').' KB' : number_format($memory / 1024, 2, ',', ' ').' MB';
+        $memoryUsage = ($memory < 1024) ? number_format($memory, 2, ',', ' ') . ' KB' : number_format($memory / 1024, 2, ',', ' ') . ' MB';
 
-        if(!empty($totalRecords))
-        {
+        if (!empty($totalRecords)) {
           $this->print(sprintf('(%s) Processing %u/%u (%s)', $this->entity->title->value, $recordsProcessed, $totalRecords, $memoryUsage));
-        }
-        else
-        {
+        } else {
           $this->print(sprintf('(%s) Processing %u (%s)', $this->entity->title->value, $recordsProcessed, $memoryUsage));
         }
 
@@ -79,8 +72,7 @@ abstract class BatchJob extends QueuedJob
         Model::clearAllDrupalStaticEntityCaches();
       }
 
-      if(empty($batch) || sizeof($batch) < $batchSize)
-      {
+      if (empty($batch) || sizeof($batch) < $batchSize) {
         $loop->stop();
       }
     });
@@ -88,18 +80,18 @@ abstract class BatchJob extends QueuedJob
     $loop->run();
   }
 
-  protected function getBatchSize() : int
+  protected function getBatchSize(): int
   {
     $batchSize = $this->entity->field_batch_size->value;
     return empty($batchSize) ? 200 : $batchSize;
   }
 
-  protected function getSleep() : float
+  protected function getSleep(): float
   {
     $sleep = $this->entity->field_sleep->value;
-    return empty($sleep) || ($sleep <= 0 ) ? 0.02 : $sleep;
+    return empty($sleep) || ($sleep <= 0) ? 0.02 : $sleep;
   }
 
-  protected abstract function processBatch(array $batch) : void;
-  protected abstract function getBatchable() : BatchableInterface;
+  protected abstract function processBatch(array $batch): void;
+  protected abstract function getBatchable(): BatchableInterface;
 }

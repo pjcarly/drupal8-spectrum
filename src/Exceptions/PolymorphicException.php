@@ -2,4 +2,5 @@
 
 namespace Drupal\spectrum\Exceptions;
 
-class PolymorphicException extends \Exception {}
+class PolymorphicException extends \Exception
+{ }

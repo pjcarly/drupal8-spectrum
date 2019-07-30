@@ -45,7 +45,7 @@ class Expression
    *
    * @return  string
    */
-  public function getName() : string
+  public function getName(): string
   {
     return $this->name;
   }
@@ -55,7 +55,7 @@ class Expression
    *
    * @return  string
    */
-  public function getExpression() : string
+  public function getExpression(): string
   {
     return $this->expression;
   }
@@ -65,7 +65,7 @@ class Expression
    *
    * @return string[]
    */
-  public function getFields() : array
+  public function getFields(): array
   {
     return $this->fields;
   }

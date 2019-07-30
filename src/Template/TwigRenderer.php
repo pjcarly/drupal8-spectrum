@@ -24,8 +24,7 @@ class TwigRenderer
    */
   private function getTwigRenderer()
   {
-    if(empty($this->twig))
-    {
+    if (empty($this->twig)) {
       // We need to get the twig environment from Drupal as we will use it to render the email template
       // Important to CLONE the twig environment, as any change we make here, shouldn't affect drupal rendering
       $this->twig = clone \Drupal::service('twig');
@@ -41,10 +40,9 @@ class TwigRenderer
    * @param array $scope
    * @return string
    */
-  public function render(string $template, array $scope = []) : string
+  public function render(string $template, array $scope = []): string
   {
-    if(!empty($template))
-    {
+    if (!empty($template)) {
       $twig = $this->getTwigRenderer();
       $renderedContent = $twig->loadTemplate($template)->render($scope);
       return $renderedContent;

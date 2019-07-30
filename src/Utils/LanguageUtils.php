@@ -26,7 +26,7 @@ class LanguageUtils
     static::$forcedLanguage = $language;
   }
 
-    /**
+  /**
    * Translate the passed in value through the Drupal t function, extra varialbes can be passed
    *
    * @param string $value
@@ -37,8 +37,7 @@ class LanguageUtils
   {
     $language = static::$forcedLanguage;
 
-    if(empty($language))
-    {
+    if (empty($language)) {
       $language = \Drupal::languageManager()->getCurrentLanguage()->getId();
     }
 

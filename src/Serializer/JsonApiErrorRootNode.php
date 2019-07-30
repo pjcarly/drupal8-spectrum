@@ -21,7 +21,7 @@ class JsonApiErrorRootNode
    * @param JsonApiErrorNode $error The error node you want to add
    * @return JsonApiLink
    */
-  public function addError(JsonApiErrorNode $error) : JsonApiErrorRootNode
+  public function addError(JsonApiErrorNode $error): JsonApiErrorRootNode
   {
     $this->errors[] = $error;
     return $this;
@@ -32,7 +32,7 @@ class JsonApiErrorRootNode
    *
    * @return boolean
    */
-  public function hasErrors() : bool
+  public function hasErrors(): bool
   {
     return sizeof($this->errors) > 0;
   }
@@ -42,13 +42,12 @@ class JsonApiErrorRootNode
    *
    * @return \stdClass
    */
-  public function serialize() : \stdClass
+  public function serialize(): \stdClass
   {
     $serialized = new \stdClass();
     $serialized->errors = [];
 
-    foreach($this->errors as $error)
-    {
+    foreach ($this->errors as $error) {
       $serialized->errors[] = $error->serialize();
     }
 

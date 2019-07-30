@@ -19,7 +19,7 @@ class ListView extends Model
    *
    * @return string
    */
-  public static function entityType() : string
+  public static function entityType(): string
   {
     return 'query';
   }
@@ -29,7 +29,7 @@ class ListView extends Model
    *
    * @return string
    */
-  public static function bundle() : string
+  public static function bundle(): string
   {
     return 'list_view';
   }
@@ -48,7 +48,8 @@ class ListView extends Model
   /**
    * @inheritDoc
    */
-  public static function getAccessPolicy(): AccessPolicyInterface {
+  public static function getAccessPolicy(): AccessPolicyInterface
+  {
     return new PublicAccessPolicy;
   }
 
@@ -57,15 +58,13 @@ class ListView extends Model
    *
    * @return BundleQuery
    */
-  public function buildQuery() : BundleQuery
+  public function buildQuery(): BundleQuery
   {
     $query = new BundleQuery($this->entity->field_entity->value, $this->entity->field_bundle->value);
-    foreach($this->conditions as $condition)
-    {
+    foreach ($this->conditions as $condition) {
       $query->addCondition($condition->buildQueryCondition());
     }
-    foreach($this->sort_orders as $sortOrder)
-    {
+    foreach ($this->sort_orders as $sortOrder) {
       $query->addSortOrder($sortOrder->buildQueryOrder());
     }
     return $query;
@@ -76,16 +75,13 @@ class ListView extends Model
    *
    * @return array
    */
-  public function getDrupalFieldDefinitions() : array
+  public function getDrupalFieldDefinitions(): array
   {
     $entityType = $this->entity->field_entity->value;
     $bundle = $this->entity->field_bundle->value;
-    if(empty($bundle))
-    {
+    if (empty($bundle)) {
       return \Drupal::service('entity_field.manager')->getFieldDefinitions($entityType, $entityType);
-    }
-    else
-    {
+    } else {
       return \Drupal::service('entity_field.manager')->getFieldDefinitions($entityType, $bundle);
     }
   }

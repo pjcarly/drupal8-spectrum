@@ -1,4 +1,5 @@
 <?php
+
 namespace Drupal\spectrum\Jobs;
 
 use Drupal\spectrum\Runnable\BatchJob;
@@ -15,7 +16,7 @@ class FileUnpublishUnreferencedFilesBatch extends BatchJob
   /**
    * {@inheritdoc}
    */
-  protected function getBatchable() : BatchableInterface
+  protected function getBatchable(): BatchableInterface
   {
     $query = File::getModelQuery();
     $query->addCondition(new Condition('status', '=', '1'));
@@ -25,18 +26,14 @@ class FileUnpublishUnreferencedFilesBatch extends BatchJob
   /**
    * {@inheritdoc}
    */
-  protected function processBatch(array $batch) : void
+  protected function processBatch(array $batch): void
   {
     $files = Collection::forgeByEntities(File::class, $batch);
 
-    foreach($files as $file)
-    {
-      if($file->isInUse())
-      {
+    foreach ($files as $file) {
+      if ($file->isInUse()) {
         $file->entity->status->value = 1;
-      }
-      else
-      {
+      } else {
         $file->entity->status->value = 0;
       }
     }

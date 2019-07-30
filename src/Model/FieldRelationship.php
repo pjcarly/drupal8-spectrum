@@ -1,4 +1,5 @@
 <?php
+
 namespace Drupal\spectrum\Model;
 
 use Drupal\spectrum\Query\EntityQuery;
@@ -82,7 +83,7 @@ class FieldRelationship extends Relationship
    *
    * @return Condition
    */
-  public function getCondition() : Condition
+  public function getCondition(): Condition
   {
     $modelType = $this->firstModelType;
     return new Condition($modelType::getIdField(), 'IN', NULL);
@@ -93,15 +94,12 @@ class FieldRelationship extends Relationship
    *
    * @return EntityQuery
    */
-  public function getRelationshipQuery() : EntityQuery
+  public function getRelationshipQuery(): EntityQuery
   {
     $modelType = $this->firstModelType;
-    if($this->isPolymorphic)
-    {
+    if ($this->isPolymorphic) {
       return $modelType::getEntityQuery();
-    }
-    else
-    {
+    } else {
       return $modelType::getModelQuery();
     }
   }
@@ -112,14 +110,13 @@ class FieldRelationship extends Relationship
    *
    * @return void
    */
-  protected function setRelationshipMetaData() : void
+  protected function setRelationshipMetaData(): void
   {
     // First we will get the field Definition to read our meta data from
     $relationshipSource = $this->relationshipSource;
     $fieldDefinition = $relationshipSource::getFieldDefinition($this->getField());
-    if(empty($fieldDefinition))
-    {
-      throw new \Drupal\spectrum\Exceptions\InvalidFieldException('Field '.$this->getField().' not found on modeltype: '.$relationshipSource);
+    if (empty($fieldDefinition)) {
+      throw new \Drupal\spectrum\Exceptions\InvalidFieldException('Field ' . $this->getField() . ' not found on modeltype: ' . $relationshipSource);
     }
     $fieldSettings = $fieldDefinition->getItemDefinition()->getSettings();
 
@@ -127,8 +124,7 @@ class FieldRelationship extends Relationship
     $relationshipEntityType = $fieldSettings['target_type'];
     $relationshipBundle = NULL;
 
-    if(!empty($fieldSettings['handler_settings']['target_bundles']))
-    {
+    if (!empty($fieldSettings['handler_settings']['target_bundles'])) {
       // with all entity references this shouldn't be a problem, however, in case of 'user', this is blank
       // luckally we handle this correctly in getModelClassForEntityAndBundle
       $relationshipBundle = reset($fieldSettings['handler_settings']['target_bundles']);
@@ -136,18 +132,14 @@ class FieldRelationship extends Relationship
 
     $this->firstModelType = Model::getModelClassForEntityAndBundle($relationshipEntityType, $relationshipBundle);
 
-    if(isset($fieldSettings['handler_settings']['target_bundles']) && sizeof($fieldSettings['handler_settings']['target_bundles']) > 1)
-    {
+    if (isset($fieldSettings['handler_settings']['target_bundles']) && sizeof($fieldSettings['handler_settings']['target_bundles']) > 1) {
       $this->isPolymorphic = true;
       $this->modelType = NULL;
 
-      foreach($fieldSettings['handler_settings']['target_bundles'] as $targetBundle)
-      {
+      foreach ($fieldSettings['handler_settings']['target_bundles'] as $targetBundle) {
         $this->polymorphicModelTypes[] = Model::getModelClassForEntityAndBundle($relationshipEntityType, $targetBundle);
       }
-    }
-    else
-    {
+    } else {
       $this->modelType = $this->firstModelType;
     }
 
@@ -160,7 +152,7 @@ class FieldRelationship extends Relationship
    *
    * @return string
    */
-  public function getField() : string
+  public function getField(): string
   {
     $positionOfDot = strpos($this->relationshipField, '.');
     return $positionOfDot ? substr($this->relationshipField, 0, $positionOfDot) : $this->relationshipField;
@@ -171,7 +163,7 @@ class FieldRelationship extends Relationship
    *
    * @return string
    */
-  public function getColumn() : string
+  public function getColumn(): string
   {
     $positionOfDot = strpos($this->relationshipField, '.');
     return substr($this->relationshipField, $positionOfDot + 1); // exclude the "." so +1
@@ -182,7 +174,7 @@ class FieldRelationship extends Relationship
    *
    * @return string[]
    */
-  public function getPolymorphicModelTypes() : array
+  public function getPolymorphicModelTypes(): array
   {
     return $this->polymorphicModelTypes;
   }
@@ -195,14 +187,11 @@ class FieldRelationship extends Relationship
    */
   public function __get($property)
   {
-    if (property_exists($this, $property))
-    {
+    if (property_exists($this, $property)) {
       return $this->$property;
-    }
-    else // lets check for pseudo properties
+    } else // lets check for pseudo properties
     {
-      switch($property)
-      {
+      switch ($property) {
         case "column":
           return $this->getColumn();
           break;
@@ -225,15 +214,16 @@ class FieldRelationship extends Relationship
   /**
    * @return int
    */
-  public function getParentPriority(): int {
+  public function getParentPriority(): int
+  {
     return $this->parentPriority;
   }
 
   /**
    * @return string
    */
-  public function getClass(): ?string {
+  public function getClass(): ?string
+  {
     return $this->class;
   }
-
 }

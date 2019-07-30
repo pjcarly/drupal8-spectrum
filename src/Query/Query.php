@@ -115,7 +115,7 @@ abstract class Query implements BatchableInterface
   /**
    * {@inheritdoc}
    */
-  public function getTotalBatchedRecords() : ?int
+  public function getTotalBatchedRecords(): ?int
   {
     return sizeof($this->batchIds);
   }
@@ -123,7 +123,7 @@ abstract class Query implements BatchableInterface
   /**
    * {@inheritdoc}
    */
-  public function getNextBatch() : array
+  public function getNextBatch(): array
   {
     $this->batchPage++;
 
@@ -131,14 +131,13 @@ abstract class Query implements BatchableInterface
     $keys = array_keys($this->batchIds);
 
     // Next we generate an array with consecutive numbers starting at the page we are currently handleing, and for the max range of the batchsize
-    $range = range(($this->batchPage - 1) * $this->batchSize, ($this->batchPage * $this->batchSize) -1);
+    $range = range(($this->batchPage - 1) * $this->batchSize, ($this->batchPage * $this->batchSize) - 1);
     $range = array_flip($range);
 
     // Next we generate the intersection, between the range and the keys, so we only have the keys that we need to handle in this batch
     $nextBatchIds = array_intersect_key($keys, $range);
 
-    if(empty($nextBatchIds))
-    {
+    if (empty($nextBatchIds)) {
       return [];
     }
 
@@ -159,7 +158,7 @@ abstract class Query implements BatchableInterface
    * @param integer $batchSize
    * @return BatchableInterface
    */
-  public function setBatchSize(int $batchSize) : BatchableInterface
+  public function setBatchSize(int $batchSize): BatchableInterface
   {
     $this->batchSize = $batchSize;
     $this->batchPage = 0;
@@ -174,7 +173,7 @@ abstract class Query implements BatchableInterface
    * @param string $tag
    * @return Query
    */
-  public function setTag(string $tag) : Query
+  public function setTag(string $tag): Query
   {
     $this->tag = $tag;
     return $this;
@@ -186,7 +185,7 @@ abstract class Query implements BatchableInterface
    * @param Condition $condition
    * @return Query
    */
-  public function addBaseCondition(Condition $condition) : Query
+  public function addBaseCondition(Condition $condition): Query
   {
     $this->baseConditions[] = $condition;
     return $this;
@@ -198,7 +197,7 @@ abstract class Query implements BatchableInterface
    * @param Condition $condition
    * @return Query
    */
-  public function addCondition(Condition $condition) : Query
+  public function addCondition(Condition $condition): Query
   {
     $this->conditions[] = $condition;
     return $this;
@@ -210,7 +209,7 @@ abstract class Query implements BatchableInterface
    * @param ConditionGroup $conditionGroup
    * @return Query
    */
-  public function addConditionGroup(ConditionGroup $conditionGroup) : Query
+  public function addConditionGroup(ConditionGroup $conditionGroup): Query
   {
     $this->conditionGroups[] = $conditionGroup;
     return $this;
@@ -222,7 +221,7 @@ abstract class Query implements BatchableInterface
    * @param Expression $expression
    * @return Query
    */
-  public function addExpression(Expression $expression) : Query
+  public function addExpression(Expression $expression): Query
   {
     $this->expressions[$expression->getName()] = $expression;
     return $this;
@@ -233,7 +232,7 @@ abstract class Query implements BatchableInterface
    *
    * @return Query
    */
-  public function clearExpressions() : Query
+  public function clearExpressions(): Query
   {
     $this->expressions = [];
     return $this;
@@ -245,7 +244,7 @@ abstract class Query implements BatchableInterface
    * @param integer $limit
    * @return Query
    */
-  public function setLimit(int $limit) : Query
+  public function setLimit(int $limit): Query
   {
     $this->rangeStart = 0;
     $this->rangeLength = $limit;
@@ -257,7 +256,7 @@ abstract class Query implements BatchableInterface
    *
    * @return boolean
    */
-  public function hasLimit() : bool
+  public function hasLimit(): bool
   {
     return !empty($this->rangeLength);
   }
@@ -268,7 +267,7 @@ abstract class Query implements BatchableInterface
    * @param string $conditionLogic
    * @return Query
    */
-  public function setConditionLogic(string $conditionLogic) : Query
+  public function setConditionLogic(string $conditionLogic): Query
   {
     $this->conditionLogic = $conditionLogic;
     return $this;
@@ -281,7 +280,7 @@ abstract class Query implements BatchableInterface
    * @param integer $length
    * @return Query
    */
-  public function setRange(int $start, int $length) : Query
+  public function setRange(int $start, int $length): Query
   {
     $this->rangeStart = $start;
     $this->rangeLength = $length;
@@ -294,7 +293,7 @@ abstract class Query implements BatchableInterface
    * @param Order $order
    * @return Query
    */
-  public function addSortOrder(Order $order) : Query
+  public function addSortOrder(Order $order): Query
   {
     $this->sortOrders[$order->fieldName] = $order;
     return $this;
@@ -306,7 +305,7 @@ abstract class Query implements BatchableInterface
    * @param string $fieldName
    * @return boolean
    */
-  public function hasSortOrderForField(string $fieldName) : bool
+  public function hasSortOrderForField(string $fieldName): bool
   {
     return array_key_exists($fieldName, $this->sortOrders);
   }
@@ -316,7 +315,7 @@ abstract class Query implements BatchableInterface
    *
    * @return Query
    */
-  public function clearSortOrders() : Query
+  public function clearSortOrders(): Query
   {
     $this->sortOrders = [];
     return $this;
@@ -327,13 +326,12 @@ abstract class Query implements BatchableInterface
    *
    * @return QueryInterface
    */
-  public function getQuery() : QueryInterface
+  public function getQuery(): QueryInterface
   {
     $query = $this->getBaseQuery();
 
     // add ranges and limits if needed
-    if($this->hasLimit())
-    {
+    if ($this->hasLimit()) {
       $query->range($this->rangeStart, $this->rangeLength);
     }
 
@@ -345,7 +343,7 @@ abstract class Query implements BatchableInterface
    *
    * @return QueryInterface
    */
-  public function getTotalCountQuery() : QueryInterface
+  public function getTotalCountQuery(): QueryInterface
   {
     $query = $this->getBaseQuery();
     $query->count();
@@ -357,7 +355,7 @@ abstract class Query implements BatchableInterface
    *
    * @return QueryInterface
    */
-  protected function getBaseQuery() : QueryInterface
+  protected function getBaseQuery(): QueryInterface
   {
     // We abstracted the getQuery and getTotalCountQuery functions in this function, to avoid duplicate code
     $query = \Drupal::entityQuery($this->entityType);
@@ -365,34 +363,26 @@ abstract class Query implements BatchableInterface
     // next we check for conditions and add them if needed
 
     // Base conditions must always be applied, regardless of the logic
-    foreach($this->baseConditions as $condition)
-    {
-      if(!$this->hasExpression($condition->getFieldName()))
-      {
+    foreach ($this->baseConditions as $condition) {
+      if (!$this->hasExpression($condition->getFieldName())) {
         $condition->addQueryCondition($query);
       }
     }
 
     // We might have a logic, lets check for it
-    if(empty($this->conditionLogic))
-    {
-      foreach($this->conditions as $condition)
-      {
-        if(!$this->hasExpression($condition->getFieldName()))
-        {
+    if (empty($this->conditionLogic)) {
+      foreach ($this->conditions as $condition) {
+        if (!$this->hasExpression($condition->getFieldName())) {
           $condition->addQueryCondition($query);
         }
       }
-    }
-    else
-    {
+    } else {
       // A logic was provided, we add all the conditions on the query to a ConditionGroup
       // Apply the logic, and then add pass in the drupal query to apply the conditions with logic on.
       $conditionGroup = new ConditionGroup();
       $conditionGroup->setLogic($this->conditionLogic);
 
-      foreach($this->conditions as $condition)
-      {
+      foreach ($this->conditions as $condition) {
         $conditionGroup->addCondition($condition);
       }
 
@@ -400,28 +390,23 @@ abstract class Query implements BatchableInterface
     }
 
     // Next the possible added condition groups
-    foreach($this->conditionGroups as $conditionGroup)
-    {
+    foreach ($this->conditionGroups as $conditionGroup) {
       $conditionGroup->applyConditionsOnQuery($query);
     }
 
     // and finally apply an order if needed
-    foreach($this->sortOrders as $sortOrder)
-    {
+    foreach ($this->sortOrders as $sortOrder) {
       // We filter out any possible fieldname that was used in an expression
-      if(!$this->hasExpression($sortOrder->getFieldName()))
-      {
+      if (!$this->hasExpression($sortOrder->getFieldName())) {
         $query->sort($sortOrder->getFieldName(), $sortOrder->getDirection(), $sortOrder->getLangcode());
       }
     }
 
-    if(!empty($this->tag))
-    {
+    if (!empty($this->tag)) {
       $query->addTag($this->tag);
     }
 
-    if(!empty($this->expressions))
-    {
+    if (!empty($this->expressions)) {
       // Here we do some hackory to get Expressions working
       // We create a conditiongroup which contains a condition with all the fields of the expressions
       // This makes sure that there is a JOIN added for the fields needed
@@ -430,16 +415,14 @@ abstract class Query implements BatchableInterface
       $expressionConditionGroup = new ConditionGroup();
 
       $logic = [];
-      foreach($this->expressions as $expression)
-      {
-        foreach($expression->getFields() as $field)
-        {
-          $logic[] = sizeof($logic)+1;
+      foreach ($this->expressions as $expression) {
+        foreach ($expression->getFields() as $field) {
+          $logic[] = sizeof($logic) + 1;
           $expressionConditionGroup->addCondition(new Condition($field, '=', '__pseudo_placeholder'));
         }
       }
 
-      $expressionConditionGroup->setLogic('OR('.implode(',', $logic).')');
+      $expressionConditionGroup->setLogic('OR(' . implode(',', $logic) . ')');
       $expressionConditionGroup->applyConditionsOnQuery($query);
 
       $query->addTag('spectrum_query')->addMetaData('spectrum_query', $this);
@@ -453,17 +436,14 @@ abstract class Query implements BatchableInterface
    *
    * @return array
    */
-  public function fetch() : array
+  public function fetch(): array
   {
     $ids = $this->fetchIds();
 
-    if($this->entityType === 'user')
-    {
+    if ($this->entityType === 'user') {
       // ugly fix for custom fields on User
       return empty($ids) ? [] : \Drupal\user\Entity\User::loadMultiple($ids);
-    }
-    else
-    {
+    } else {
       $store = \Drupal::entityTypeManager()->getStorage($this->entityType);
       return empty($ids) ? [] : $store->loadMultiple($ids);
     }
@@ -474,7 +454,7 @@ abstract class Query implements BatchableInterface
    *
    * @return array
    */
-  public function fetchIds() : array
+  public function fetchIds(): array
   {
     $query = $this->getQuery();
     $result = $query->execute();
@@ -487,7 +467,7 @@ abstract class Query implements BatchableInterface
    *
    * @return string|null
    */
-  public function fetchId() : ?string
+  public function fetchId(): ?string
   {
     $ids = $this->fetchIds();
 
@@ -499,17 +479,14 @@ abstract class Query implements BatchableInterface
    *
    * @return EntityInterface|null
    */
-  public function fetchSingle() : ?EntityInterface
+  public function fetchSingle(): ?EntityInterface
   {
     $id = $this->fetchId();
 
-    if($this->entityType === 'user')
-    {
+    if ($this->entityType === 'user') {
       // ugly fix for custom fields on User
       return empty($id) ? null : \Drupal\user\Entity\User::load($id);
-    }
-    else
-    {
+    } else {
       $store = \Drupal::entityTypeManager()->getStorage($this->entityType);
       return empty($id) ? null : $store->load($id);
     }
@@ -520,7 +497,7 @@ abstract class Query implements BatchableInterface
    *
    * @return integer
    */
-  public function fetchTotalCount() : int
+  public function fetchTotalCount(): int
   {
     $query = $this->getTotalCountQuery();
     $result = $query->execute();
@@ -533,7 +510,7 @@ abstract class Query implements BatchableInterface
    *
    * @return  Condition[]
    */
-  public function getConditions() : array
+  public function getConditions(): array
   {
     return $this->conditions;
   }
@@ -543,7 +520,7 @@ abstract class Query implements BatchableInterface
    *
    * @return  Condition[]
    */
-  public function getBaseConditions() : array
+  public function getBaseConditions(): array
   {
     return $this->baseConditions;
   }
@@ -553,7 +530,7 @@ abstract class Query implements BatchableInterface
    *
    * @return  ConditionGroup[]
    */
-  public function getConditionGroups() : array
+  public function getConditionGroups(): array
   {
     return $this->conditionGroups;
   }
@@ -563,7 +540,7 @@ abstract class Query implements BatchableInterface
    *
    * @return Expression[]
    */
-  public function getExpressions() : array
+  public function getExpressions(): array
   {
     return $this->expressions;
   }
@@ -574,7 +551,7 @@ abstract class Query implements BatchableInterface
    * @param string $name
    * @return boolean
    */
-  public function hasExpression(string $name) : bool
+  public function hasExpression(string $name): bool
   {
     return array_key_exists($name, $this->expressions);
   }
@@ -585,36 +562,31 @@ abstract class Query implements BatchableInterface
    * @param Query $query
    * @return Query
    */
-  public function copyConditionsFrom(Query $query) : Query
+  public function copyConditionsFrom(Query $query): Query
   {
-    foreach($query->getBaseConditions() as $baseCondition)
-    {
+    foreach ($query->getBaseConditions() as $baseCondition) {
       $this->addBaseCondition($baseCondition);
     }
 
-    foreach($query->getConditions() as $condition)
-    {
+    foreach ($query->getConditions() as $condition) {
       $this->addCondition($condition);
     }
 
-    foreach($query->getConditionGroups() as $conditionGroup)
-    {
+    foreach ($query->getConditionGroups() as $conditionGroup) {
       $this->addConditionGroup($conditionGroup);
     }
 
     $conditionLogic = $query->getConditionLogic();
-    if(!empty($conditionLogic))
-    {
+    if (!empty($conditionLogic)) {
       $this->setConditionLogic($conditionLogic);
     }
 
     return $this;
   }
 
-  public function copySortOrdersFrom(Query $query) : Query
+  public function copySortOrdersFrom(Query $query): Query
   {
-    foreach($query->getSortOrders() as $sortOrder)
-    {
+    foreach ($query->getSortOrders() as $sortOrder) {
       $this->addSortOrder($sortOrder);
     }
 
@@ -626,20 +598,18 @@ abstract class Query implements BatchableInterface
    *
    * @return Query
    */
-  public function copy() : Query
+  public function copy(): Query
   {
     $query = new EntityQuery($this->getEntityType()); // Doesnt matter what the subclass is, the conditions will be added below
     $query->copyConditionsFrom($this);
     $query->copySortOrdersFrom($this);
 
     $tag = $this->getTag();
-    if(!empty($tag))
-    {
+    if (!empty($tag)) {
       $query->setTag($tag);
     }
 
-    if($this->hasLimit())
-    {
+    if ($this->hasLimit()) {
       $query->setRange($this->getRangeStart(), $this->getRangeLength());
     }
 
@@ -651,7 +621,7 @@ abstract class Query implements BatchableInterface
    *
    * @return Order[]
    */
-  public function getSortOrders() : array
+  public function getSortOrders(): array
   {
     return $this->sortOrders;
   }
@@ -661,7 +631,7 @@ abstract class Query implements BatchableInterface
    *
    * @return  string|null
    */
-  public function getTag() : ?string
+  public function getTag(): ?string
   {
     return $this->tag;
   }
@@ -671,7 +641,7 @@ abstract class Query implements BatchableInterface
    *
    * @return  int
    */
-  public function getRangeStart() : int
+  public function getRangeStart(): int
   {
     return $this->rangeStart;
   }
@@ -681,7 +651,7 @@ abstract class Query implements BatchableInterface
    *
    * @return  int
    */
-  public function getRangeLength() : int
+  public function getRangeLength(): int
   {
     return $this->rangeLength;
   }
@@ -691,7 +661,7 @@ abstract class Query implements BatchableInterface
    *
    * @return  string|null
    */
-  public function getConditionLogic() : ?string
+  public function getConditionLogic(): ?string
   {
     return $this->conditionLogic;
   }
@@ -701,7 +671,7 @@ abstract class Query implements BatchableInterface
    *
    * @return  string
    */
-  public function getEntityType() : string
+  public function getEntityType(): string
   {
     return $this->entityType;
   }
@@ -716,24 +686,20 @@ abstract class Query implements BatchableInterface
    * @param DrupalSelectQuery $drupalQuery
    * @return Query
    */
-  public function parseExpressions(DrupalSelectQuery $drupalQuery) : Query
+  public function parseExpressions(DrupalSelectQuery $drupalQuery): Query
   {
     $index = 0;
     $columnMapping = [];
     $pseudoConditionGroupKey = null;
 
     // First we find the column mapping from the drupal query and the key to unset
-    foreach($drupalQuery->conditions() as $key => $condition)
-    {
-      if($condition['field'] instanceof DrupalCondition)
-      {
+    foreach ($drupalQuery->conditions() as $key => $condition) {
+      if ($condition['field'] instanceof DrupalCondition) {
         /** @var DrupalCondition $conditionGroup */
         $conditionGroup = $condition['field'];
 
-        foreach($conditionGroup->conditions() as $subCondition)
-        {
-          if($subCondition['value'] === '__pseudo_placeholder')
-          {
+        foreach ($conditionGroup->conditions() as $subCondition) {
+          if ($subCondition['value'] === '__pseudo_placeholder') {
             $pseudoConditionGroupKey = $key;
             $columnMapping[$index] = $subCondition['field'];
             $index++;
@@ -747,11 +713,9 @@ abstract class Query implements BatchableInterface
 
     // Now we have the initial colums, we match those with the fields in the expressions
     $index = 0;
-    foreach($this->expressions as $expression)
-    {
+    foreach ($this->expressions as $expression) {
       $expressionString = $expression->getExpression();
-      foreach($expression->getFields() as $field)
-      {
+      foreach ($expression->getFields() as $field) {
         $column = $columnMapping[$index];
         $expressionString = str_replace($field, $column, $expressionString);
 
@@ -762,15 +726,12 @@ abstract class Query implements BatchableInterface
     }
 
     // And now we add the conditions and sort orders from the expression
-    foreach($this->sortOrders as $sortOrder)
-    {
-      if($this->hasExpression($sortOrder->getFieldName()))
-      {
+    foreach ($this->sortOrders as $sortOrder) {
+      if ($this->hasExpression($sortOrder->getFieldName())) {
         $drupalQuery->orderBy($sortOrder->getFieldName(), $sortOrder->getDirection());
       }
     }
 
     return $this;
   }
-
 }

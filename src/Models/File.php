@@ -22,7 +22,7 @@ class File extends Model
    *
    * @return string
    */
-  public static function entityType() : string
+  public static function entityType(): string
   {
     return 'file';
   }
@@ -32,7 +32,7 @@ class File extends Model
    *
    * @return string
    */
-  public static function bundle() : string
+  public static function bundle(): string
   {
     return '';
   }
@@ -43,13 +43,13 @@ class File extends Model
    * @return void
    */
   public static function relationships()
-  {
-  }
+  { }
 
   /**
    * @inheritDoc
    */
-  public static function getAccessPolicy(): AccessPolicyInterface {
+  public static function getAccessPolicy(): AccessPolicyInterface
+  {
     return new PublicAccessPolicy;
   }
 
@@ -58,7 +58,7 @@ class File extends Model
    *
    * @return string
    */
-  protected function getBaseApiPath() : string
+  protected function getBaseApiPath(): string
   {
     return 'file';
   }
@@ -68,7 +68,7 @@ class File extends Model
    *
    * @return array
    */
-  public function getReferences() : array
+  public function getReferences(): array
   {
     return file_get_file_references($this->entity);
   }
@@ -78,7 +78,7 @@ class File extends Model
    *
    * @return array
    */
-  public function getUsage() : array
+  public function getUsage(): array
   {
     $fileUsageService = \Drupal::service('file.usage');
     $usage = $fileUsageService->listUsage($this->entity);
@@ -91,7 +91,7 @@ class File extends Model
    *
    * @return boolean
    */
-  public function hasReferences() : bool
+  public function hasReferences(): bool
   {
     return sizeof($this->getReferences()) > 0;
   }
@@ -101,7 +101,7 @@ class File extends Model
    *
    * @return boolean
    */
-  public function hasUsage() : bool
+  public function hasUsage(): bool
   {
     return sizeof($this->getUsage()) > 0;
   }
@@ -111,7 +111,7 @@ class File extends Model
    *
    * @return boolean
    */
-  public function isInUse() : bool
+  public function isInUse(): bool
   {
     return $this->hasReferences() || $this->hasUsage();
   }
@@ -126,14 +126,11 @@ class File extends Model
     $references = $this->getReferences();
 
     // We loop over the references
-    foreach($references as $fieldName => $referencedEntityTypes)
-    {
+    foreach ($references as $fieldName => $referencedEntityTypes) {
       // Next we loop over every entitytype containting the different entities
-      foreach($referencedEntityTypes as $entityType => $referencedEntities)
-      {
+      foreach ($referencedEntityTypes as $entityType => $referencedEntities) {
         // Next we loop over every entity containing the reference
-        foreach($referencedEntities as $entityId => $entity)
-        {
+        foreach ($referencedEntities as $entityId => $entity) {
           $entity->$fieldName->target_id = null;
           $entity->save();
         }
@@ -146,7 +143,7 @@ class File extends Model
    *
    * @return JsonApiNode
    */
-  public function getJsonApiNode() : JsonApiNode
+  public function getJsonApiNode(): JsonApiNode
   {
     $node = parent::getJsonApiNode();
     $node->addAttribute('hash', $this->getHash());
@@ -160,7 +157,7 @@ class File extends Model
    *
    * @return string
    */
-  public function getHash() : string
+  public function getHash(): string
   {
     return md5($this->entity->uuid->value);
   }
@@ -170,7 +167,7 @@ class File extends Model
    *
    * @return string
    */
-  public function getRealSrc() : string
+  public function getRealSrc(): string
   {
     return $this->entity->url();
   }
@@ -180,12 +177,12 @@ class File extends Model
    *
    * @return string
    */
-  public function getBase64SRC() : string
+  public function getBase64SRC(): string
   {
     $mime = $this->entity->get('filemime')->value;
     $base64 = base64_encode(file_get_contents($this->getRealSrc()));
 
-    return 'data:'.$mime.';base64,'.$base64;
+    return 'data:' . $mime . ';base64,' . $base64;
   }
 
   /**
@@ -194,9 +191,9 @@ class File extends Model
    *
    * @return string
    */
-  public function getSRC() : string
+  public function getSRC(): string
   {
-    $url = UrlUtils::getBaseURL() . $this->getBaseApiPath().'/' . $this->entity->get('filename')->value . '?fid=' . $this->getId() . '&dg=' . $this->getHash();
+    $url = UrlUtils::getBaseURL() . $this->getBaseApiPath() . '/' . $this->entity->get('filename')->value . '?fid=' . $this->getId() . '&dg=' . $this->getHash();
 
     return $url;
   }
@@ -210,7 +207,7 @@ class File extends Model
    * @param mixed $data the blob of the file you want to save
    * @return File
    */
-  public static function createNewFile(string $uriScheme, string $directory, string $filename, $data) : File
+  public static function createNewFile(string $uriScheme, string $directory, string $filename, $data): File
   {
     $directory = trim(trim($directory), '/');
     // Replace tokens. As the tokens might contain HTML we convert it to plaintext.
@@ -218,11 +215,10 @@ class File extends Model
     $filename = basename($filename);
 
     // We build the URI
-    $target = $uriScheme . '://' . $directory ;
+    $target = $uriScheme . '://' . $directory;
 
     // Prepare the destination directory.
-    if (file_prepare_directory($target, FILE_CREATE_DIRECTORY))
-    {
+    if (file_prepare_directory($target, FILE_CREATE_DIRECTORY)) {
       // The destination is already a directory, so append the source basename.
       $target = file_stream_wrapper_uri_normalize($target . '/' . drupal_basename($filename));
 
@@ -240,17 +236,12 @@ class File extends Model
       $file->save();
 
       return $file;
-    }
-    else
-    {
+    } else {
       // Perhaps $destination is a dir/file?
       $dirname = drupal_dirname($target);
-      if (!file_prepare_directory($dirname, FILE_CREATE_DIRECTORY))
-      {
-        throw new \Exception('File could not be moved/copied because the destination directory '.$target.' is not configured correctly.');
-      }
-      else
-      {
+      if (!file_prepare_directory($dirname, FILE_CREATE_DIRECTORY)) {
+        throw new \Exception('File could not be moved/copied because the destination directory ' . $target . ' is not configured correctly.');
+      } else {
         throw new NotImplementedException('Functionality not implemented');
       }
     }

@@ -1,4 +1,5 @@
 <?php
+
 namespace Drupal\spectrum\Triggers;
 
 use Drupal\spectrum\Model\Model;
@@ -17,10 +18,9 @@ class ModelTrigger
    * @param string $trigger
    * @return void
    */
-  public static function handle(EntityInterface $entity, string $trigger) : void
+  public static function handle(EntityInterface $entity, string $trigger): void
   {
-    if(!\Drupal::hasService('spectrum.model'))
-    {
+    if (!\Drupal::hasService('spectrum.model')) {
       // Model Service not yet initialized, we skip the triggers, no need to check for models
       return;
     }
@@ -28,40 +28,35 @@ class ModelTrigger
     $entityType = $entity->getEntityTypeId();
     $bundle = $entity->bundle();
 
-    if(Model::hasModelClassForEntityAndBundle($entityType, $bundle))
-    {
+    if (Model::hasModelClassForEntityAndBundle($entityType, $bundle)) {
       $modelClass = Model::getModelClassForEntityAndBundle($entityType, $bundle);
       /** @var Model $model */
       $model = $modelClass::forgeByEntity($entity);
 
-      switch($trigger)
-      {
+      switch ($trigger) {
         case 'presave':
-          if($model->entity->isNew())
-          {
+          if ($model->entity->isNew()) {
             $model->beforeInsert();
-          }
-          else
-          {
+          } else {
             $model->beforeUpdate();
           }
-        break;
+          break;
         case 'insert':
           $model->setAccessPolicy();
           $model->afterInsert();
-        break;
+          break;
         case 'update':
           $model->setAccessPolicy();
           $model->afterUpdate();
-        break;
+          break;
         case 'predelete':
           $model->beforeDelete();
           $model->unsetAccessPolicy();
-        break;
+          break;
         case 'delete':
           $model->afterDelete();
           $model->doCascadingDeletes();
-        break;
+          break;
       }
     }
   }

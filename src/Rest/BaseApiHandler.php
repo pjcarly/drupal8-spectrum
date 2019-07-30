@@ -40,7 +40,7 @@ abstract class BaseApiHandler
    * @param Request $request
    * @return Response
    */
-  public function get(Request $request) : Response
+  public function get(Request $request): Response
   {
     return new Response(null, 405, []);
   }
@@ -51,7 +51,7 @@ abstract class BaseApiHandler
    * @param Request $request
    * @return Response
    */
-  public function post(Request $request) : Response
+  public function post(Request $request): Response
   {
     return new Response(null, 405, []);
   }
@@ -62,7 +62,7 @@ abstract class BaseApiHandler
    * @param Request $request
    * @return Response
    */
-  public function put(Request $request) : Response
+  public function put(Request $request): Response
   {
     return new Response(null, 405, []);
   }
@@ -73,7 +73,7 @@ abstract class BaseApiHandler
    * @param Request $request
    * @return Response
    */
-  public function patch(Request $request) : Response
+  public function patch(Request $request): Response
   {
     return new Response(null, 405, []);
   }
@@ -84,7 +84,7 @@ abstract class BaseApiHandler
    * @param Request $request
    * @return Response
    */
-  public function delete(Request $request) : Response
+  public function delete(Request $request): Response
   {
     return new Response(null, 405, []);
   }
@@ -95,7 +95,7 @@ abstract class BaseApiHandler
    * @param Request $request
    * @return Response
    */
-  public function options(Request $request) : Response
+  public function options(Request $request): Response
   {
     return new Response(null, 405, []);
   }
@@ -106,10 +106,9 @@ abstract class BaseApiHandler
    * @param Response $response
    * @return BaseApiHandler
    */
-  private final function setDefaultHeaders(Response $response) : BaseApiHandler
+  private final function setDefaultHeaders(Response $response): BaseApiHandler
   {
-    foreach(array_keys($this->defaultHeaders) as $key)
-    {
+    foreach (array_keys($this->defaultHeaders) as $key) {
       $response->headers->set($key, $this->defaultHeaders[$key]);
     }
 
@@ -124,59 +123,41 @@ abstract class BaseApiHandler
    * @param string $action
    * @return Response
    */
-  public final function handle(Request $request, string $action = NULL) : Response
+  public final function handle(Request $request, string $action = NULL): Response
   {
-    $response;
+    $response = null;
     $method = $request->getMethod();
 
     // strip all none alpha numeric characters, an action is a function name
     $action = empty($action) ? '' : preg_replace('/[^A-Za-z0-9 ]/', '', $action);
 
-    if($method === 'GET' && empty($action))
-    {
+    if ($method === 'GET' && empty($action)) {
       $response = $this->get($request);
-    }
-    else if($method === 'POST')
-    {
-      if(empty($action))
-      {
+    } else if ($method === 'POST') {
+      if (empty($action)) {
         // Normal post, lets handle it via the POST method
         $response = $this->post($request);
-      }
-      else
-      {
+      } else {
         $action = ucfirst(strtolower($action));
-        $method = 'action'.$action;
+        $method = 'action' . $action;
 
-        if(is_callable([$this, $method]))
-        {
+        if (is_callable([$this, $method])) {
           $response = $this->$method($request);
         }
       }
-    }
-    else if($method === 'PUT' && empty($action))
-    {
+    } else if ($method === 'PUT' && empty($action)) {
       $response = $this->put($request);
-    }
-    else if($method === 'PATCH' && empty($action))
-    {
+    } else if ($method === 'PATCH' && empty($action)) {
       $response = $this->patch($request);
-    }
-    else if($method === 'DELETE' && empty($action))
-    {
+    } else if ($method === 'DELETE' && empty($action)) {
       $response = $this->delete($request);
-    }
-    else if($method === 'OPTIONS' && empty($action))
-    {
+    } else if ($method === 'OPTIONS' && empty($action)) {
       $response = $this->options($request);
     }
 
-    if(empty($response))
-    {
+    if (empty($response)) {
       $response = new Response(null, 400, []);
-    }
-    else
-    {
+    } else {
       $this->setDefaultHeaders($response);
     }
 

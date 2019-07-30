@@ -19,7 +19,7 @@ interface ModelStoreInterface
    * @param string $value Value of the Field
    * @return Model|null
    */
-  public function getByFieldValue(string $modelClass, string $fieldName, string $value) : ?Model;
+  public function getByFieldValue(string $modelClass, string $fieldName, string $value): ?Model;
 
   /**
    * Adds a Model to the DataStore
@@ -27,7 +27,7 @@ interface ModelStoreInterface
    * @param Model $model
    * @return self
    */
-  public function addModel(Model $model) : ModelStore;
+  public function addModel(Model $model): ModelStore;
 
   /**
    * Add every Model in the Collection to the datastore
@@ -35,5 +35,5 @@ interface ModelStoreInterface
    * @param Collection $collection
    * @return self
    */
-  public function addCollection(Collection $collection) : ModelStore;
+  public function addCollection(Collection $collection): ModelStore;
 }

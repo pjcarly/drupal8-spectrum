@@ -1,4 +1,5 @@
 <?php
+
 namespace Drupal\spectrum\Model;
 
 use Drupal\spectrum\Query\EntityQuery;
@@ -45,7 +46,7 @@ abstract class Relationship
    */
   public $cascadingDelete = false;
 
-    /**
+  /**
    * The fully qualified classname of the model you wish to relate. This might not be the FQC passed in the constructor, a lookup will be done to see if another registered (overridden) modelclass exists
    *
    * @var string
@@ -68,7 +69,7 @@ abstract class Relationship
    * @param boolean $cascadingDelete
    * @return Relationship
    */
-  public function setCascadingDelete(bool $cascadingDelete) : Relationship
+  public function setCascadingDelete(bool $cascadingDelete): Relationship
   {
     $this->cascadingDelete = $cascadingDelete;
     return $this;
@@ -80,7 +81,7 @@ abstract class Relationship
    * @param string $source
    * @return Relationship
    */
-  public function setRelationshipSource(string $source) : Relationship
+  public function setRelationshipSource(string $source): Relationship
   {
     $this->relationshipSource = $source;
     $this->setRelationshipMetaData();
@@ -93,7 +94,7 @@ abstract class Relationship
    *
    * @return string
    */
-  public function getSourceModelType() : string
+  public function getSourceModelType(): string
   {
     return $this->relationshipSource;
   }
@@ -103,7 +104,7 @@ abstract class Relationship
    *
    * @return string
    */
-  public function getName() : string
+  public function getName(): string
   {
     return $this->name;
   }
@@ -113,7 +114,7 @@ abstract class Relationship
    *
    * @return string
    */
-  public function getModelType() : string
+  public function getModelType(): string
   {
     return $this->modelType;
   }
@@ -123,19 +124,20 @@ abstract class Relationship
    *
    * @return void
    */
-  protected function setRelationshipMetaData() : void {}
+  protected function setRelationshipMetaData(): void
+  { }
 
   /**
    * Returns a EntityQuery that can be used to query entities of this relationship
    *
    * @return EntityQuery
    */
-  public abstract function getRelationshipQuery() : EntityQuery;
+  public abstract function getRelationshipQuery(): EntityQuery;
 
   /**
    * Returns a Condition, with the correct relationship field and operator filled in. The value will be blank and dependend on implementation
    *
    * @return Condition
    */
-  public abstract function getCondition() : Condition;
+  public abstract function getCondition(): Condition;
 }

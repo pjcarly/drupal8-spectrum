@@ -24,8 +24,7 @@ class BundleQuery extends EntityQuery
     $this->bundle = $bundle;
 
     // first of all, lets filter by bundle, keep in mind that user is an exception, no type field for user even though there is a bundle defined
-    if(!empty($this->bundle))
-    {
+    if (!empty($this->bundle)) {
       $this->addBaseCondition(new Condition('type', '=', $this->bundle));
     }
   }

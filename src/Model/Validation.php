@@ -1,4 +1,5 @@
 <?php
+
 namespace Drupal\spectrum\Model;
 
 use Drupal\Component\Utility\Html;
@@ -63,7 +64,7 @@ class Validation
    *
    * @return EntityConstraintViolationListInterface
    */
-  public function getViolations() : EntityConstraintViolationListInterface
+  public function getViolations(): EntityConstraintViolationListInterface
   {
     return $this->violations;
   }
@@ -74,7 +75,7 @@ class Validation
    * @param ConstraintViolationInterface $violation
    * @return Validation
    */
-  public function addViolation(ConstraintViolationInterface $violation) : Validation
+  public function addViolation(ConstraintViolationInterface $violation): Validation
   {
     $this->violations->add($violation);
     return $this;
@@ -85,7 +86,7 @@ class Validation
    *
    * @return array
    */
-  public function getFailedFields() : array
+  public function getFailedFields(): array
   {
     return $this->violations->getFieldNames();
   }
@@ -95,7 +96,7 @@ class Validation
    *
    * @return EntityConstraintViolationListInterface
    */
-  public function getValidationErrors() : EntityConstraintViolationListInterface
+  public function getValidationErrors(): EntityConstraintViolationListInterface
   {
     $failedFields = $this->getFailedFields();
     return $this->violations->getByFields($failedFields);
@@ -106,27 +107,20 @@ class Validation
    *
    * @return boolean
    */
-  public function hasSucceeded() : bool
+  public function hasSucceeded(): bool
   {
-    if($this->violations->count() === 0)
-    {
+    if ($this->violations->count() === 0) {
       // life is easy, no violations counted, if the inlineValidationsSucceed we are ready to go!
       return $this->inlineValidationsSucceeded();
-    }
-    else if (sizeof($this->ignores) === 0)
-    {
+    } else if (sizeof($this->ignores) === 0) {
       // life is still easy, there were violations, but no ignores, so the validation failed
       return false;
-    }
-    else
-    {
+    } else {
       // now it gets hard, there were violations, but also ignores, we must check if the violations found include our ignore
       // we will count the violations
       $foundViolationCount = $this->violations->count();
-      foreach($this->violations as $violation)
-      {
-        if($this->hasIgnoreForViolation($violation))
-        {
+      foreach ($this->violations as $violation) {
+        if ($this->hasIgnoreForViolation($violation)) {
           // we found an ignore, let's deduct the count
           $foundViolationCount--;
         }
@@ -142,21 +136,18 @@ class Validation
    * @param ConstraintViolationInterface $violation
    * @return boolean
    */
-  private function hasIgnoreForViolation(ConstraintViolationInterface $violation) : bool
+  private function hasIgnoreForViolation(ConstraintViolationInterface $violation): bool
   {
     $ignoreFound = false;
-    if($path = $violation->getPropertyPath())
-    {
+    if ($path = $violation->getPropertyPath()) {
       // lets get the fieldName from the violation
       $fieldName = $this->getFieldNameForPropertyPath($path);
-      if(array_key_exists($fieldName, $this->ignores))
-      {
+      if (array_key_exists($fieldName, $this->ignores)) {
         // we found an ignore for this field
         // lets check the class
         $failingConstraint = $violation->getConstraint();
         $constraintToIgnore = $this->ignores[$fieldName];
-        if($failingConstraint instanceof $constraintToIgnore)
-        {
+        if ($failingConstraint instanceof $constraintToIgnore) {
           // aha, class matches, so there is an ignore;
           $ignoreFound = true;
         }
@@ -170,13 +161,11 @@ class Validation
    *
    * @return boolean
    */
-  public function inlineValidationsSucceeded() : bool
+  public function inlineValidationsSucceeded(): bool
   {
     $succeeded = true;
-    foreach($this->inlineValidations as $inlineValidation)
-    {
-      if(!$inlineValidation->hasSucceeded())
-      {
+    foreach ($this->inlineValidations as $inlineValidation) {
+      if (!$inlineValidation->hasSucceeded()) {
         $succeeded = false;
         break;
       }
@@ -189,7 +178,7 @@ class Validation
    *
    * @return boolean
    */
-  public function hasFailed() : bool
+  public function hasFailed(): bool
   {
     return !$this->hasSucceeded();
   }
@@ -201,16 +190,13 @@ class Validation
    *
    * @return Validation
    */
-  public function processInvalidReferenceConstraints() : Validation
+  public function processInvalidReferenceConstraints(): Validation
   {
-    foreach($this->violations as $violation)
-    {
+    foreach ($this->violations as $violation) {
       $failingConstraint = $violation->getConstraint();
 
-      if($failingConstraint instanceof ValidReferenceConstraint)
-      {
-        if ($path = $violation->getPropertyPath())
-        {
+      if ($failingConstraint instanceof ValidReferenceConstraint) {
+        if ($path = $violation->getPropertyPath()) {
           $fieldName = $this->getFieldNameForPropertyPath($path);
           $this->model->entity->$fieldName->target_id = null;
           $this->addIgnore($fieldName, 'Drupal\Core\Entity\Plugin\Validation\Constraint\ValidReferenceConstraint');
@@ -227,7 +213,7 @@ class Validation
    * @param Validation $validation
    * @return Validation
    */
-  public function merge(Validation $validation) : Validation
+  public function merge(Validation $validation): Validation
   {
     $this->violations->addAll($validation->getViolations());
     return $this;
@@ -245,7 +231,7 @@ class Validation
    * @param string $constraint The fully qualified classname of the Drupal Constraint you want to ignore
    * @return Validation
    */
-  public function addIgnore(string $fieldName, string $constraint) : Validation
+  public function addIgnore(string $fieldName, string $constraint): Validation
   {
     $this->ignores[$fieldName] = $constraint;
     return $this;
@@ -258,7 +244,7 @@ class Validation
    * @param Validation $validation
    * @return Validation
    */
-  public function addIncludedValidation(string $path, Validation $validation) : Validation
+  public function addIncludedValidation(string $path, Validation $validation): Validation
   {
     $this->inlineValidations[$path] = $validation;
     return $this;
@@ -270,7 +256,7 @@ class Validation
    * @param string $propertyPath
    * @return string
    */
-  private function getFieldNameForPropertyPath(string $propertyPath) : string
+  private function getFieldNameForPropertyPath(string $propertyPath): string
   {
     list($fieldName) = explode('.', $propertyPath, 2);
     return $fieldName;
@@ -281,42 +267,34 @@ class Validation
    *
    * @return \stdClass
    */
-  public function toJsonApi() : \stdClass
+  public function toJsonApi(): \stdClass
   {
     $errors = new \stdClass();
     $errors->errors = [];
 
     $modelName = $this->modelName;
     $fieldToPrettyMapping = $modelName::getFieldsToPrettyFieldsMapping();
-    foreach($this->violations as $violation)
-    {
+    foreach ($this->violations as $violation) {
       // Let's check for ignores
-      if(!$this->hasIgnoreForViolation($violation))
-      {
-        if ($path = $violation->getPropertyPath())
-        {
+      if (!$this->hasIgnoreForViolation($violation)) {
+        if ($path = $violation->getPropertyPath()) {
           $fieldName = $this->getFieldNameForPropertyPath($path);
 
-          if (array_key_exists($fieldName, $fieldToPrettyMapping))
-          {
+          if (array_key_exists($fieldName, $fieldToPrettyMapping)) {
             $prettyField = $fieldToPrettyMapping[$fieldName];
             $error = new \stdClass();
-            $error->detail = strip_tags('('.$prettyField.') ' . $violation->getMessage()->render());
+            $error->detail = strip_tags('(' . $prettyField . ') ' . $violation->getMessage()->render());
             $error->source = new \stdClass();
-            $error->source->pointer = '/data/attributes/'.$prettyField;
+            $error->source->pointer = '/data/attributes/' . $prettyField;
             $errors->errors[] = $error;
-          }
-          else
-          {
+          } else {
             $error = new \stdClass();
             $error->detail = strip_tags($violation->getMessage()->render());
             $error->source = new \stdClass();
             $error->source->pointer = '/data';
             $errors->errors[] = $error;
           }
-        }
-        else
-        {
+        } else {
           $error = new \stdClass();
           $error->detail = strip_tags($violation->getMessage()->render());
           $error->source = new \stdClass();
@@ -327,15 +305,12 @@ class Validation
     }
 
     // we must also include the inline validations
-    foreach($this->inlineValidations as $path => $inlineValidation)
-    {
+    foreach ($this->inlineValidations as $path => $inlineValidation) {
       $inlineRecordsErrors = $inlineValidation->toJsonApi();
-      foreach($inlineRecordsErrors as $inlineRecordErrors)
-      {
-        foreach($inlineRecordErrors as $inlineRecordError)
-        {
+      foreach ($inlineRecordsErrors as $inlineRecordErrors) {
+        foreach ($inlineRecordErrors as $inlineRecordError) {
           // we must include the path in the error pointer
-          $inlineRecordError->source->pointer = '/data'. $path . $inlineRecordError->source->pointer;
+          $inlineRecordError->source->pointer = '/data' . $path . $inlineRecordError->source->pointer;
           $errors->errors[] = $inlineRecordError;
         }
       }
@@ -349,7 +324,7 @@ class Validation
    *
    * @return \stdClass
    */
-  public function serialize() : \stdClass
+  public function serialize(): \stdClass
   {
     return $this->toJsonApi();
   }

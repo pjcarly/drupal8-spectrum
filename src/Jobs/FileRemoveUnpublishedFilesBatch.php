@@ -1,4 +1,5 @@
 <?php
+
 namespace Drupal\spectrum\Jobs;
 
 use Drupal\spectrum\Runnable\BatchJob;
@@ -15,7 +16,7 @@ class FileRemoveUnpublishedFilesBatch extends BatchJob
   /**
    * {@inheritdoc}
    */
-  protected function getBatchable() : BatchableInterface
+  protected function getBatchable(): BatchableInterface
   {
     $query = File::getModelQuery();
     $query->addCondition(new Condition('status', '=', '0'));
@@ -26,12 +27,11 @@ class FileRemoveUnpublishedFilesBatch extends BatchJob
   /**
    * {@inheritdoc}
    */
-  protected function processBatch(array $batch) : void
+  protected function processBatch(array $batch): void
   {
     $files = Collection::forgeByEntities(File::class, $batch);
 
-    foreach($files as $file)
-    {
+    foreach ($files as $file) {
       $files->removeModel($file);
     }
 

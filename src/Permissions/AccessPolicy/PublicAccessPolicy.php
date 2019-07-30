@@ -10,7 +10,8 @@ use Drupal\spectrum\Model\Model;
  *
  * @package Drupal\spectrum\Permissions\AccessPolicy
  */
-class PublicAccessPolicy implements AccessPolicyInterface {
+class PublicAccessPolicy implements AccessPolicyInterface
+{
 
   /**
    * @var \Drupal\Core\Database\Connection
@@ -20,14 +21,16 @@ class PublicAccessPolicy implements AccessPolicyInterface {
   /**
    * PublicAccessPolicy constructor.
    */
-  public function __construct() {
+  public function __construct()
+  {
     $this->database = \Drupal::database();
   }
 
   /**
    * @inheritDoc
    */
-  public function onSave(Model $model): void {
+  public function onSave(Model $model): void
+  {
     $insertQuery = $this->database->insert(self::TABLE_ENTITY_ACCESS)
       ->fields([
         'entity_type',
@@ -36,7 +39,7 @@ class PublicAccessPolicy implements AccessPolicyInterface {
       ])
       ->values([
         'entity_type' => $model::entityType(),
-        'entity_id' => (int)$model->getId(),
+        'entity_id' => (int) $model->getId(),
         // We use UID 0 for public access.
         'uid' => 0,
       ]);
@@ -54,7 +57,8 @@ class PublicAccessPolicy implements AccessPolicyInterface {
   /**
    * @inheritDoc
    */
-  public function onDelete(Model $model): void {
+  public function onDelete(Model $model): void
+  {
     $this->removeAccess($model);
     (new ParentAccessPolicy())->onDelete($model);
   }
@@ -62,25 +66,27 @@ class PublicAccessPolicy implements AccessPolicyInterface {
   /**
    * @param \Drupal\spectrum\Model\Model $model
    */
-  protected function removeAccess(Model $model): void {
+  protected function removeAccess(Model $model): void
+  {
     $this->database->delete(self::TABLE_ENTITY_ACCESS)
       ->condition('entity_type', $model::entityType())
-      ->condition('entity_id', (int)$model->getId())
+      ->condition('entity_id', (int) $model->getId())
       ->execute();
   }
 
   /**
    * @inheritDoc
    */
-  public function onQuery(Select $query): Select {
+  public function onQuery(Select $query): Select
+  {
     return $query;
   }
 
   /**
    * @inheritDoc
    */
-  public function userHasAccess(Model $model, int $uid): bool {
+  public function userHasAccess(Model $model, int $uid): bool
+  {
     return TRUE;
   }
-
 }

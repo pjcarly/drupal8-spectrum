@@ -1,4 +1,5 @@
 <?php
+
 namespace Drupal\spectrum\Runnable;
 
 use Drupal\spectrum\Model\Model;
@@ -28,23 +29,18 @@ abstract class RunnableModel extends Model
    *
    * @return void
    */
-  public final function run() : void
+  public final function run(): void
   {
     $currentTime = gmdate('Y-m-d\TH:i:s');
-    try
-    {
+    try {
       $job = $this->fetch('job');
 
       $this->preExecution();
       $this->execute();
       $this->postExecution();
-    }
-    catch(\Exception $ex)
-    {
+    } catch (\Exception $ex) {
       $this->failedExecution($ex);
-    }
-    catch(\Error $error)
-    {
+    } catch (\Error $error) {
       $this->runtimeError($error);
     }
   }
@@ -55,15 +51,12 @@ abstract class RunnableModel extends Model
    * @param string $message
    * @return void
    */
-  public function print(string $message) : void
+  public function print(string $message): void
   {
-    if($this->cliContext)
-    {
+    if ($this->cliContext) {
       drush_print($message);
-    }
-    else
-    {
-      print($message.'<br/>');
+    } else {
+      print($message . '<br/>');
     }
   }
 
@@ -73,15 +66,15 @@ abstract class RunnableModel extends Model
    * @param boolean $cliContext
    * @return RunnableModel
    */
-  public function setCliContext($cliContext) : RunnableModel
+  public function setCliContext($cliContext): RunnableModel
   {
     $this->cliContext = $cliContext;
     return $this;
   }
 
-  abstract function preExecution() : void;
-  abstract function execute() : void;
-  abstract function postExecution() : void;
-  abstract function failedExecution(\Exception $ex = null, string $message = null) : void;
-  abstract function runtimeError(\Error $error) : void;
+  abstract function preExecution(): void;
+  abstract function execute(): void;
+  abstract function postExecution(): void;
+  abstract function failedExecution(\Exception $ex = null, string $message = null): void;
+  abstract function runtimeError(\Error $error): void;
 }

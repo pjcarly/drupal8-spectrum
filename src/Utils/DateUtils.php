@@ -18,7 +18,7 @@ class DateUtils
    * @param string $timezone
    * @return DateTime
    */
-  public static function getNextUTCDateTimeForMMDDHourString(string $datestring, string $timezone = '') : DateTime
+  public static function getNextUTCDateTimeForMMDDHourString(string $datestring, string $timezone = ''): DateTime
   {
     $dateSplitted = explode('T', $datestring);
     $time = $dateSplitted[1];
@@ -27,7 +27,7 @@ class DateUtils
     $month = $dateMonthAndDay[0];
     $fullDateString = static::getNextDateStringForDayAndMonth($day, $month);
 
-    $date = new DateTime($fullDateString.'T'.$time.(empty($timezone) ? '' : '+'.$timezone), new DateTimeZone('UTC'));
+    $date = new DateTime($fullDateString . 'T' . $time . (empty($timezone) ? '' : '+' . $timezone), new DateTimeZone('UTC'));
     return $date;
   }
 
@@ -40,17 +40,16 @@ class DateUtils
    * @param integer $month
    * @return string
    */
-  public static function getNextDateStringForDayAndMonth(int $day, int $month) : string
+  public static function getNextDateStringForDayAndMonth(int $day, int $month): string
   {
     $now = new DateTime();
     $year = $now->format('Y');
 
-    if($month < $now->format('m') || $month == $now->format('m') && $day < $now->format('d'))
-    {
+    if ($month < $now->format('m') || $month == $now->format('m') && $day < $now->format('d')) {
       $year++;
     }
 
-    return $year.'-'.str_pad($month, 2, '0', STR_PAD_LEFT).'-'.str_pad($day, 2, '0', STR_PAD_LEFT);
+    return $year . '-' . str_pad($month, 2, '0', STR_PAD_LEFT) . '-' . str_pad($day, 2, '0', STR_PAD_LEFT);
   }
 
   /**
@@ -59,7 +58,7 @@ class DateUtils
    * @param float $gmtOffset
    * @return string
    */
-  public static function getHourMinuteStringForGmtOffset(float $gmtOffset) : string
+  public static function getHourMinuteStringForGmtOffset(float $gmtOffset): string
   {
     $returnValue = sprintf('%02d:%02d', (int) $gmtOffset, fmod($gmtOffset, 1) * 60);
     return $returnValue;
@@ -78,7 +77,7 @@ class DateUtils
    * @param string $pattern
    * @return string
    */
-  public static function generatePatternString(DateTime $date, string $pattern) : string
+  public static function generatePatternString(DateTime $date, string $pattern): string
   {
     $value = $pattern;
     $value = str_replace('{{YYYY}}', $date->format('Y'), $value);
@@ -95,9 +94,9 @@ class DateUtils
    * @param DateTime $date
    * @return float
    */
-  public static function getQuarter(DateTime $date) : float
+  public static function getQuarter(DateTime $date): float
   {
-    return ceil($date->format('n')/3);
+    return ceil($date->format('n') / 3);
   }
 
   /**
@@ -106,57 +105,34 @@ class DateUtils
    * @param string $month
    * @return integer
    */
-  public static function getMonthNumber(string $month) : int
+  public static function getMonthNumber(string $month): int
   {
     $monthNumber = false;
     $month = strtoupper($month);
 
-    if($month === 'JAN')
-    {
+    if ($month === 'JAN') {
       $monthNumber = 1;
-    }
-    else if($month === 'FEB')
-    {
+    } else if ($month === 'FEB') {
       $monthNumber = 2;
-    }
-    else if($month === 'MAR')
-    {
+    } else if ($month === 'MAR') {
       $monthNumber = 3;
-    }
-    else if($month === 'APR')
-    {
+    } else if ($month === 'APR') {
       $monthNumber = 4;
-    }
-    else if($month === 'MAY')
-    {
+    } else if ($month === 'MAY') {
       $monthNumber = 5;
-    }
-    else if($month === 'JUN')
-    {
+    } else if ($month === 'JUN') {
       $monthNumber = 6;
-    }
-    else if($month === 'JUL')
-    {
+    } else if ($month === 'JUL') {
       $monthNumber = 7;
-    }
-    else if($month === 'AUG')
-    {
+    } else if ($month === 'AUG') {
       $monthNumber = 8;
-    }
-    else if($month === 'SEP')
-    {
+    } else if ($month === 'SEP') {
       $monthNumber = 9;
-    }
-    else if($month === 'OCT')
-    {
+    } else if ($month === 'OCT') {
       $monthNumber = 10;
-    }
-    else if($month === 'NOV')
-    {
+    } else if ($month === 'NOV') {
       $monthNumber = 11;
-    }
-    else if($month === 'DEC')
-    {
+    } else if ($month === 'DEC') {
       $monthNumber = 12;
     }
 

@@ -26,16 +26,13 @@ class ModelStore implements ModelStoreInterface
    * @param string $value Value of the Field
    * @return Model|null
    */
-  public function getByFieldValue(string $modelClass, string $fieldName, string $value = null) : ?Model
+  public function getByFieldValue(string $modelClass, string $fieldName, string $value = null): ?Model
   {
     $model = null;
 
-    if(!empty($value) && array_key_exists($modelClass, $this->data))
-    {
-      foreach($this->data[$modelClass] as $cachedModel)
-      {
-        if($cachedModel->entity->$fieldName->value === $value)
-        {
+    if (!empty($value) && array_key_exists($modelClass, $this->data)) {
+      foreach ($this->data[$modelClass] as $cachedModel) {
+        if ($cachedModel->entity->$fieldName->value === $value) {
           $model = $cachedModel;
           break;
         }
@@ -51,12 +48,11 @@ class ModelStore implements ModelStoreInterface
    * @param Model $model
    * @return self
    */
-  public function addModel(Model $model) : ModelStore
+  public function addModel(Model $model): ModelStore
   {
     $modelClass = $model->getModelName();
 
-    if(!array_key_exists($modelClass, $this->data))
-    {
+    if (!array_key_exists($modelClass, $this->data)) {
       $this->data[$modelClass] = [];
     }
 
@@ -71,10 +67,9 @@ class ModelStore implements ModelStoreInterface
    * @param Collection $collection
    * @return self
    */
-  public function addCollection(Collection $collection) : ModelStore
+  public function addCollection(Collection $collection): ModelStore
   {
-    foreach($collection as $model)
-    {
+    foreach ($collection as $model) {
       $this->addModel($model);
     }
 

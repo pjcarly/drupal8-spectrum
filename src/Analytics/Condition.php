@@ -53,7 +53,7 @@ class Condition extends Model
    *
    * @return string
    */
-  public static function entityType() : string
+  public static function entityType(): string
   {
     return 'query';
   }
@@ -63,7 +63,7 @@ class Condition extends Model
    *
    * @return string
    */
-  public static function bundle() : string
+  public static function bundle(): string
   {
     return 'condition';
   }
@@ -84,7 +84,8 @@ class Condition extends Model
   /**
    * @inheritDoc
    */
-  public static function getAccessPolicy(): AccessPolicyInterface {
+  public static function getAccessPolicy(): AccessPolicyInterface
+  {
     return new PublicAccessPolicy;
   }
 
@@ -99,8 +100,7 @@ class Condition extends Model
     $operator = static::$operationMapping[$this->entity->field_operator->value];
     $value = $this->getValue(); // This parses possible literals
 
-    if(in_array($operator, QueryCondition::$multipleValueOperators))
-    {
+    if (in_array($operator, QueryCondition::$multipleValueOperators)) {
       $value = explode(',', $value);
       $value = array_map('trim', $value);
     }
@@ -117,34 +117,24 @@ class Condition extends Model
   {
     $value = $this->entity->field_value->value;
 
-    if(in_array($value, static::$userLiterals) || in_array($value, static::$dateLiterals))
-    {
+    if (in_array($value, static::$userLiterals) || in_array($value, static::$dateLiterals)) {
       $fieldDefinition = $this->getDrupalFieldDefinition();
-      if(!empty($fieldDefinition))
-      {
+      if (!empty($fieldDefinition)) {
         $fieldType = $fieldDefinition->getType();
-        if($fieldType === 'entity_reference')
-        {
+        if ($fieldType === 'entity_reference') {
           $fieldSettings = $fieldDefinition->getItemDefinition()->getSettings();
 
-          if($fieldSettings['target_type'] === 'user')
-          {
-            if($value === 'MYSELF')
-            {
+          if ($fieldSettings['target_type'] === 'user') {
+            if ($value === 'MYSELF') {
               $currentUser = \Drupal::currentUser();
               $value = $currentUser->id();
             }
           }
-        }
-        else if($fieldType === 'datetime')
-        {
-          if($value === 'TODAY')
-          {
+        } else if ($fieldType === 'datetime') {
+          if ($value === 'TODAY') {
             $today = new \DateTime();
             $value = $today->format(DateTimeItemInterface::DATE_STORAGE_FORMAT);
-          }
-          else if($value === 'NOW')
-          {
+          } else if ($value === 'NOW') {
             $now = new \DateTime();
             $value = $now->format(DateTimeItemInterface::DATETIME_STORAGE_FORMAT);
           }
@@ -165,8 +155,7 @@ class Condition extends Model
     $fieldName = $this->entity->field_field->value;
     $fieldDefinitions = $this->get('parent')->getDrupalFieldDefinitions();
 
-    if(array_key_exists($fieldName, $fieldDefinitions))
-    {
+    if (array_key_exists($fieldName, $fieldDefinitions)) {
       return $fieldDefinitions[$fieldName];
     }
 

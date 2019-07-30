@@ -59,7 +59,7 @@ class ConditionGroup
    * @param Condition $condition
    * @return ConditionGroup
    */
-  public function addCondition(Condition $condition) : ConditionGroup
+  public function addCondition(Condition $condition): ConditionGroup
   {
     $this->conditions[] = $condition;
     return $this;
@@ -70,7 +70,7 @@ class ConditionGroup
    *
    * @return array
    */
-  public function getConditions() : array
+  public function getConditions(): array
   {
     return $this->conditions;
   }
@@ -85,7 +85,7 @@ class ConditionGroup
    * @param string $logic
    * @return ConditionGroup
    */
-  public function setLogic(string $logic) : ConditionGroup
+  public function setLogic(string $logic): ConditionGroup
   {
     $this->logic = $logic;
     return $this;
@@ -97,10 +97,9 @@ class ConditionGroup
    * @param QueryInterface $query
    * @return QueryInterface
    */
-  public function applyConditionsOnQuery(QueryInterface $query) : QueryInterface
+  public function applyConditionsOnQuery(QueryInterface $query): QueryInterface
   {
-    if(empty($this->logic))
-    {
+    if (empty($this->logic)) {
       throw new InvalidQueryException('No Condition logic passed for Condition Group');
     }
 
@@ -119,57 +118,40 @@ class ConditionGroup
    * @param QueryInterface $drupalQuery
    * @return void
    */
-  private function setConditionsOnBase($base, array $logic, QueryInterface $drupalQuery) : void
+  private function setConditionsOnBase($base, array $logic, QueryInterface $drupalQuery): void
   {
-    $conditionGroup;
-    foreach($logic as $key => $value)
-    {
-      if(is_array($value))
-      {
-        if(empty($conditionGroup))
-        {
+    $conditionGroup = null;
+    foreach ($logic as $key => $value) {
+      if (is_array($value)) {
+        if (empty($conditionGroup)) {
           throw new InvalidQueryException();
-        }
-        else
-        {
+        } else {
           $this->setConditionsOnBase($conditionGroup, $value, $drupalQuery);
         }
-      }
-      else if(strtoupper($value) === 'OR')
-      {
-        if(!empty($conditionGroup))
-        {
+      } else if (strtoupper($value) === 'OR') {
+        if (!empty($conditionGroup)) {
           $base->condition($conditionGroup);
         }
 
         $conditionGroup = $drupalQuery->orConditionGroup();
-      }
-      else if(strtoupper($value) === 'AND')
-      {
-        if(!empty($conditionGroup))
-        {
+      } else if (strtoupper($value) === 'AND') {
+        if (!empty($conditionGroup)) {
           $base->condition($conditionGroup);
         }
 
         $conditionGroup = $drupalQuery->andConditionGroup();
-      }
-      else if(is_numeric($value))
-      {
+      } else if (is_numeric($value)) {
         // check for condition in list
-        if(array_key_exists($value-1, $this->conditions))
-        {
-          $condition = $this->conditions[$value-1];
+        if (array_key_exists($value - 1, $this->conditions)) {
+          $condition = $this->conditions[$value - 1];
           $condition->addQueryCondition($base);
-        }
-        else
-        {
+        } else {
           // Condition doesnt exist, ignore it
         }
       }
     }
 
-    if(!empty($conditionGroup))
-    {
+    if (!empty($conditionGroup)) {
       $base->condition($conditionGroup);
     }
   }

@@ -27,7 +27,7 @@ class JsonApiDataNode extends JsonApiBaseNode
    *
    * @return JsonApiDataNode
    */
-  public function clearData() : JsonApiDataNode
+  public function clearData(): JsonApiDataNode
   {
     unset($this->data);
     return $this;
@@ -41,19 +41,13 @@ class JsonApiDataNode extends JsonApiBaseNode
    */
   public function addNode(JsonApiNode $node)
   {
-    if(empty($this->data) && !$this->asArray)
-    {
+    if (empty($this->data) && !$this->asArray) {
       $this->data = $node;
-    }
-    else
-    {
-      if(!empty($this->data) && !is_array($this->data))
-      {
+    } else {
+      if (!empty($this->data) && !is_array($this->data)) {
         $firstNode = $this->data;
         $this->data = [$firstNode];
-      }
-      else if(empty($this->data))
-      {
+      } else if (empty($this->data)) {
         $this->data = [];
       }
 
@@ -80,7 +74,7 @@ class JsonApiDataNode extends JsonApiBaseNode
    * @param boolean $asArray
    * @return JsonApiDataNode
    */
-  public function asArray(bool $asArray) : JsonApiDataNode
+  public function asArray(bool $asArray): JsonApiDataNode
   {
     $this->asArray = $asArray;
     return $this;
@@ -91,40 +85,30 @@ class JsonApiDataNode extends JsonApiBaseNode
    *
    * @return \stdClass
    */
-  public function serialize() : \stdClass
+  public function serialize(): \stdClass
   {
     $serialized = new \stdClass();
 
-    if(!empty($this->links))
-    {
+    if (!empty($this->links)) {
       $serialized->links = $this->getSerializedLinks();
     }
 
-    if(!empty($this->meta))
-    {
+    if (!empty($this->meta)) {
       $serialized->meta = $this->meta;
     }
 
-    if(is_array($this->data) || ($this->asArray))
-    {
+    if (is_array($this->data) || ($this->asArray)) {
       $serializedData = [];
-      if(!empty($this->data))
-      {
-        foreach($this->data as $dataMember)
-        {
+      if (!empty($this->data)) {
+        foreach ($this->data as $dataMember) {
           $serializedData[] = $dataMember->serialize();
         }
       }
       $serialized->data = $serializedData;
-    }
-    else
-    {
-      if(empty($this->data))
-      {
+    } else {
+      if (empty($this->data)) {
         $serialized->data = new \stdClass;
-      }
-      else
-      {
+      } else {
         $serialized->data = $this->data->serialize();
       }
     }

@@ -54,8 +54,7 @@ class TwigFile
     }
 
     $fileContent = file_get_contents($path);
-    if($fileContent)
-    {
+    if ($fileContent) {
       $this->fileContent = $fileContent;
     }
 
@@ -69,7 +68,7 @@ class TwigFile
    * @param ImmutableConfig $config
    * @return void
    */
-  public function addConfigToScope(string $name, ImmutableConfig $config) : TwigFile
+  public function addConfigToScope(string $name, ImmutableConfig $config): TwigFile
   {
     $this->scope[$name] = new SimpleConfigWrapper($config);
 
@@ -85,7 +84,7 @@ class TwigFile
    * @param Model $model
    * @return TwigFile
    */
-  public function addModelToScope(string $name, Model $model) : TwigFile
+  public function addModelToScope(string $name, Model $model): TwigFile
   {
     $this->scope[$name] = new SimpleModelWrapper($model);
 
@@ -99,7 +98,7 @@ class TwigFile
    * @param mixed $object
    * @return TwigFile
    */
-  public function addObjectToScope(string $name, $object) : TwigFile
+  public function addObjectToScope(string $name, $object): TwigFile
   {
     $this->scope[$name] = $object;
 
@@ -111,7 +110,7 @@ class TwigFile
    *
    * @return TwigFile
    */
-  public function render() : TwigFile
+  public function render(): TwigFile
   {
     // Use the spectrum twigrenderer;
     $twig = new TwigRenderer();
@@ -127,7 +126,7 @@ class TwigFile
    *
    * @return string|null
    */
-  public function getRenderedHtml() : ?string
+  public function getRenderedHtml(): ?string
   {
     return $this->html;
   }

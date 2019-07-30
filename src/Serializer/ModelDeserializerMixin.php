@@ -24,35 +24,26 @@ trait ModelDeserializerMixin
    * @param \stdClass $deserialized jsonapi.org document
    * @return Model
    */
-  public function applyChangesFromJsonAPIDocument(\stdClass $deserialized) : Model
+  public function applyChangesFromJsonAPIDocument(\stdClass $deserialized): Model
   {
     // get helper variables
     $fieldNameMapping = static::getPrettyFieldsToFieldsMapping();
 
     // and now we'll loop over the different content of the deserialized object
-    foreach($deserialized->data as $key => $value)
-    {
-      if($key === 'attributes')
-      {
+    foreach ($deserialized->data as $key => $value) {
+      if ($key === 'attributes') {
         // here we'll loop all the attributes in the json, and match them to existing attributes on the entity class
-        foreach($value as $attributeKey => $attributeValue)
-        {
-          if(array_key_exists($attributeKey, $fieldNameMapping))
-          {
+        foreach ($value as $attributeKey => $attributeValue) {
+          if (array_key_exists($attributeKey, $fieldNameMapping)) {
             $fieldName = $fieldNameMapping[$attributeKey];
             $this->deserializeField($fieldName, $attributeValue);
           }
         }
-      }
-      else if($key === 'relationships')
-      {
-        foreach($value as $relationshipFieldName => $relationshipValue)
-        {
+      } else if ($key === 'relationships') {
+        foreach ($value as $relationshipFieldName => $relationshipValue) {
           // first we'll check if the relationship exists
-          try
-          {
-            if(array_key_exists($relationshipFieldName, $fieldNameMapping))
-            {
+          try {
+            if (array_key_exists($relationshipFieldName, $fieldNameMapping)) {
               $fieldName = $fieldNameMapping[$relationshipFieldName];
 
               $this->deserializeRelationship($fieldName, $relationshipValue);
@@ -76,46 +67,34 @@ trait ModelDeserializerMixin
    */
   protected function deserializeRelationship(string $fieldName, $relationshipValue)
   {
-    if(static::currentUserHasFieldPermission($fieldName, 'edit')) // Only allow fields the user has access to
+    if (static::currentUserHasFieldPermission($fieldName, 'edit')) // Only allow fields the user has access to
     {
       $relationship = static::getRelationshipByFieldName($fieldName);
 
-      if(!empty($relationship))
-      {
+      if (!empty($relationship)) {
         // now the relationship exists, we'll do something different depending on the type of relationship
-        if($relationship instanceof FieldRelationship)
-        {
+        if ($relationship instanceof FieldRelationship) {
           $relationshipField = $relationship->getField();
           $relationshipColumn = $relationship->getColumn();
 
-          if($relationship->fieldCardinality !== 1)
-          {
+          if ($relationship->fieldCardinality !== 1) {
             // This is a multi-reference field
             // We need to set an array, instead of a single field column
             $this->entity->$relationshipField = [];
 
-            if(!empty($relationshipValue->data) && is_array($relationshipValue->data))
-            {
-              foreach($relationshipValue->data as $singleRelationshipValue)
-              {
+            if (!empty($relationshipValue->data) && is_array($relationshipValue->data)) {
+              foreach ($relationshipValue->data as $singleRelationshipValue) {
                 $this->entity->$relationshipField[] = [$relationshipColumn => $singleRelationshipValue->id];
               }
             }
-          }
-          else
-          {
-            if(empty($relationshipValue->data))
-            {
+          } else {
+            if (empty($relationshipValue->data)) {
               $this->entity->$relationshipField->$relationshipColumn = null;
-            }
-            else
-            {
+            } else {
               $this->entity->$relationshipField->$relationshipColumn = $relationshipValue->data->id;
             }
           }
-        }
-        else if ($relationship instanceof ReferencedRelationship)
-        {
+        } else if ($relationship instanceof ReferencedRelationship) {
           // TODO: make this work with entity reference multi-field
         }
       }
@@ -134,10 +113,9 @@ trait ModelDeserializerMixin
     $fieldDefinition = static::getFieldDefinition($fieldName);
     $fieldCardinality = $fieldDefinition->getFieldStorageDefinition()->getCardinality();
 
-    if(static::currentUserHasFieldPermission($fieldName, 'edit')) // Only allow fields the user has access to
+    if (static::currentUserHasFieldPermission($fieldName, 'edit')) // Only allow fields the user has access to
     {
-      switch($fieldDefinition->getType())
-      {
+      switch ($fieldDefinition->getType()) {
         case 'boolean':
           $this->entity->$fieldName->value = $attributeValue ? '1' : '0'; // cannot be stricly typed, drupal uses true/false as '1' and '0' interchangeably
           break;
@@ -148,18 +126,14 @@ trait ModelDeserializerMixin
         case 'datetime':
           $dateValue = null;
 
-          if(!empty($attributeValue))
-          {
+          if (!empty($attributeValue)) {
             // We must figure out if this is a Date field or a datetime field
             // lets get the meta information of the field
             $fieldSettingsDatetimeType = $fieldDefinition->getItemDefinition()->getSettings()['datetime_type'];
-            if($fieldSettingsDatetimeType === 'date')
-            {
+            if ($fieldSettingsDatetimeType === 'date') {
               $dateValue = new \DateTime($attributeValue);
               $dateValue = $dateValue->format(DateTimeItemInterface::DATE_STORAGE_FORMAT);
-            }
-            else if($fieldSettingsDatetimeType === 'datetime')
-            {
+            } else if ($fieldSettingsDatetimeType === 'datetime') {
               $dateValue = new \DateTime($attributeValue);
               $dateValue = $dateValue->format(DateTimeItemInterface::DATETIME_STORAGE_FORMAT);
             }
@@ -171,52 +145,39 @@ trait ModelDeserializerMixin
         case 'image':
           $valueToSet = null;
 
-          if($fieldCardinality === 1)
-          {
-            if(isset($attributeValue->id) && isset($attributeValue->hash))
-            {
+          if ($fieldCardinality === 1) {
+            if (isset($attributeValue->id) && isset($attributeValue->hash)) {
               $fileModel = File::forgeById($attributeValue->id);
               $fileModel = new File($fileModel->entity); // TODO File/Image model fix
               // We must be sure that the hash provided in the deserialization, matches the file entity in the database
               // That way no unauthorized file linking can occur
-              if($fileModel->getId() === $attributeValue->id && $fileModel->getHash() === $attributeValue->hash)
-              {
+              if ($fileModel->getId() === $attributeValue->id && $fileModel->getHash() === $attributeValue->hash) {
                 $valueToSet = $attributeValue->id;
               }
             }
 
             $this->entity->$fieldName->target_id = $valueToSet;
-          }
-          else
-          {
+          } else {
             $valueToSet = [];
-            if(is_array($attributeValue))
-            {
+            if (is_array($attributeValue)) {
               $fileIds = [];
-              foreach($attributeValue as $singleAttributeValue)
-              {
-                if(isset($singleAttributeValue->id))
-                {
+              foreach ($attributeValue as $singleAttributeValue) {
+                if (isset($singleAttributeValue->id)) {
                   $fileIds[] = $singleAttributeValue->id;
                 }
               }
 
-              if(!empty($fileIds))
-              {
+              if (!empty($fileIds)) {
                 $filesCollection = Collection::forgeByIds(File::class, $fileIds);
 
-                if(!$filesCollection->isEmpty)
-                {
-                  foreach($attributeValue as $singleAttributeValue)
-                  {
-                    if(isset($singleAttributeValue->id) && $filesCollection->containsKey($singleAttributeValue->id))
-                    {
+                if (!$filesCollection->isEmpty) {
+                  foreach ($attributeValue as $singleAttributeValue) {
+                    if (isset($singleAttributeValue->id) && $filesCollection->containsKey($singleAttributeValue->id)) {
                       $fileModel = $filesCollection->getModel($singleAttributeValue->id);
 
                       // We must be sure that the hash provided in the deserialization, matches the file entity in the database
                       // That way no unauthorized file linking can occur
-                      if($fileModel->getId() === $singleAttributeValue->id && $fileModel->getHash() === $singleAttributeValue->hash)
-                      {
+                      if ($fileModel->getId() === $singleAttributeValue->id && $fileModel->getHash() === $singleAttributeValue->hash) {
                         $valueToSet[] = ['target_id' => $singleAttributeValue->id];
                       }
                     }
@@ -235,8 +196,7 @@ trait ModelDeserializerMixin
           $this->entity->$fieldName->uri = $attributeValue;
           break;
         case 'address':
-          if(empty($attributeValue))
-          {
+          if (empty($attributeValue)) {
             $this->entity->$fieldName->country_code = null;
             $this->entity->$fieldName->administrative_area = null;
             $this->entity->$fieldName->locality = null;
@@ -245,9 +205,7 @@ trait ModelDeserializerMixin
             $this->entity->$fieldName->sorting_code = null;
             $this->entity->$fieldName->address_line1 = null;
             $this->entity->$fieldName->address_line2 = null;
-          }
-          else
-          {
+          } else {
             $value = [];
             $value['country_code'] = $attributeValue->{'countryCode'};
             $value['administrative_area'] = $attributeValue->{'administrativeArea'};
@@ -267,8 +225,7 @@ trait ModelDeserializerMixin
           // Except for currency, a currency is passed as a value (the ISO currency code)
           // And since in our system the ID of the currency is the iso currency code, we use that instead
           $fieldObjectSettings = $fieldDefinition->getSettings();
-          if(!empty($fieldObjectSettings) && array_key_exists('target_type', $fieldObjectSettings) && $fieldObjectSettings['target_type'] === 'currency')
-          {
+          if (!empty($fieldObjectSettings) && array_key_exists('target_type', $fieldObjectSettings) && $fieldObjectSettings['target_type'] === 'currency') {
             $this->entity->$fieldName->target_id = $attributeValue;
           }
           break;
@@ -277,20 +234,15 @@ trait ModelDeserializerMixin
           // Do nothing, internal fields
           break;
         default:
-          if($fieldCardinality !== 1)
-          {
+          if ($fieldCardinality !== 1) {
             // More than 1 value allowed in the field
             $this->entity->$fieldName = [];
-            if(is_array($attributeValue))
-            {
-              foreach($attributeValue as $singleAttributeValue)
-              {
+            if (is_array($attributeValue)) {
+              foreach ($attributeValue as $singleAttributeValue) {
                 $this->entity->$fieldName[] = $singleAttributeValue;
               }
             }
-          }
-          else
-          {
+          } else {
             $this->entity->$fieldName->value = $attributeValue;
           }
 

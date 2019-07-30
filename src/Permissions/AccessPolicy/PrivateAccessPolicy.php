@@ -15,7 +15,8 @@ use Drupal\spectrum\Query\Condition;
  *
  * @package Drupal\spectrum\Permissions\AccessPolicy
  */
-class PrivateAccessPolicy implements AccessPolicyInterface {
+class PrivateAccessPolicy implements AccessPolicyInterface
+{
 
   /**
    * @var \Drupal\Core\Database\Connection
@@ -30,7 +31,8 @@ class PrivateAccessPolicy implements AccessPolicyInterface {
   /**
    * PrivateAccessPolicy constructor.
    */
-  public function __construct() {
+  public function __construct()
+  {
     $this->database = \Drupal::database();
     $this->userStorage = \Drupal::entityTypeManager()
       ->getStorage('user');
@@ -39,7 +41,8 @@ class PrivateAccessPolicy implements AccessPolicyInterface {
   /**
    * @inheritDoc
    */
-  public function onSave(Model $model): void {
+  public function onSave(Model $model): void
+  {
     // Create an insert query. This query will be used to insert all
     // permissions at once.
     $insertQuery = $this->database->insert(self::TABLE_ENTITY_ACCESS);
@@ -48,7 +51,7 @@ class PrivateAccessPolicy implements AccessPolicyInterface {
     foreach ($this->getUserIds($model) as $uid) {
       $insertQuery = $insertQuery->values([
         'entity_type' => $model::entityType(),
-        'entity_id' => (int)$model->getId(),
+        'entity_id' => (int) $model->getId(),
         'uid' => $uid,
       ]);
     }
@@ -65,7 +68,8 @@ class PrivateAccessPolicy implements AccessPolicyInterface {
   /**
    * @inheritDoc
    */
-  public function onDelete(Model $model): void {
+  public function onDelete(Model $model): void
+  {
     $this->removeAccess($model);
     (new ParentAccessPolicy)->onDelete($model);
   }
@@ -73,17 +77,19 @@ class PrivateAccessPolicy implements AccessPolicyInterface {
   /**
    * @param \Drupal\spectrum\Model\Model $model
    */
-  protected function removeAccess(Model $model): void {
+  protected function removeAccess(Model $model): void
+  {
     $this->database->delete(self::TABLE_ENTITY_ACCESS)
       ->condition('entity_type', $model::entityType())
-      ->condition('entity_id', (int)$model->getId())
+      ->condition('entity_id', (int) $model->getId())
       ->execute();
   }
 
   /**
    * @inheritDoc
    */
-  public function onQuery(Select $query): Select {
+  public function onQuery(Select $query): Select
+  {
     $type = $query->getTables()['base_table']['table'];
     $condition = strtr('ea.entity_type = \'@type\' AND ea.entity_id = base_table.id', [
       '@type' => $type,
@@ -100,7 +106,8 @@ class PrivateAccessPolicy implements AccessPolicyInterface {
    *
    * @return bool
    */
-  public function userHasAccess(Model $model, int $uid): bool {
+  public function userHasAccess(Model $model, int $uid): bool
+  {
     return in_array($uid, $this->getUserIds($model));
   }
 
@@ -109,7 +116,8 @@ class PrivateAccessPolicy implements AccessPolicyInterface {
    *
    * @return array
    */
-  protected function getUserIds(Model $model): array {
+  protected function getUserIds(Model $model): array
+  {
     $users = [];
 
     // Fetches the user IDs related to a company.
@@ -137,9 +145,7 @@ class PrivateAccessPolicy implements AccessPolicyInterface {
           $users = array_merge($users, [$user->getId()]);
         }
       }
-    }
-    catch (RelationshipNotDefinedException $e) {
-    }
+    } catch (RelationshipNotDefinedException $e) { }
 
     try {
       // There is a company related to the model.
@@ -147,9 +153,7 @@ class PrivateAccessPolicy implements AccessPolicyInterface {
       if ($company = $model->fetch('company')) {
         $users = array_merge($users, $usersFromCompany($company));
       }
-    }
-    catch (RelationshipNotDefinedException $e) {
-    }
+    } catch (RelationshipNotDefinedException $e) { }
 
     try {
       // There is an organization related to the model.
@@ -160,9 +164,7 @@ class PrivateAccessPolicy implements AccessPolicyInterface {
           $users = array_merge($users, $employees->getIds());
         }
       }
-    }
-    catch (RelationshipNotDefinedException $e) {
-    }
+    } catch (RelationshipNotDefinedException $e) { }
 
     $administrators = User::getEntityQuery()
       ->addCondition(new Condition('status', '=', 1))
@@ -172,5 +174,4 @@ class PrivateAccessPolicy implements AccessPolicyInterface {
 
     return array_unique($users);
   }
-
 }

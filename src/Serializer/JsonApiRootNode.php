@@ -24,28 +24,19 @@ class JsonApiRootNode extends JsonApiDataNode
    * @param JsonApiBaseNode $jsonapi
    * @return JsonApiRootNode
    */
-  public function addInclude(JsonApiBaseNode $jsonapi) : JsonApiRootNode
+  public function addInclude(JsonApiBaseNode $jsonapi): JsonApiRootNode
   {
-    if($jsonapi instanceof JsonApiNode)
-    {
+    if ($jsonapi instanceof JsonApiNode) {
       $this->addJsonApiNodeToIncludes($jsonapi);
-    }
-    else if($jsonapi instanceof JsonApiDataNode)
-    {
-      if(is_array($jsonapi->data))
-      {
-        foreach($jsonapi->data as $jsonapiNode)
-        {
+    } else if ($jsonapi instanceof JsonApiDataNode) {
+      if (is_array($jsonapi->data)) {
+        foreach ($jsonapi->data as $jsonapiNode) {
           $this->addJsonApiNodeToIncludes($jsonapiNode);
         }
-      }
-      else if(!empty($jsonapi->data))
-      {
+      } else if (!empty($jsonapi->data)) {
         $this->addJsonApiNodeToIncludes($jsonapi->data);
       }
-    }
-    else
-    {
+    } else {
       throw new InvalidTypeException();
     }
 
@@ -57,10 +48,9 @@ class JsonApiRootNode extends JsonApiDataNode
    *
    * @return JsonApiNode[]
    */
-  public function getIncluded() : array
+  public function getIncluded(): array
   {
-    if(empty($this->included))
-    {
+    if (empty($this->included)) {
       return [];
     }
 
@@ -73,10 +63,9 @@ class JsonApiRootNode extends JsonApiDataNode
    * @param string $key
    * @return JsonApiRootNode
    */
-  public function removeIncluded(string $key) : JsonApiRootNode
+  public function removeIncluded(string $key): JsonApiRootNode
   {
-    if(!empty($this->included) && array_key_exists($key, $this->included))
-    {
+    if (!empty($this->included) && array_key_exists($key, $this->included)) {
       unset($this->included[$key]);
     }
 
@@ -89,10 +78,9 @@ class JsonApiRootNode extends JsonApiDataNode
    * @param JsonApiNode $node
    * @return JsonApiRootNode
    */
-  private function addJsonApiNodeToIncludes(JsonApiNode $node) : JsonApiRootNode
+  private function addJsonApiNodeToIncludes(JsonApiNode $node): JsonApiRootNode
   {
-    if(empty($this->included))
-    {
+    if (empty($this->included)) {
       $this->included = [];
     }
 
@@ -107,16 +95,14 @@ class JsonApiRootNode extends JsonApiDataNode
    *
    * @return \stdClass
    */
-  public function serialize() : \stdClass
+  public function serialize(): \stdClass
   {
     $serialized = parent::serialize();
 
-    if(!empty($this->included))
-    {
+    if (!empty($this->included)) {
       $serializedIncluded = [];
 
-      foreach($this->included as $includedMember)
-      {
+      foreach ($this->included as $includedMember) {
         $serializedIncluded[] = $includedMember->serialize();
       }
 
@@ -132,18 +118,14 @@ class JsonApiRootNode extends JsonApiDataNode
    * @param JsonApiDataNode $node
    * @return JsonApiRootNode
    */
-  public function setData(JsonApiDataNode $node) : JsonApiRootNode
+  public function setData(JsonApiDataNode $node): JsonApiRootNode
   {
-    if($this->asArray && !is_array($node->data))
-    {
+    if ($this->asArray && !is_array($node->data)) {
       $this->data = [];
-      if(!empty($node->data))
-      {
+      if (!empty($node->data)) {
         $this->data[] = $node->data;
       }
-    }
-    else
-    {
+    } else {
       $this->data = $node->data;
     }
 
@@ -156,10 +138,9 @@ class JsonApiRootNode extends JsonApiDataNode
    * @param JsonApiDataNode $node
    * @return JsonApiRootNode
    */
-  public function setMeta(JsonApiDataNode $node) : JsonApiRootNode
+  public function setMeta(JsonApiDataNode $node): JsonApiRootNode
   {
-    foreach($node->getMeta() as $key => $value)
-    {
+    foreach ($node->getMeta() as $key => $value) {
       $this->addMeta($key, $value);
     }
 
@@ -173,14 +154,12 @@ class JsonApiRootNode extends JsonApiDataNode
    * @param \stdClass $jsonapidocument
    * @return array
    */
-  public static function getNoneDefaultDataKeys(\stdClass $jsonapidocument) : array
+  public static function getNoneDefaultDataKeys(\stdClass $jsonapidocument): array
   {
     $noneDefaultKeys = [];
     $standardKeys = ['type', 'id', 'attributes', 'relationships', 'links'];
-    foreach($jsonapidocument->data as $key => $value)
-    {
-      if(!in_array($key, $standardKeys))
-      {
+    foreach ($jsonapidocument->data as $key => $value) {
+      if (!in_array($key, $standardKeys)) {
         $noneDefaultKeys[] = $key;
       }
     }

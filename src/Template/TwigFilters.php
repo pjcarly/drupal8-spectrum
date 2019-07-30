@@ -55,7 +55,7 @@ class TwigFilters extends \Twig_Extension
    * @param string $imagestyle
    * @return string
    */
-  public static function src(Image $image, string $imagestyle = null) : string
+  public static function src(Image $image, string $imagestyle = null): string
   {
     return $image->getSRC($imagestyle);
   }
@@ -66,7 +66,7 @@ class TwigFilters extends \Twig_Extension
    * @param File $file
    * @return string
    */
-  public static function fileSrc(File $file) : string
+  public static function fileSrc(File $file): string
   {
     return $file->getSRC();
   }
@@ -79,7 +79,7 @@ class TwigFilters extends \Twig_Extension
    * @param string $imagestyle
    * @return string
    */
-  public static function base64src(Image $image, string $imagestyle = null) : string
+  public static function base64src(Image $image, string $imagestyle = null): string
   {
     return $image->getBase64SRC($imagestyle);
   }
@@ -90,7 +90,7 @@ class TwigFilters extends \Twig_Extension
    * @param Address|null $address
    * @return string|null
    */
-  public static function addressFormat(?Address $address) : ?string
+  public static function addressFormat(?Address $address): ?string
   {
     return AddressUtils::format($address);
   }
@@ -102,7 +102,7 @@ class TwigFilters extends \Twig_Extension
    * @param string $currency
    * @return string
    */
-  public static function price($price, string $currency = null) : string
+  public static function price($price, string $currency = null): string
   {
     return number_format((float) $price, 2, ',', ' ') . ' ' . $currency;
   }
@@ -115,7 +115,7 @@ class TwigFilters extends \Twig_Extension
    * @param string $padvalue
    * @return string
    */
-  public static function padLeft(string $value, int $length, string $padvalue = '0') : string
+  public static function padLeft(string $value, int $length, string $padvalue = '0'): string
   {
     return str_pad($value, $length, $padvalue, STR_PAD_LEFT);
   }
@@ -128,7 +128,7 @@ class TwigFilters extends \Twig_Extension
    * @param \DateTime $date The date you want to use for the dynamic part of the autonumber format
    * @return string
    */
-  public static function autonumberFormat(string $value, string $format, \DateTime $date) : string
+  public static function autonumberFormat(string $value, string $format, \DateTime $date): string
   {
     $formatted = DateUtils::generatePatternString($date, $format);
     $formatted =  str_replace('{{VALUE}}', $value, $formatted);
@@ -141,7 +141,7 @@ class TwigFilters extends \Twig_Extension
    * @param string $value
    * @return string
    */
-  public static function pnrSafeName(string $value) : string
+  public static function pnrSafeName(string $value): string
   {
     return StringUtils::pnrSafeString($value);
   }
@@ -165,7 +165,7 @@ class TwigFilters extends \Twig_Extension
    * @param string $sortingFunction
    * @return SimpleCollectionWrapper
    */
-  public static function collectionSort(SimpleCollectionWrapper $simpleCollection, string $sortingFunction) : SimpleCollectionWrapper
+  public static function collectionSort(SimpleCollectionWrapper $simpleCollection, string $sortingFunction): SimpleCollectionWrapper
   {
     $collection = $simpleCollection->getCollection();
     $collection->sort($sortingFunction);

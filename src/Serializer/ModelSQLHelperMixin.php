@@ -2,7 +2,7 @@
 
 namespace Drupal\spectrum\Serializer;
 
-Use Drupal\spectrum\Utils\StringUtils;
+use Drupal\spectrum\Utils\StringUtils;
 use Drupal\Core\Field\FieldDefinitionInterface;
 
 /**
@@ -22,7 +22,7 @@ trait ModelSQLHelperMixin
    * @param FieldDefinitionInterface $fieldDefinition
    * @return array
    */
-  public static function getViewTableColumnsForField(string $fieldName, string $alias, FieldDefinitionInterface $fieldDefinition = null) : array
+  public static function getViewTableColumnsForField(string $fieldName, string $alias, FieldDefinitionInterface $fieldDefinition = null): array
   {
     $fieldDefinition = empty($fieldDefinition) ? static::getFieldDefinition($fieldName) : $fieldDefinition;
     $fieldType = $fieldDefinition->getType();
@@ -30,25 +30,23 @@ trait ModelSQLHelperMixin
 
     $columns = [];
 
-    if($fieldCardinality != 1)
-    {
+    if ($fieldCardinality != 1) {
       // Higher field cardinality not supported
       return $columns;
     }
 
-    $columnBase = '`'.$alias.'`.'.$fieldName.'_';
+    $columnBase = '`' . $alias . '`.' . $fieldName . '_';
 
-    switch ($fieldType)
-    {
+    switch ($fieldType) {
       case 'address':
-          $columns[] = $columnBase.'country_code AS '.$alias.'_country_code';
-          $columns[] = $columnBase.'administrative_area AS '.$alias.'_administrative_area';
-          $columns[] = $columnBase.'locality AS '.$alias.'_locality';
-          $columns[] = $columnBase.'dependent_locality AS '.$alias.'_dependent_locality';
-          $columns[] = $columnBase.'postal_code AS '.$alias.'_postal_code';
-          $columns[] = $columnBase.'sorting_code AS '.$alias.'_sorting_code';
-          $columns[] = $columnBase.'address_line1 AS '.$alias.'_address_line1';
-          $columns[] = $columnBase.'address_line2 AS '.$alias.'_address_line2';
+        $columns[] = $columnBase . 'country_code AS ' . $alias . '_country_code';
+        $columns[] = $columnBase . 'administrative_area AS ' . $alias . '_administrative_area';
+        $columns[] = $columnBase . 'locality AS ' . $alias . '_locality';
+        $columns[] = $columnBase . 'dependent_locality AS ' . $alias . '_dependent_locality';
+        $columns[] = $columnBase . 'postal_code AS ' . $alias . '_postal_code';
+        $columns[] = $columnBase . 'sorting_code AS ' . $alias . '_sorting_code';
+        $columns[] = $columnBase . 'address_line1 AS ' . $alias . '_address_line1';
+        $columns[] = $columnBase . 'address_line2 AS ' . $alias . '_address_line2';
         break;
       case 'changed':
       case 'created':
@@ -59,21 +57,21 @@ trait ModelSQLHelperMixin
       case 'entity_reference':
       case 'file':
       case 'image':
-        $columns[] = $columnBase.'target_id AS `'.$alias.'`';
+        $columns[] = $columnBase . 'target_id AS `' . $alias . '`';
         break;
       case 'geolocation':
-        $columns[] = $columnBase.'lat AS '.$alias.'_lat';
-        $columns[] = $columnBase.'lng AS '.$alias.'_lng';
+        $columns[] = $columnBase . 'lat AS ' . $alias . '_lat';
+        $columns[] = $columnBase . 'lng AS ' . $alias . '_lng';
         break;
       case 'json':
       case 'uri':
 
-      break;
+        break;
       case 'link':
-        $columns[] = $columnBase.'uri AS `'.$alias.'`';
+        $columns[] = $columnBase . 'uri AS `' . $alias . '`';
         break;
       default:
-        $columns[] = $columnBase.'value AS `'.$alias.'`';
+        $columns[] = $columnBase . 'value AS `' . $alias . '`';
         break;
     }
 
@@ -85,7 +83,7 @@ trait ModelSQLHelperMixin
    *
    * @return array
    */
-  public static function getIgnoreFieldsForSQL() : array
+  public static function getIgnoreFieldsForSQL(): array
   {
     return [];
   }
@@ -96,7 +94,7 @@ trait ModelSQLHelperMixin
    * @param array $fieldsFromJoin The fields you want to include in your fields originating from a JOIN
    * @return array
    */
-  public static function getViewSelectColumnsForFields(array $fieldsFromJoin) : array
+  public static function getViewSelectColumnsForFields(array $fieldsFromJoin): array
   {
     $columns = [];
 
@@ -104,49 +102,37 @@ trait ModelSQLHelperMixin
     $fieldDefinitions = static::getFieldDefinitions();
     $fieldToPrettyMapping = static::getFieldsToPrettyFieldsMapping();
 
-    foreach($fieldDefinitions as $fieldName => $fieldDefinition)
-    {
+    foreach ($fieldDefinitions as $fieldName => $fieldDefinition) {
       $fieldNamePretty = $fieldToPrettyMapping[$fieldName];
       $fieldNamePretty = StringUtils::underscore($fieldNamePretty);
 
-      if($fieldName === 'type')
-      {
+      if ($fieldName === 'type') {
         continue;
-      }
-      else if($fieldName === static::getIdField())
-      {
-        $columns[] = static::entityType().'_data.'.$fieldName.' AS id';
+      } else if ($fieldName === static::getIdField()) {
+        $columns[] = static::entityType() . '_data.' . $fieldName . ' AS id';
         continue;
       }
 
       // Now we'll check the other fields
-      if(!in_array($fieldName, $ignoreFields))
-      {
+      if (!in_array($fieldName, $ignoreFields)) {
         $type = substr($fieldName, 0, 6);
 
-        if($type === 'field_' || $fieldName === 'body')
-        {
+        if ($type === 'field_' || $fieldName === 'body') {
           // These are fields from a different table (throught the field API) which are joined on the base table
-          if(in_array($fieldName, $fieldsFromJoin))
-          {
+          if (in_array($fieldName, $fieldsFromJoin)) {
             // Only add fields for joins we actually did
             $fieldColumns = static::getViewTableColumnsForField($fieldName, $fieldNamePretty, $fieldDefinition);
             $columns = array_merge($columns, $fieldColumns);
           }
-        }
-        else if($fieldName === 'user_picture')
-        {
+        } else if ($fieldName === 'user_picture') {
           // For some reason this default field works differently than any other field, we do it manually
-          if(in_array($fieldName, $fieldsFromJoin))
-          {
+          if (in_array($fieldName, $fieldsFromJoin)) {
             // Only add fields for joins we actually did
             $columns[] = 'user_picture.user_picture_target_id AS user_picture';
           }
-        }
-        else
-        {
+        } else {
           // These fields exist on the base table, we can just include them
-          $columns[] = static::entityType().'_data.'.$fieldName.' AS `'.$fieldNamePretty.'`';
+          $columns[] = static::entityType() . '_data.' . $fieldName . ' AS `' . $fieldNamePretty . '`';
         }
       }
     }
@@ -159,20 +145,17 @@ trait ModelSQLHelperMixin
    *
    * @return string
    */
-  public static function getViewBaseTable() : string
+  public static function getViewBaseTable(): string
   {
     $baseTablePrefix = static::entityType();
 
-    if($baseTablePrefix === 'user')
-    {
+    if ($baseTablePrefix === 'user') {
       $baseTablePrefix = 'users';
-    }
-    else if($baseTablePrefix === 'file')
-    {
-      return $baseTablePrefix . '_managed AS '.static::entityType() . '_data';
+    } else if ($baseTablePrefix === 'file') {
+      return $baseTablePrefix . '_managed AS ' . static::entityType() . '_data';
     }
 
-    return $baseTablePrefix . '_field_data AS '.static::entityType() . '_data';
+    return $baseTablePrefix . '_field_data AS ' . static::entityType() . '_data';
   }
 
   /**
@@ -180,7 +163,7 @@ trait ModelSQLHelperMixin
    *
    * @return array
    */
-  public static function getViewJoins() : array
+  public static function getViewJoins(): array
   {
     $joins = [];
 
@@ -190,45 +173,37 @@ trait ModelSQLHelperMixin
     $fieldToPrettyMapping = static::getFieldsToPrettyFieldsMapping();
 
     $amountOfFields = 0;
-    foreach($fieldDefinitions as $fieldName => $fieldDefinition)
-    {
+    foreach ($fieldDefinitions as $fieldName => $fieldDefinition) {
       $fieldNamePretty = $fieldToPrettyMapping[$fieldName];
       $fieldNamePretty = StringUtils::underscore($fieldNamePretty);
       $fieldCardinality = $fieldDefinition->getFieldStorageDefinition()->getCardinality();
 
-      if($fieldName === 'type' || $fieldCardinality != 1)
-      {
+      if ($fieldName === 'type' || $fieldCardinality != 1) {
         // Only fields with 1 value supported
         continue;
       }
 
       // Now we'll check the other fields
-      if(!in_array($fieldName, $ignoreFields) && !in_array($fieldName, $customIgnoreFields))
-      {
+      if (!in_array($fieldName, $ignoreFields) && !in_array($fieldName, $customIgnoreFields)) {
         $type = substr($fieldName, 0, 6);
         $amountOfFields++;
 
-        if($amountOfFields > 60)
-        {
-          trigger_error('Skipping field '.$fieldName.' for bundle '.static::bundle(), E_USER_WARNING);
+        if ($amountOfFields > 60) {
+          trigger_error('Skipping field ' . $fieldName . ' for bundle ' . static::bundle(), E_USER_WARNING);
           continue;
         }
 
-        if($type === 'field_' || $fieldName === 'body')
-        {
-          $joins[$fieldName] = 'LEFT JOIN '.static::entityType().'__'.$fieldName. ' AS `'.$fieldNamePretty.'` ON `'.$fieldNamePretty.'`.entity_id = `'.static::entityType().'_data`.'.static::getIdField();
-        }
-        else if($fieldName === 'user_picture')
-        {
+        if ($type === 'field_' || $fieldName === 'body') {
+          $joins[$fieldName] = 'LEFT JOIN ' . static::entityType() . '__' . $fieldName . ' AS `' . $fieldNamePretty . '` ON `' . $fieldNamePretty . '`.entity_id = `' . static::entityType() . '_data`.' . static::getIdField();
+        } else if ($fieldName === 'user_picture') {
           $joins[$fieldName] = 'LEFT JOIN user__user_picture AS user_picture ON user_picture.entity_id = user_data.uid';
         }
       }
     }
 
-    if($amountOfFields > 60)
-    {
+    if ($amountOfFields > 60) {
       // Only 60 joins allowed due to MySQL constraints
-      trigger_error('Bundle '.static::bundle().' has too many columns ('.$amountOfFields.'), stopped at 60', E_USER_WARNING);
+      trigger_error('Bundle ' . static::bundle() . ' has too many columns (' . $amountOfFields . '), stopped at 60', E_USER_WARNING);
     }
 
     return $joins;
@@ -239,9 +214,9 @@ trait ModelSQLHelperMixin
    *
    * @return string|null
    */
-  public static function getViewWhereClause() : ?string
+  public static function getViewWhereClause(): ?string
   {
-    return empty(static::bundle()) ? null : static::entityType().'_data.type = \''. static::bundle().'\'';
+    return empty(static::bundle()) ? null : static::entityType() . '_data.type = \'' . static::bundle() . '\'';
   }
 
   /**
@@ -250,19 +225,18 @@ trait ModelSQLHelperMixin
    *
    * @return string
    */
-  public static function getViewSelectQuery() : string
+  public static function getViewSelectQuery(): string
   {
     $joins = static::getViewJoins();
 
-    $query = 'SELECT '.implode(', ', static::getViewSelectColumnsForFields(array_keys($joins))). ' ';
-    $query .= 'FROM '.static::getViewBaseTable().' ';
-    $query .= implode(' ', $joins).' ';
+    $query = 'SELECT ' . implode(', ', static::getViewSelectColumnsForFields(array_keys($joins))) . ' ';
+    $query .= 'FROM ' . static::getViewBaseTable() . ' ';
+    $query .= implode(' ', $joins) . ' ';
 
     $where = static::getViewWhereClause();
 
-    if(!empty($where))
-    {
-      $query .= 'WHERE '.$where;
+    if (!empty($where)) {
+      $query .= 'WHERE ' . $where;
     }
 
     return $query;

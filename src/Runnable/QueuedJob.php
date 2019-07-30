@@ -1,4 +1,5 @@
 <?php
+
 namespace Drupal\spectrum\Runnable;
 
 use Drupal\Core\Session\AnonymousUserSession;
@@ -20,7 +21,7 @@ class QueuedJob extends RunnableModel
    *
    * @return string
    */
-  public static function entityType() : string
+  public static function entityType(): string
   {
     return 'runnable';
   }
@@ -30,7 +31,7 @@ class QueuedJob extends RunnableModel
    *
    * @return string
    */
-  public static function bundle() : string
+  public static function bundle(): string
   {
     return 'queued_job';
   }
@@ -38,7 +39,8 @@ class QueuedJob extends RunnableModel
   /**
    * @inheritDoc
    */
-  public static function getAccessPolicy(): AccessPolicyInterface {
+  public static function getAccessPolicy(): AccessPolicyInterface
+  {
     return new PublicAccessPolicy;
   }
 
@@ -60,10 +62,10 @@ class QueuedJob extends RunnableModel
    *
    * @return void
    */
-  public final function preExecution() : void
+  public final function preExecution(): void
   {
     $currentTime = gmdate('Y-m-d\TH:i:s');
-    $this->print('Job with ID: '.$this->getId().' STARTED at '.$currentTime . ' ('.$this->entity->title->value.')');
+    $this->print('Job with ID: ' . $this->getId() . ' STARTED at ' . $currentTime . ' (' . $this->entity->title->value . ')');
 
     $this->entity->field_job_status->value = 'Running';
     $this->entity->field_start_time->value = $currentTime;
@@ -75,12 +77,9 @@ class QueuedJob extends RunnableModel
     // If no provided user, execute as anonymous
 
     $this->accountSwitcher = \Drupal::service('account_switcher');
-    if(empty($this->entity->field_run_as->target_id) || $this->entity->field_run_as->target_id === 0 || empty($this->entity->field_run_as->entity))
-    {
+    if (empty($this->entity->field_run_as->target_id) || $this->entity->field_run_as->target_id === 0 || empty($this->entity->field_run_as->entity)) {
       $this->accountSwitcher->switchTo(new AnonymousUserSession());
-    }
-    else
-    {
+    } else {
       $this->accountSwitcher->switchTo($this->entity->field_run_as->entity);
     }
   }
@@ -90,7 +89,8 @@ class QueuedJob extends RunnableModel
    *
    * @return void
    */
-  public function execute() : void {}
+  public function execute(): void
+  { }
 
   /**
    * Schedule a job on a given datetime, with a possible variable.
@@ -100,17 +100,15 @@ class QueuedJob extends RunnableModel
    * @param \DateTime $date (optional) The date you want to schedule the job on. If left blank, "now" will be chosen
    * @return QueuedJob
    */
-  public static function schedule(string $jobName, string $variable = '', \DateTime $date = null) : QueuedJob
+  public static function schedule(string $jobName, string $variable = '', \DateTime $date = null): QueuedJob
   {
     $registeredJob = RegisteredJob::getByKey($jobName);
 
-    if(empty($registeredJob))
-    {
-      throw new \Exception('Registered Job ('.$jobName.') not found');
+    if (empty($registeredJob)) {
+      throw new \Exception('Registered Job (' . $jobName . ') not found');
     }
 
-    if(empty($date))
-    {
+    if (empty($date)) {
       $utc = new \DateTimeZone('UTC');
       $date = new \DateTime();
       $date->setTimezone($utc);
@@ -119,8 +117,7 @@ class QueuedJob extends RunnableModel
     $queuedJob = $registeredJob->createJobInstance();
     $queuedJob->entity->title->value = $jobName;
 
-    if(!empty($variable))
-    {
+    if (!empty($variable)) {
       $queuedJob->entity->field_variable->value = $variable;
     }
 
@@ -139,7 +136,7 @@ class QueuedJob extends RunnableModel
    * @param string $message
    * @return void
    */
-  public final function setFailed(string $message) : void
+  public final function setFailed(string $message): void
   {
     throw new JobTerminateException($message);
   }
@@ -150,17 +147,16 @@ class QueuedJob extends RunnableModel
    *
    * @return void
    */
-  public final function postExecution() : void
+  public final function postExecution(): void
   {
     // Lets not forget to switch back to the original user context
     $this->accountSwitcher->switchBack();
 
     // Lets put the job to completed
     $currentTime = gmdate('Y-m-d\TH:i:s');
-    $this->print('Job with ID: '.$this->getId().' FINISHED at '.$currentTime . ' ('.$this->entity->title->value.')');
+    $this->print('Job with ID: ' . $this->getId() . ' FINISHED at ' . $currentTime . ' (' . $this->entity->title->value . ')');
 
-    if($this->entity->field_job_status->value === 'Running')
-    {
+    if ($this->entity->field_job_status->value === 'Running') {
       $this->entity->field_job_status->value = 'Completed';
     }
 
@@ -170,33 +166,26 @@ class QueuedJob extends RunnableModel
     // And check if we need to reschedule this job
     $rescheduleIn = $this->entity->field_reschedule_in->value;
     $rescheduleFrom = $this->entity->field_reschedule_from->value;
-    if(!empty($rescheduleIn) && $rescheduleIn > 0 && !empty($rescheduleFrom))
-    {
+    if (!empty($rescheduleIn) && $rescheduleIn > 0 && !empty($rescheduleFrom)) {
       $newScheduledTime = null;
       $utc = new \DateTimeZone('UTC');
       $now = new \DateTime();
       $now->setTimezone($utc);
       $created = $now->format('U');
 
-      if($rescheduleFrom === 'Scheduled Time')
-      {
+      if ($rescheduleFrom === 'Scheduled Time') {
         $newScheduledTime = new \DateTime($this->entity->field_scheduled_time->value, $utc);
-      }
-      else if($rescheduleFrom === 'Start Time')
-      {
+      } else if ($rescheduleFrom === 'Start Time') {
         $newScheduledTime = new \DateTime($this->entity->field_start_time->value, $utc);
-      }
-      else if($rescheduleFrom === 'End Time')
-      {
+      } else if ($rescheduleFrom === 'End Time') {
         $newScheduledTime = new \DateTime($this->entity->field_end_time->value, $utc);
       }
 
-      if($newScheduledTime < $now)
-      {
+      if ($newScheduledTime < $now) {
         $newScheduledTime = $now;
       }
 
-      $newScheduledTime->modify('+'.$rescheduleIn.' minutes');
+      $newScheduledTime->modify('+' . $rescheduleIn . ' minutes');
 
       $copiedJob = $this->getCopiedModel();
       $copiedJob->entity->field_end_time->value = null;
@@ -207,7 +196,7 @@ class QueuedJob extends RunnableModel
       $copiedJob->entity->field_scheduled_time->value = $newScheduledTime->format('Y-m-d\TH:i:s');
       $copiedJob->save();
 
-      $this->print('Job with ID: '.$copiedJob->getId().' RESCHEDULED at '.$newScheduledTime->format('Y-m-d\TH:i:s') . ' ('.$copiedJob->entity->title->value.')');
+      $this->print('Job with ID: ' . $copiedJob->getId() . ' RESCHEDULED at ' . $newScheduledTime->format('Y-m-d\TH:i:s') . ' (' . $copiedJob->entity->title->value . ')');
     }
   }
 
@@ -218,31 +207,27 @@ class QueuedJob extends RunnableModel
    * @param string $message
    * @return void
    */
-  public final function failedExecution(?\Exception $ex = null, string $message = null) : void
+  public final function failedExecution(?\Exception $ex = null, string $message = null): void
   {
     // Execution failed, set the status to failed
     // Set a possible error message
 
     $currentTime = gmdate('Y-m-d\TH:i:s');
-    $this->print('Job with ID: '.$this->getId().' FAILED at '.$currentTime . ' ('.$this->entity->title->value.')');
+    $this->print('Job with ID: ' . $this->getId() . ' FAILED at ' . $currentTime . ' (' . $this->entity->title->value . ')');
 
     $this->entity->field_job_status->value = 'Failed';
     $this->entity->field_end_time->value = $currentTime;
 
-    if(!empty($ex))
-    {
+    if (!empty($ex)) {
       $message = $ex->getMessage();
-      if(!($ex instanceof JobTerminateException))
-      {
-        $message = '('.$message . ') ' . $ex->getTraceAsString();
+      if (!($ex instanceof JobTerminateException)) {
+        $message = '(' . $message . ') ' . $ex->getTraceAsString();
 
         \Drupal::logger('spectrum_cron')->error($ex->getMessage() . ' ' . $ex->getTraceAsString());
       }
 
       $this->entity->field_error_message->value = $message;
-    }
-    else if(!empty($message))
-    {
+    } else if (!empty($message)) {
       $this->entity->field_error_message->value = $message;
     }
 
@@ -255,13 +240,13 @@ class QueuedJob extends RunnableModel
     // Set a possible error message
 
     $currentTime = gmdate('Y-m-d\TH:i:s');
-    $this->print('Job with ID: '.$this->getId().' generated RUNTIME ERROR at '.$currentTime . ' ('.$this->entity->title->value.')');
+    $this->print('Job with ID: ' . $this->getId() . ' generated RUNTIME ERROR at ' . $currentTime . ' (' . $this->entity->title->value . ')');
 
     $this->entity->field_job_status->value = 'Failed';
     $this->entity->field_end_time->value = $currentTime;
 
     $message = $error->getMessage();
-    $message = '('.$message . ') ' . $error->getTraceAsString();
+    $message = '(' . $message . ') ' . $error->getTraceAsString();
 
     \Drupal::logger('spectrum_cron')->error($error->getMessage());
     \Drupal::logger('spectrum_cron')->error($error->getTraceAsString());

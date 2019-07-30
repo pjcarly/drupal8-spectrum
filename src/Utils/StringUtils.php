@@ -16,7 +16,7 @@ class StringUtils
    * @param string $input
    * @return boolean
    */
-  public static function hasAlphaCharacters(string $input) : bool
+  public static function hasAlphaCharacters(string $input): bool
   {
     // @FLW: Bart: Regexen da is toch alsan geestig he
     return preg_match('/^[a-zA-Z]/', $input) === 1;
@@ -28,7 +28,7 @@ class StringUtils
    * @param string $input
    * @return string
    */
-  public static function pnrSafeString(string $input) : string
+  public static function pnrSafeString(string $input): string
   {
     return static::upperCase(static::keepAlphaCharactersAndSpaces(static::transliterate($input)));
   }
@@ -39,7 +39,7 @@ class StringUtils
    * @param string $input
    * @return string
    */
-  public static function upperCase(string $input) : string
+  public static function upperCase(string $input): string
   {
     return strtoupper($input);
   }
@@ -50,7 +50,7 @@ class StringUtils
    * @param string $input
    * @return string
    */
-  public static function keepAlphaCharactersAndSpaces(string $input) : string
+  public static function keepAlphaCharactersAndSpaces(string $input): string
   {
     return preg_replace('/[^A-Za-z ]/', '', $input);
   }
@@ -61,7 +61,7 @@ class StringUtils
    * @param string $input
    * @return string
    */
-  public static function transliterate(string $input) : string
+  public static function transliterate(string $input): string
   {
     $transliterator = new PhpTransliteration();
     $response = $transliterator->transliterate($input);
@@ -74,7 +74,7 @@ class StringUtils
    * @param string $input
    * @return string
    */
-  public static function camelize(string $input) : string
+  public static function camelize(string $input): string
   {
     return Stringy::camelize($input);
   }
@@ -85,7 +85,7 @@ class StringUtils
    * @param string $input
    * @return string
    */
-  public static function dasherize(string $input) : string
+  public static function dasherize(string $input): string
   {
     return Stringy::dasherize($input);
   }
@@ -96,7 +96,7 @@ class StringUtils
    * @param string $input
    * @return string
    */
-  public static function underscore(string $input) : string
+  public static function underscore(string $input): string
   {
     return Stringy::underscored($input);
   }
@@ -107,7 +107,7 @@ class StringUtils
    * @param string $string
    * @return boolean
    */
-  public static function hasSpaces(string $string) : bool
+  public static function hasSpaces(string $string): bool
   {
     return preg_match('/\s/', $string);
   }
@@ -119,7 +119,7 @@ class StringUtils
    * @param string $needle
    * @return boolean
    */
-  public static function contains(string $haystack, string $needle) : bool
+  public static function contains(string $haystack, string $needle): bool
   {
     return strpos($haystack, $needle) !== false;
   }
@@ -130,7 +130,7 @@ class StringUtils
    * @param string $text
    * @return boolean
    */
-  public static function hasNumber(string $text) : bool
+  public static function hasNumber(string $text): bool
   {
     return preg_match('/\d/', $text) > 0;
   }
@@ -141,7 +141,7 @@ class StringUtils
    * @param string $string
    * @return boolean
    */
-  public static function isAlphaNumericWithoutSpaces(string $string) : bool
+  public static function isAlphaNumericWithoutSpaces(string $string): bool
   {
     return preg_match('/^[a-z0-9 .\-]+$/i', $string);
   }
@@ -151,14 +151,18 @@ class StringUtils
    *
    * @return string
    */
-  public static function generateUUID() : string
+  public static function generateUUID(): string
   {
-    return sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-        mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ),
-        mt_rand( 0, 0xffff ),
-        mt_rand( 0, 0x0fff ) | 0x4000,
-        mt_rand( 0, 0x3fff ) | 0x8000,
-        mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff )
+    return sprintf(
+      '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+      mt_rand(0, 0xffff),
+      mt_rand(0, 0xffff),
+      mt_rand(0, 0xffff),
+      mt_rand(0, 0x0fff) | 0x4000,
+      mt_rand(0, 0x3fff) | 0x8000,
+      mt_rand(0, 0xffff),
+      mt_rand(0, 0xffff),
+      mt_rand(0, 0xffff)
     );
   }
 
@@ -177,23 +181,18 @@ class StringUtils
     $s = 0;
     $i = 0;
 
-    while(is_integer($i))
-    {
+    while (is_integer($i)) {
       $i = mb_stripos($haystack, $needle, $s);
 
-      if(is_integer($i))
-      {
+      if (is_integer($i)) {
         $aStrPos[] = $i;
         $s = $i + mb_strlen($needle);
       }
     }
 
-    if(isset($aStrPos))
-    {
+    if (isset($aStrPos)) {
       return $aStrPos;
-    }
-    else
-    {
+    } else {
       return false;
     }
   }

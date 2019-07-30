@@ -6,7 +6,7 @@ use Drupal\spectrum\Serializer\JsonApiRootNode;
 use Drupal\spectrum\Serializer\JsonApiNode;
 use Drupal\spectrum\Serializer\JsonApiDataNode;
 use Drupal\spectrum\Model\Model;
-Use Drupal\spectrum\Utils\StringUtils;
+use Drupal\spectrum\Utils\StringUtils;
 
 use Drupal\spectrum\Models\File;
 use Drupal\spectrum\Models\Image;
@@ -24,7 +24,7 @@ trait ModelSerializerMixin
    *
    * @return array
    */
-  public static function getIgnoreFields() : array
+  public static function getIgnoreFields(): array
   {
     return [
       'type',
@@ -53,7 +53,10 @@ trait ModelSerializerMixin
       'field_meta_tags',
       'menu_link',
       'roles',
-      'reusable'
+      'reusable',
+      'rh_action',
+      'rh_redirect',
+      'rh_redirect_response'
     ];
   }
 
@@ -72,13 +75,11 @@ trait ModelSerializerMixin
     $fieldType = $fieldDefinition->getType();
     $fieldCardinality = $fieldDefinition->getFieldStorageDefinition()->getCardinality();
 
-    switch ($fieldType)
-    {
+    switch ($fieldType) {
       case 'address':
         $address = $this->entity->get($fieldName);
         $attribute = null;
-        if(!empty($address->country_code))
-        {
+        if (!empty($address->country_code)) {
           $attribute = new \stdClass();
           $attribute->{'countryCode'} = $address->country_code;
           $attribute->{'administrativeArea'} = $address->administrative_area;
@@ -109,20 +110,16 @@ trait ModelSerializerMixin
         $dateValue = null;
         $attributeValue = $this->entity->get($fieldName)->value;
 
-        if(!empty($attributeValue))
-        {
+        if (!empty($attributeValue)) {
           // We must figure out if this is a Date field or a datetime field
           // lets get the meta information of the field
           $fieldSettingsDatetimeType = $fieldDefinition->getItemDefinition()->getSettings()['datetime_type'];
-          if($fieldSettingsDatetimeType === 'date')
-          {
+          if ($fieldSettingsDatetimeType === 'date') {
             $dateValue = new \DateTime($attributeValue);
             $dateValue = $dateValue->format('Y-m-d');
-          }
-          else if($fieldSettingsDatetimeType === 'datetime')
-          {
+          } else if ($fieldSettingsDatetimeType === 'datetime') {
             $dateValue = new \DateTime($attributeValue);
-            $dateValue = $dateValue->format('Y-m-d\TH:i:s').'+00:00'; // we are returning as UTC
+            $dateValue = $dateValue->format('Y-m-d\TH:i:s') . '+00:00'; // we are returning as UTC
           }
         }
 
@@ -130,12 +127,11 @@ trait ModelSerializerMixin
         break;
       case 'decimal':
         $valueToSerialize = $this->entity->get($fieldName)->value;
-        $valueToSerialize = $valueToSerialize === NULL ? NULL : (double) $valueToSerialize;
+        $valueToSerialize = $valueToSerialize === NULL ? NULL : (float) $valueToSerialize;
         break;
       case 'entity_reference':
         // TODO: this is really hacky, we must consider finding a more performant solution than the one with the target_ids now
-        if(!empty($this->entity->get($fieldName)->entity))
-        {
+        if (!empty($this->entity->get($fieldName)->entity)) {
           // Lets figure out what the target-type is, in some cases, we just serialize the target_id (currency for example)
           // Becaue it is a ISO default
           $fieldObjectSettings = $fieldDefinition->getSettings();
@@ -145,18 +141,15 @@ trait ModelSerializerMixin
 
           // Lets also check the cardinality of the field (amount of references the field can contain)
           // If it is more than 1 item (or -1 in case of unlimited references), we must return an array
-          if($fieldCardinality !== 1)
-          {
+          if ($fieldCardinality !== 1) {
             $relationshipDataNode->asArray(true);
           }
 
           $idsThatHaveBeenset = [];
-          foreach($this->entity->get($fieldName) as $referencedEntity)
-          {
+          foreach ($this->entity->get($fieldName) as $referencedEntity) {
             $target_id = $referencedEntity->target_id;
 
-            if(!array_key_exists($target_id, $idsThatHaveBeenset))
-            {
+            if (!array_key_exists($target_id, $idsThatHaveBeenset)) {
               $idsThatHaveBeenset[$target_id] = $target_id;
               $relationshipNode = new JsonApiNode();
               $relationshipNode->setId($referencedEntity->target_id);
@@ -165,14 +158,11 @@ trait ModelSerializerMixin
               $targetBundle = $referencedEntity->entity->bundle();
               $targetEntityType = $referencedEntity->entity->getEntityType()->id();
 
-              if(Model::hasModelClassForEntityAndBundle($targetEntityType, $targetBundle))
-              {
+              if (Model::hasModelClassForEntityAndBundle($targetEntityType, $targetBundle)) {
                 $targetModelClass = Model::getModelClassForEntityAndBundle($targetEntityType, $targetBundle);
 
                 $relationshipNode->setType($targetModelClass::getSerializationType());
-              }
-              else
-              {
+              } else {
                 // nothing found. Lets use the bundle
                 $relationshipNode->setType($referencedEntity->entity->bundle());
               }
@@ -181,19 +171,15 @@ trait ModelSerializerMixin
             }
           }
 
-          if(!empty($fieldObjectSettings) && array_key_exists('target_type', $fieldObjectSettings) && $fieldObjectSettings['target_type'] === 'currency')
-          {
+          if (!empty($fieldObjectSettings) && array_key_exists('target_type', $fieldObjectSettings) && $fieldObjectSettings['target_type'] === 'currency') {
             $valueToSerialize = $referencedEntity->target_id;
-          }
-          else
-          {
+          } else {
             $valueToSerialize = $relationshipDataNode;
           }
         }
         break;
       case 'file':
-        if(!empty($this->entity->get($fieldName)->entity))
-        {
+        if (!empty($this->entity->get($fieldName)->entity)) {
           $fileModel = new File($this->entity->get($fieldName)->entity); // TODO File/Image model fix
           $jsonapinode = $fileModel->getJsonApiNode();
 
@@ -208,16 +194,13 @@ trait ModelSerializerMixin
           // TODO: add URL like image
 
           $valueToSerialize = $attribute;
-        }
-        else
-        {
+        } else {
           $valueToSerialize = null;
         }
         break;
       case 'geolocation':
         $attribute = null;
-        if(!empty($this->entity->get($fieldName)->lat))
-        {
+        if (!empty($this->entity->get($fieldName)->lat)) {
           $attribute = new \stdClass();
           $attribute->lat = (float) $this->entity->get($fieldName)->lat;
           $attribute->lng = (float) $this->entity->get($fieldName)->lng;
@@ -227,25 +210,19 @@ trait ModelSerializerMixin
       case 'integer':
         $fieldValue = $this->entity->get($fieldName)->value;
 
-        if($fieldValue === NULL)
-        {
+        if ($fieldValue === NULL) {
           $valueToSerialize = NULL;
-        }
-        else
-        {
+        } else {
           $valueToSerialize = (int) $fieldValue;
         }
 
         break;
       case 'image':
-        if($fieldCardinality !== 1)
-        {
+        if ($fieldCardinality !== 1) {
           $valueToSerialize = [];
 
-          foreach($this->entity->get($fieldName) as $fieldValue)
-          {
-            if(!empty($fieldValue->entity))
-            {
+          foreach ($this->entity->get($fieldName) as $fieldValue) {
+            if (!empty($fieldValue->entity)) {
               $imageModel = Image::forgeByEntity($fieldValue->entity);
               $jsonapinode = $imageModel->getJsonApiNode();
 
@@ -265,11 +242,8 @@ trait ModelSerializerMixin
               $valueToSerialize[] = $attribute;
             }
           }
-        }
-        else
-        {
-          if(!empty($this->entity->get($fieldName)->entity))
-          {
+        } else {
+          if (!empty($this->entity->get($fieldName)->entity)) {
             $imageModel = Image::forgeByEntity($this->entity->get($fieldName)->entity);
             $jsonapinode = $imageModel->getJsonApiNode();
 
@@ -287,9 +261,7 @@ trait ModelSerializerMixin
             $attribute->title = $this->entity->get($fieldName)->title;
 
             $valueToSerialize = $attribute;
-          }
-          else
-          {
+          } else {
             $valueToSerialize = null;
           }
         }
@@ -297,13 +269,13 @@ trait ModelSerializerMixin
         break;
       case 'json':
         $valueToSerialize = json_decode($this->entity->get($fieldName)->value);
-      break;
+        break;
       case 'link':
         $valueToSerialize = $this->entity->get($fieldName)->uri;
         break;
       case 'metatag':
         $meta = $this->entity->get($fieldName)->value;
-        if(!empty($meta)){
+        if (!empty($meta)) {
           $meta = unserialize($meta);
           $value = new \stdClass();
           // Now we render the tokens
@@ -312,10 +284,8 @@ trait ModelSerializerMixin
             'node' => $this->entity
           ];
           // Loop over all meta information
-          foreach($meta as $key => $metaValue)
-          {
-            if(is_string($metaValue))
-            {
+          foreach ($meta as $key => $metaValue) {
+            if (is_string($metaValue)) {
               $value->$key = strip_tags($token->replace($metaValue, $data));
             }
           }
@@ -329,18 +299,14 @@ trait ModelSerializerMixin
         //$node->addAttribute('url', file_create_url($this->entity->get($fieldName)->value));
         break;
       default:
-        if($fieldCardinality !== 1)
-        {
+        if ($fieldCardinality !== 1) {
           // More than 1 value allowed in the field
           $value = [];
           $fieldValues = $this->entity->get($fieldName);
-          foreach($fieldValues as $fieldValue)
-          {
+          foreach ($fieldValues as $fieldValue) {
             $value[] = $fieldValue->value;
           }
-        }
-        else
-        {
+        } else {
           $value = $this->entity->get($fieldName)->value;
         }
 
@@ -358,19 +324,13 @@ trait ModelSerializerMixin
 
     $valueToSerialize = $this->getValueToSerialize($fieldName, $fieldDefinition);
 
-    if($fieldType === 'entity_reference')
-    {
-      if(!empty($fieldObjectSettings) && array_key_exists('target_type', $fieldObjectSettings) && $fieldObjectSettings['target_type'] === 'currency')
-      {
+    if ($fieldType === 'entity_reference') {
+      if (!empty($fieldObjectSettings) && array_key_exists('target_type', $fieldObjectSettings) && $fieldObjectSettings['target_type'] === 'currency') {
         $node->addAttribute($fieldNamePretty, $valueToSerialize);
-      }
-      else
-      {
+      } else {
         $node->addRelationship($fieldNamePretty, $valueToSerialize);
       }
-    }
-    else
-    {
+    } else {
       $node->addAttribute($fieldNamePretty, $valueToSerialize);
     }
   }
@@ -382,7 +342,7 @@ trait ModelSerializerMixin
    *
    * @return JsonApiNode
    */
-  public function getJsonApiNode() : JsonApiNode
+  public function getJsonApiNode(): JsonApiNode
   {
     $node = new JsonApiNode();
 
@@ -390,32 +350,26 @@ trait ModelSerializerMixin
     $fieldToPrettyMapping = static::getFieldsToPrettyFieldsMapping();
     $fieldDefinitions = static::getFieldDefinitions();
 
-    foreach($fieldDefinitions as $fieldName => $fieldDefinition)
-    {
+    foreach ($fieldDefinitions as $fieldName => $fieldDefinition) {
       // First let's check the manual fields
-      if($fieldName === 'type')
-      {
+      if ($fieldName === 'type') {
         // Disabled for now, we use the type of the model
         //$node->setType(StringUtils::dasherize($this->entity->get($fieldName)->target_id));
         continue;
-      }
-      else if($fieldName === static::getIdField())
-      {
+      } else if ($fieldName === static::getIdField()) {
         $node->setId($this->entity->get($fieldName)->value);
         continue;
       }
 
       // Now we'll check the other fields
-      if(!in_array($fieldName, $ignoreFields) && static::currentUserHasFieldPermission($fieldName, 'view'))
-      {
+      if (!in_array($fieldName, $ignoreFields) && static::currentUserHasFieldPermission($fieldName, 'view')) {
         $fieldNamePretty = $fieldToPrettyMapping[$fieldName];
         $this->serializeField($fieldName, $fieldNamePretty, $fieldDefinition, $node);
       }
     }
 
     // some entity types don't have a type field, we must rely on static definitions
-    if(!$node->hasType())
-    {
+    if (!$node->hasType()) {
       // some entity types don't have a bundle (user for example) so we must rely on the entity type itself
       $node->setType(static::getSerializationType());
     }
@@ -428,7 +382,7 @@ trait ModelSerializerMixin
    *
    * @return \stdClass
    */
-  public function serialize() : \stdClass
+  public function serialize(): \stdClass
   {
     $root = new JsonApiRootNode();
     $node = $this->getJsonApiNode();
@@ -443,7 +397,7 @@ trait ModelSerializerMixin
    *
    * @return array
    */
-  public static function getTypePrettyFieldToFieldsMapping() : array
+  public static function getTypePrettyFieldToFieldsMapping(): array
   {
     $mapping = [];
     $mapping['address'] = [];
@@ -464,16 +418,14 @@ trait ModelSerializerMixin
    *
    * @return array
    */
-  public static function getTypeFieldToPrettyFielsMapping() : array
+  public static function getTypeFieldToPrettyFielsMapping(): array
   {
     $prettyMapping = static::getTypePrettyFieldToFieldsMapping();
     $mapping = [];
 
-    foreach($prettyMapping as $type => $prettyFieldsMapping)
-    {
+    foreach ($prettyMapping as $type => $prettyFieldsMapping) {
       $mapping[$type] = [];
-      foreach($prettyFieldsMapping as $prettyField => $localField)
-      {
+      foreach ($prettyFieldsMapping as $prettyField => $localField) {
         $mapping[$type][$localField] = $prettyField;
       }
     }
@@ -488,19 +440,15 @@ trait ModelSerializerMixin
    *
    * @return array
    */
-  public static function getPrettyFieldsToFieldsMapping() : array
+  public static function getPrettyFieldsToFieldsMapping(): array
   {
     $mapping = [];
     $fieldList = static::getFieldDefinitions();
 
-    foreach($fieldList as $key => $value)
-    {
-      if($key !== 'title')
-      {
+    foreach ($fieldList as $key => $value) {
+      if ($key !== 'title') {
         $fieldnamepretty = trim(trim(StringUtils::dasherize(str_replace('field_', '', $key)), '-'));
-      }
-      else
-      {
+      } else {
         $fieldnamepretty = 'name';
       }
 
@@ -515,13 +463,12 @@ trait ModelSerializerMixin
    *
    * @return void
    */
-  public static function getFieldsToPrettyFieldsMapping() : array
+  public static function getFieldsToPrettyFieldsMapping(): array
   {
     $prettyMapping = static::getPrettyFieldsToFieldsMapping();
 
     $mapping = [];
-    foreach($prettyMapping as $pretty => $field)
-    {
+    foreach ($prettyMapping as $pretty => $field) {
       $mapping[$field] = $pretty;
     }
 
@@ -534,13 +481,12 @@ trait ModelSerializerMixin
    * @param string $prettyField
    * @return string|null
    */
-  public static function getFieldForPrettyField(string $prettyField) : ?string
+  public static function getFieldForPrettyField(string $prettyField): ?string
   {
     $field = null;
     $prettyToFieldsMap = static::getPrettyFieldsToFieldsMapping();
 
-    if(array_key_exists($prettyField, $prettyToFieldsMap))
-    {
+    if (array_key_exists($prettyField, $prettyToFieldsMap)) {
       $field = $prettyToFieldsMap[$prettyField];
     }
 
@@ -553,13 +499,12 @@ trait ModelSerializerMixin
    * @param string $field
    * @return string|null
    */
-  public static function getPrettyFieldForField(string $field) : ? string
+  public static function getPrettyFieldForField(string $field): ?string
   {
     $prettymapping = static::getFieldsToPrettyFieldsMapping();
     $prettyField = null;
 
-    if(array_key_exists($field, $prettymapping))
-    {
+    if (array_key_exists($field, $prettymapping)) {
       $prettyField = $prettymapping[$field];
     }
 
@@ -572,7 +517,7 @@ trait ModelSerializerMixin
    * @param string $prettyField
    * @return boolean
    */
-  public static function prettyFieldExists(string $prettyField) : bool
+  public static function prettyFieldExists(string $prettyField): bool
   {
     $field = static::getFieldForPrettyField($prettyField);
     return !empty($field);
@@ -588,9 +533,8 @@ trait ModelSerializerMixin
   public static function currentUserHasFieldPermission(
     string $field,
     string $access
-  ) : bool {
+  ): bool {
     return User::loggedInUser()
       ->hasFieldPermission(get_called_class(), $field, $access);
   }
-
 }

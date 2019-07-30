@@ -48,7 +48,7 @@ class Email
    * @param string $email
    * @return Email
    */
-  public function addTo(string $email) : Email
+  public function addTo(string $email): Email
   {
     $this->toAddresses[] = $email;
     return $this;
@@ -60,7 +60,7 @@ class Email
    * @param string $email
    * @return Email
    */
-  public function setFrom(string $email) : Email
+  public function setFrom(string $email): Email
   {
     $this->fromAddress = $email;
     return $this;
@@ -72,7 +72,7 @@ class Email
    * @param string $name
    * @return Email
    */
-  public function setFromName(string $name) : Email
+  public function setFromName(string $name): Email
   {
     $this->fromName = $name;
     return $this;
@@ -84,7 +84,7 @@ class Email
    * @param string $email
    * @return Email
    */
-  public function setReplyTo(string $email) : Email
+  public function setReplyTo(string $email): Email
   {
     $this->replyTo = $email;
     return $this;
@@ -96,7 +96,7 @@ class Email
    * @param EmailTemplate $template
    * @return Email
    */
-  public function setTemplate(EmailTemplate $template) : Email
+  public function setTemplate(EmailTemplate $template): Email
   {
     $this->template = $template;
     return $this;
@@ -105,7 +105,7 @@ class Email
   /**
    * @return string
    */
-  public function getHtml() : string
+  public function getHtml(): string
   {
     return $this->template->render()->getRenderedHtml();
   }
@@ -113,7 +113,7 @@ class Email
   /**
    * @return string
    */
-  public function getText() : string
+  public function getText(): string
   {
     return $this->template->render()->getRenderedText();
   }
@@ -122,7 +122,7 @@ class Email
    * @return \Drupal\spectrum\Email\Email
    * @throws \Drupal\spectrum\Exceptions\EmailException
    */
-  public function send() : Email
+  public function send(): Email
   {
     // Get environment variables
     $template = $this->template;
@@ -133,14 +133,11 @@ class Email
     $emailProvider = $config->get('email_provider');
 
     // Depending on the Email provider, we do something else
-    try
-    {
-      if($emailProvider === 'sendgrid')
-      {
+    try {
+      if ($emailProvider === 'sendgrid') {
         $sendGridKey = $config->get('sendgrid_api_key');
 
-        if (empty($sendGridKey))
-        {
+        if (empty($sendGridKey)) {
           throw new EmailException('SendGrid API Key blank.');
         }
 
@@ -161,25 +158,20 @@ class Email
         // And finally send the email
         $client = new \SendGrid($sendGridKey);
         $client->send($sendgridMessage);
-      }
-      else if($emailProvider === 'aws-ses')
-      {
+      } else if ($emailProvider === 'aws-ses') {
         $awsKey = $config->get('aws_ses_api_key');
         $awsSecret = $config->get('aws_ses_api_secret');
         $awsRegion = $config->get('aws_ses_region');
 
-        if (empty($awsKey))
-        {
+        if (empty($awsKey)) {
           throw new EmailException('AWS SES Key blank.');
         }
 
-        if (empty($awsSecret))
-        {
+        if (empty($awsSecret)) {
           throw new EmailException('AWS SES Secret blank.');
         }
 
-        if (empty($awsRegion))
-        {
+        if (empty($awsRegion)) {
           throw new EmailException('AWS SES Region blank.');
         }
 
@@ -197,7 +189,7 @@ class Email
         $fromName = $this->fromName;
         $replyTo = $this->replyTo;
 
-        $from = empty($fromName) ? $fromAddress : '"'.$fromName.'" <'.$fromAddress.'>';
+        $from = empty($fromName) ? $fromAddress : '"' . $fromName . '" <' . $fromAddress . '>';
         $payload = [];
         $payload['Destination'] = [
           'BccAddresses' => [],
@@ -222,21 +214,16 @@ class Email
         ];
         $payload['Source'] = $from;
 
-        if(!empty($replyTo))
-        {
+        if (!empty($replyTo)) {
           $payload['ReplyToAddresses'] = [$replyTo];
         }
 
         $client->sendEmail($payload);
-      }
-      else
-      {
+      } else {
         throw new EmailException('No email provider Selected');
       }
-    }
-    catch(\Aws\Ses\Exception\SesException $exc)
-    {
-      throw new EmailException('AWS Exception: '.$exc->getMessage());
+    } catch (\Aws\Ses\Exception\SesException $exc) {
+      throw new EmailException('AWS Exception: ' . $exc->getMessage());
     }
 
     return $this;

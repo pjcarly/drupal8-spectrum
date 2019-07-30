@@ -57,7 +57,7 @@ class JsonApiNode extends JsonApiBaseNode
    * @param string|int $id
    * @return JsonApiNode
    */
-  public function setId($id) : JsonApiNode
+  public function setId($id): JsonApiNode
   {
     $this->id = $id;
     return $this;
@@ -78,7 +78,7 @@ class JsonApiNode extends JsonApiBaseNode
    *
    * @return string
    */
-  public function getUniqueKey() : string
+  public function getUniqueKey(): string
   {
     return $this->getId() . $this->getType();
   }
@@ -90,7 +90,7 @@ class JsonApiNode extends JsonApiBaseNode
    * @param string $type
    * @return JsonApiNode
    */
-  public function setType(string $type) : JsonApiNode
+  public function setType(string $type): JsonApiNode
   {
     $this->type = $type;
     return $this;
@@ -101,7 +101,7 @@ class JsonApiNode extends JsonApiBaseNode
    *
    * @return string
    */
-  public function getType() : string
+  public function getType(): string
   {
     return $this->type;
   }
@@ -111,7 +111,7 @@ class JsonApiNode extends JsonApiBaseNode
    *
    * @return boolean
    */
-  public function hasType() : bool
+  public function hasType(): bool
   {
     return !empty($this->type);
   }
@@ -123,10 +123,9 @@ class JsonApiNode extends JsonApiBaseNode
    * @param JsonApiDataNode|null $node
    * @return JsonApiNode
    */
-  public function addRelationship(string $name, ?JsonApiDataNode $node)  : JsonApiNode
+  public function addRelationship(string $name, ?JsonApiDataNode $node): JsonApiNode
   {
-    if(empty($this->relationships))
-    {
+    if (empty($this->relationships)) {
       $this->relationships = [];
     }
 
@@ -141,10 +140,9 @@ class JsonApiNode extends JsonApiBaseNode
    * @param mixed $attribute
    * @return JsonApiNode
    */
-  public function addAttribute(string $name, $attribute) : JsonApiNode
+  public function addAttribute(string $name, $attribute): JsonApiNode
   {
-    if(empty($this->attributes))
-    {
+    if (empty($this->attributes)) {
       $this->attributes = [];
     }
 
@@ -158,10 +156,9 @@ class JsonApiNode extends JsonApiBaseNode
    * @param string $name
    * @return JsonApiNode
    */
-  public function removeAttribute(string $name) : JsonApiNode
+  public function removeAttribute(string $name): JsonApiNode
   {
-    if(!empty($name) && array_key_exists($name, $this->attributes))
-    {
+    if (!empty($name) && array_key_exists($name, $this->attributes)) {
       unset($this->attributes[$name]);
     }
 
@@ -175,10 +172,9 @@ class JsonApiNode extends JsonApiBaseNode
    * @param string $newName The new name of the attribute, this will be the new key in the serialized hash
    * @return JsonApiNode
    */
-  public function renameAttribute(string $oldName, string $newName) : JsonApiNode
+  public function renameAttribute(string $oldName, string $newName): JsonApiNode
   {
-    if(!empty($oldName) && !empty($newName) && array_key_exists($oldName, $this->attributes))
-    {
+    if (!empty($oldName) && !empty($newName) && array_key_exists($oldName, $this->attributes)) {
       $this->attributes[$newName] = $this->attributes[$oldName];
       unset($this->attributes[$oldName]);
     }
@@ -192,10 +188,9 @@ class JsonApiNode extends JsonApiBaseNode
    * @param string $name
    * @return JsonApiNode
    */
-  public function removeRelationship(string $name) : JsonApiNode
+  public function removeRelationship(string $name): JsonApiNode
   {
-    if(!empty($name) && array_key_exists($name, $this->relationships))
-    {
+    if (!empty($name) && array_key_exists($name, $this->relationships)) {
       unset($this->relationships[$name]);
     }
 
@@ -209,10 +204,9 @@ class JsonApiNode extends JsonApiBaseNode
    * @param string $newName The new name of the relationship, this will be the new key in the serialized hash
    * @return JsonApiNode
    */
-  public function renameRelationship(string $oldName, string $newName) : JsonApiNode
+  public function renameRelationship(string $oldName, string $newName): JsonApiNode
   {
-    if(!empty($oldName) && !empty($newName) && array_key_exists($oldName, $this->relationships))
-    {
+    if (!empty($oldName) && !empty($newName) && array_key_exists($oldName, $this->relationships)) {
       $this->relationships[$newName] = $this->relationships[$oldName];
       unset($this->attributes[$oldName]);
     }
@@ -228,8 +222,7 @@ class JsonApiNode extends JsonApiBaseNode
    */
   public function getAttribute(string $name)
   {
-    if($this->hasAttribute($name))
-    {
+    if ($this->hasAttribute($name)) {
       return $this->attributes[$name];
     }
   }
@@ -240,7 +233,7 @@ class JsonApiNode extends JsonApiBaseNode
    * @param string $name
    * @return boolean
    */
-  public function hasAttribute(string $name) : bool
+  public function hasAttribute(string $name): bool
   {
     return !empty($name) && array_key_exists($name, $this->attributes);
   }
@@ -250,7 +243,7 @@ class JsonApiNode extends JsonApiBaseNode
    *
    * @return array|null
    */
-  public function getAttributes() : ?array
+  public function getAttributes(): ?array
   {
     return $this->attributes;
   }
@@ -260,7 +253,7 @@ class JsonApiNode extends JsonApiBaseNode
    *
    * @return array|null
    */
-  public function getRelationships() : ?array
+  public function getRelationships(): ?array
   {
     return $this->relationships;
   }
@@ -271,10 +264,9 @@ class JsonApiNode extends JsonApiBaseNode
    * @param string $name
    * @return JsonApiDataNode|null
    */
-  public function getRelationship(string $name) : ?JsonApiDataNode
+  public function getRelationship(string $name): ?JsonApiDataNode
   {
-    if(!empty($name) && array_key_exists($name, $this->relationships))
-    {
+    if (!empty($name) && array_key_exists($name, $this->relationships)) {
       return $this->relationships[$name];
     }
 
@@ -286,31 +278,26 @@ class JsonApiNode extends JsonApiBaseNode
    *
    * @return \stdClass
    */
-  public function serialize() : \stdClass
+  public function serialize(): \stdClass
   {
     $serialized = new \stdClass();
 
-    if(!empty($this->links))
-    {
+    if (!empty($this->links)) {
       $serialized->links = $this->getSerializedLinks();
     }
 
     $serialized->id = $this->id;
     $serialized->type = $this->type;
 
-    if(!empty($this->attributes))
-    {
+    if (!empty($this->attributes)) {
       $serialized->attributes = $this->attributes;
     }
 
-    if(!empty($this->relationships))
-    {
+    if (!empty($this->relationships)) {
       $serializedRelationships = [];
-      foreach(array_keys($this->relationships) as $relationshipName)
-      {
+      foreach (array_keys($this->relationships) as $relationshipName) {
         $relationship = $this->relationships[$relationshipName];
-        if(!empty($relationship))
-        {
+        if (!empty($relationship)) {
           $serializedRelationships[$relationshipName] = $relationship->serialize();
         }
       }

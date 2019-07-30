@@ -17,7 +17,7 @@ class Order extends Model
    *
    * @return string
    */
-  public static function entityType() : string
+  public static function entityType(): string
   {
     return 'query';
   }
@@ -27,7 +27,7 @@ class Order extends Model
    *
    * @return string
    */
-  public static function bundle() : string
+  public static function bundle(): string
   {
     return 'order';
   }
@@ -45,7 +45,8 @@ class Order extends Model
   /**
    * @inheritDoc
    */
-  public static function getAccessPolicy(): AccessPolicyInterface {
+  public static function getAccessPolicy(): AccessPolicyInterface
+  {
     return new PublicAccessPolicy;
   }
 
@@ -54,7 +55,7 @@ class Order extends Model
    *
    * @return QueryOrder
    */
-  public function buildQueryOrder() : QueryOrder
+  public function buildQueryOrder(): QueryOrder
   {
     return new QueryOrder($this->entity->field_field->value, $this->entity->field_direction->value);
   }

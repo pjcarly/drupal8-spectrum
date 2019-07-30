@@ -10,26 +10,30 @@ use Drupal\spectrum\Model\Model;
  *
  * @package Drupal\spectrum\Permissions\AccessPolicy
  */
-class NoAccessPolicy implements AccessPolicyInterface {
+class NoAccessPolicy implements AccessPolicyInterface
+{
 
   /**
    * @inheritDoc
    */
-  public function onSave(Model $model): void {
+  public function onSave(Model $model): void
+  {
     // Do nothing.
   }
 
   /**
    * @inheritDoc
    */
-  public function onDelete(Model $model): void {
+  public function onDelete(Model $model): void
+  {
     // Do nothing.
   }
 
   /**
    * @inheritDoc
    */
-  public function onQuery(Select $query): Select {
+  public function onQuery(Select $query): Select
+  {
     $query->addExpression('1=0');
     return $query;
   }
@@ -37,8 +41,8 @@ class NoAccessPolicy implements AccessPolicyInterface {
   /**
    * @inheritDoc
    */
-  public function userHasAccess(Model $model, int $uid): bool {
+  public function userHasAccess(Model $model, int $uid): bool
+  {
     return FALSE;
   }
-
 }

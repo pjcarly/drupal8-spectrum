@@ -12,15 +12,15 @@ class UrlUtils
    *
    * @return string
    */
-  public static function getBaseURL() : string
+  public static function getBaseURL(): string
   {
     $request = \Drupal::request();
     $rootUrl = $request->getSchemeAndHttpHost() . base_path();
     $config = \Drupal::config('spectrum.settings');
 
-    if($rootUrl === 'http://default/') // Executed from CLI
+    if ($rootUrl === 'http://default/') // Executed from CLI
     {
-       $rootUrl = $config->get('default_base_path');
+      $rootUrl = $config->get('default_base_path');
     }
 
     return $rootUrl;

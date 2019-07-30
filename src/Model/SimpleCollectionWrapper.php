@@ -34,7 +34,7 @@ class SimpleCollectionWrapper implements \IteratorAggregate
    *
    * @return Collection
    */
-  public function getCollection() : Collection
+  public function getCollection(): Collection
   {
     return $this->collection;
   }
@@ -48,8 +48,7 @@ class SimpleCollectionWrapper implements \IteratorAggregate
   {
     $simpleModels = [];
 
-    foreach($this->collection as $key => $model)
-    {
+    foreach ($this->collection as $key => $model) {
       $simpleModels[$key] = new SimpleModelWrapper($model);
     }
 
@@ -64,14 +63,11 @@ class SimpleCollectionWrapper implements \IteratorAggregate
    */
   public function __get($property)
   {
-    if (property_exists($this->collection, $property))
-    {
+    if (property_exists($this->collection, $property)) {
       return $this->collection->$property;
-    }
-    else if(in_array($property, ['size', 'isEmpty', 'entities']))// lets check for pseudo properties
+    } else if (in_array($property, ['size', 'isEmpty', 'entities'])) // lets check for pseudo properties
     {
-      switch($property)
-      {
+      switch ($property) {
         case "size":
           return $this->collection->size();
           break;
@@ -82,9 +78,7 @@ class SimpleCollectionWrapper implements \IteratorAggregate
           return $this->collection->getEntities();
           break;
       }
-    }
-    else if($this->collection->hasRelationship($property))
-    {
+    } else if ($this->collection->hasRelationship($property)) {
       $collection = $this->collection->get($property);
       return new SimpleCollectionWrapper($collection);
     }

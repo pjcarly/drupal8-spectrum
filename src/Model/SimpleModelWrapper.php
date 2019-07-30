@@ -38,7 +38,7 @@ class SimpleModelWrapper
    *
    * @return Model
    */
-  public function getModel() : Model
+  public function getModel(): Model
   {
     return $this->model;
   }
@@ -56,8 +56,7 @@ class SimpleModelWrapper
     $prettyField = $model::getPrettyFieldForUnderscoredField($underscoredField);
     $prettyFieldsToFields = $model::getPrettyFieldsToFieldsMapping();
 
-    if(array_key_exists($prettyField, $prettyFieldsToFields))
-    {
+    if (array_key_exists($prettyField, $prettyFieldsToFields)) {
       $fieldName = $prettyFieldsToFields[$prettyField];
       $fieldDefinition = $model->entity->getFieldDefinition($fieldName);
 
@@ -65,7 +64,7 @@ class SimpleModelWrapper
       $returnValue = '';
 
       // TODO: add support for field cardinality
-      switch($fieldType){
+      switch ($fieldType) {
         case 'autonumber':
           $returnValue = (int) $model->entity->get($fieldName)->value;
           break;
@@ -73,18 +72,17 @@ class SimpleModelWrapper
           $returnValue = ($model->entity->get($fieldName)->value === '1');
           break;
         case 'decimal':
-          $returnValue = (double) $model->entity->get($fieldName)->value;
+          $returnValue = (float) $model->entity->get($fieldName)->value;
           break;
         case 'geolocation':
           $lat = (float) $model->entity->get($fieldName)->lat;
           $lng = (float) $model->entity->get($fieldName)->lng;
 
-          $returnValue = $lat.','.$lng;
+          $returnValue = $lat . ',' . $lng;
           break;
         case 'entity_reference':
           $fieldObjectSettings = $fieldDefinition->getSettings();
-          if(!empty($fieldObjectSettings) && array_key_exists('target_type', $fieldObjectSettings) && $fieldObjectSettings['target_type'] === 'currency')
-          {
+          if (!empty($fieldObjectSettings) && array_key_exists('target_type', $fieldObjectSettings) && $fieldObjectSettings['target_type'] === 'currency') {
             $returnValue = $model->entity->get($fieldName)->target_id;
           }
 
@@ -92,16 +90,14 @@ class SimpleModelWrapper
         case 'image':
           $fileId = $model->entity->get($fieldName)->target_id;
 
-          if(!empty($fileId))
-          {
+          if (!empty($fileId)) {
             $returnValue = Image::forgeById($fileId);
           }
           break;
         case 'file':
           $fileId = $model->entity->get($fieldName)->target_id;
 
-          if(!empty($fileId))
-          {
+          if (!empty($fileId)) {
             $returnValue = File::forgeById($fileId);
             // TODO File/Image model fix
             $returnValue = new File($returnValue->entity);
@@ -130,19 +126,15 @@ class SimpleModelWrapper
           $dateValue = null;
           $attributeValue = $model->entity->get($fieldName)->value;
 
-          if(!empty($attributeValue))
-          {
+          if (!empty($attributeValue)) {
             // We must figure out if this is a Date field or a datetime field
             // lets get the meta information of the field
             $fieldSettingsDatetimeType = $fieldDefinition
               ->getItemDefinition()
               ->getSettings()['datetime_type'];
-            if($fieldSettingsDatetimeType === 'date')
-            {
+            if ($fieldSettingsDatetimeType === 'date') {
               $dateValue = new \DateTime($attributeValue);
-            }
-            else if($fieldSettingsDatetimeType === 'datetime')
-            {
+            } else if ($fieldSettingsDatetimeType === 'datetime') {
               $dateValue = new \DateTime(
                 $attributeValue,
                 new \DateTimeZone(DateTimeItemInterface::STORAGE_TIMEZONE)
@@ -158,9 +150,7 @@ class SimpleModelWrapper
       }
 
       return $returnValue;
-    }
-    else
-    {
+    } else {
       throw new InvalidFieldException();
     }
   }
@@ -175,59 +165,39 @@ class SimpleModelWrapper
   {
     $model = $this->model;
 
-    if(array_key_exists($property, $model->relatedViaFieldOnEntity)) // lets check for pseudo properties
+    if (array_key_exists($property, $model->relatedViaFieldOnEntity)) // lets check for pseudo properties
     {
       $object = $model->relatedViaFieldOnEntity[$property];
 
-      if($object instanceof Model)
-      {
+      if ($object instanceof Model) {
         return new SimpleModelWrapper($object);
-      }
-      else if($object instanceof Collection)
-      {
+      } else if ($object instanceof Collection) {
         return new SimpleCollectionWrapper($object);
-      }
-      else
-      {
+      } else {
         return null;
       }
-    }
-    else if(array_key_exists($property, $model->relatedViaFieldOnExternalEntity)) // lets check for pseudo properties
+    } else if (array_key_exists($property, $model->relatedViaFieldOnExternalEntity)) // lets check for pseudo properties
     {
       $object = $model->relatedViaFieldOnExternalEntity[$property];
 
-      if($object instanceof Model)
-      {
+      if ($object instanceof Model) {
         return new SimpleModelWrapper($object);
-      }
-      else if($object instanceof Collection)
-      {
+      } else if ($object instanceof Collection) {
         return new SimpleCollectionWrapper($object);
-      }
-      else
-      {
+      } else {
         return null;
       }
-    }
-    else if($model::underScoredFieldExists($property))
-    {
-      try
-      {
+    } else if ($model::underScoredFieldExists($property)) {
+      try {
         $value = $this->getValue($property);
         return $value;
+      } catch (InvalidFieldException $exception) {
+        \Drupal::logger('Spectrum')->error('Property ' . $property . ' does not exist on modelclass ' . get_called_class());
       }
-      catch (InvalidFieldException $exception)
-      {
-        \Drupal::logger('Spectrum')->error('Property '.$property.' does not exist on modelclass '.get_called_class());
-      }
-    }
-    else if(property_exists($model, $property))
-    {
+    } else if (property_exists($model, $property)) {
       $returnValue = $model->{$property};
       return $returnValue;
-    }
-    else if(Model::getterExists($model, $property))
-    {
+    } else if (Model::getterExists($model, $property)) {
       return $model->callGetter($property);
     }
   }

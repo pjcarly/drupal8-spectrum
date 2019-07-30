@@ -45,7 +45,7 @@ class Order
    *
    * @return  string
    */
-  public function getFieldName() : string
+  public function getFieldName(): string
   {
     return $this->fieldName;
   }
@@ -55,7 +55,7 @@ class Order
    *
    * @return  string
    */
-  public function getDirection() : string
+  public function getDirection(): string
   {
     return $this->direction;
   }
@@ -65,7 +65,7 @@ class Order
    *
    * @return  string
    */
-  public function getLangcode() : ?string
+  public function getLangcode(): ?string
   {
     return $this->langcode;
   }

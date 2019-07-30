@@ -1,4 +1,5 @@
 <?php
+
 namespace Drupal\spectrum\Model;
 
 use Drupal\spectrum\Query\Query;
@@ -33,7 +34,7 @@ class Collection implements \IteratorAggregate, \Countable
    *
    * @return Model[]
    */
-  public function getModels() : array
+  public function getModels(): array
   {
     return $this->models;
   }
@@ -43,7 +44,7 @@ class Collection implements \IteratorAggregate, \Countable
    *
    * @return Model[]
    */
-  public function getOriginalModels() : array
+  public function getOriginalModels(): array
   {
     return $this->originalModels;
   }
@@ -76,17 +77,15 @@ class Collection implements \IteratorAggregate, \Countable
    * @param [type] $newKey
    * @return Collection
    */
-  public function replaceOldModelKey($oldKey, $newKey) : Collection
+  public function replaceOldModelKey($oldKey, $newKey): Collection
   {
-    if(array_key_exists($oldKey, $this->models))
-    {
+    if (array_key_exists($oldKey, $this->models)) {
       $model = $this->models[$oldKey];
       unset($this->models[$oldKey]);
       $this->models[$newKey] = $model;
     }
 
-    if(array_key_exists($oldKey, $this->originalModels))
-    {
+    if (array_key_exists($oldKey, $this->originalModels)) {
       $originalModel = $this->originalModels[$oldKey];
       unset($this->originalModels[$oldKey]);
       $this->originalModels[$newKey] = $originalModel;
@@ -101,22 +100,17 @@ class Collection implements \IteratorAggregate, \Countable
    * @param string $relationshipName
    * @return Collection
    */
-  public function save(string $relationshipName = NULL) : Collection
+  public function save(string $relationshipName = NULL): Collection
   {
-    if(empty($relationshipName))
-    {
-      foreach($this->models as $model)
-      {
+    if (empty($relationshipName)) {
+      foreach ($this->models as $model) {
         $model->save();
       }
 
-      foreach($this->getModelsToDelete() as $modelToDelete)
-      {
+      foreach ($this->getModelsToDelete() as $modelToDelete) {
         $modelToDelete->delete();
       }
-    }
-    else
-    {
+    } else {
       $this->get($relationshipName)->save();
     }
 
@@ -130,10 +124,9 @@ class Collection implements \IteratorAggregate, \Countable
    * @param String[] $languageCodes an array containing the languagecodes you want to load on the entity
    * @return Collection
    */
-  public function loadTranslation(array $languageCodes) : Collection
+  public function loadTranslation(array $languageCodes): Collection
   {
-    foreach($this->models as $model)
-    {
+    foreach ($this->models as $model) {
       $model->loadTranslation($languageCodes);
     }
 
@@ -146,7 +139,7 @@ class Collection implements \IteratorAggregate, \Countable
    * @param string $sortingFunction
    * @return Collection
    */
-  public function sort(string $sortingFunction) : Collection
+  public function sort(string $sortingFunction): Collection
   {
     // Bug in PHP causes PHP warnings for uasort, we surpressed warnings with @, but be weary!
     @uasort($this->models, [$this->modelType, $sortingFunction]);
@@ -158,16 +151,14 @@ class Collection implements \IteratorAggregate, \Countable
    *
    * @return array
    */
-  public function getModelsToDelete() : array
+  public function getModelsToDelete(): array
   {
     $existingRemovedModels = [];
     $removedModelKeys = array_diff(array_keys($this->originalModels), array_keys($this->models));
 
-    foreach($removedModelKeys as $removedModelKey)
-    {
+    foreach ($removedModelKeys as $removedModelKey) {
       $removedModel = $this->originalModels[$removedModelKey];
-      if(!$removedModel->isNew())
-      {
+      if (!$removedModel->isNew()) {
         $existingRemovedModels[$removedModel->key] = $removedModel;
       }
     }
@@ -182,10 +173,9 @@ class Collection implements \IteratorAggregate, \Countable
    * @param string $key
    * @return Collection
    */
-  public function remove($key) : Collection
+  public function remove($key): Collection
   {
-    if(array_key_exists($key, $this->models))
-    {
+    if (array_key_exists($key, $this->models)) {
       unset($this->models[$key]);
     }
 
@@ -198,7 +188,7 @@ class Collection implements \IteratorAggregate, \Countable
    * @param Model $model
    * @return Collection
    */
-  public function removeModel(Model $model) : Collection
+  public function removeModel(Model $model): Collection
   {
     return $this->remove($model->key);
   }
@@ -208,7 +198,7 @@ class Collection implements \IteratorAggregate, \Countable
    *
    * @return Collection
    */
-  public function removeAll() : Collection
+  public function removeAll(): Collection
   {
     $this->models = [];
 
@@ -220,13 +210,11 @@ class Collection implements \IteratorAggregate, \Countable
    *
    * @return Collection
    */
-  public function removeNonSelectedModels() : Collection
+  public function removeNonSelectedModels(): Collection
   {
     /** @var Model $model */
-    foreach($this->models as $model)
-    {
-      if(!$model->selected)
-      {
+    foreach ($this->models as $model) {
+      if (!$model->selected) {
         $this->removeModel($model);
       }
     }
@@ -240,27 +228,20 @@ class Collection implements \IteratorAggregate, \Countable
    * @param string $relationshipName
    * @return Validation
    */
-  public function validate(string $relationshipName = NULL) : Validation
+  public function validate(string $relationshipName = NULL): Validation
   {
-    if(empty($relationshipName))
-    {
+    if (empty($relationshipName)) {
       $validation = null;
-      foreach($this->models as $model)
-      {
-        if(empty($validation))
-        {
+      foreach ($this->models as $model) {
+        if (empty($validation)) {
           $validation = $model->validate();
-        }
-        else
-        {
+        } else {
           $validation->merge($model->validate());
         }
       }
 
       return $validation;
-    }
-    else
-    {
+    } else {
       return $this->get($relationshipName)->validate();
     }
   }
@@ -271,10 +252,9 @@ class Collection implements \IteratorAggregate, \Countable
    * @param string $relationshipName
    * @return Collection
    */
-  public function clear(string $relationshipName) : Collection
+  public function clear(string $relationshipName): Collection
   {
-    foreach($this->models as $model)
-    {
+    foreach ($this->models as $model) {
       /** @var Model $model */
       $model->clear($relationshipName);
     }
@@ -289,52 +269,45 @@ class Collection implements \IteratorAggregate, \Countable
    * @param Query $queryToCopyFrom (optional) add a query to fetch, to limit the amount of results when fetching, all base conditions, conditions and conditiongroups will be add to the fetch query
    * @return Collection the fetched relationship
    */
-  public function fetch(string $relationshipName, ?Query $queryToCopyFrom = null) : Collection
+  public function fetch(string $relationshipName, ?Query $queryToCopyFrom = null): Collection
   {
     $returnValue = null;
     $lastRelationshipNameIndex = strrpos($relationshipName, '.');
 
-    if(empty($lastRelationshipNameIndex)) // relationship name without extra relationships
+    if (empty($lastRelationshipNameIndex)) // relationship name without extra relationships
     {
       $modelType = $this->getModelType();
       $relationship = $modelType::getRelationship($relationshipName);
       $relationshipQuery = $relationship->getRelationshipQuery();
 
       // Lets see if we need to copy in some default conditions
-      if(!empty($queryToCopyFrom))
-      {
+      if (!empty($queryToCopyFrom)) {
         $relationshipQuery->copyConditionsFrom($queryToCopyFrom);
       }
 
       $relationshipCondition = $relationship->getCondition();
 
-      if($relationship instanceof FieldRelationship)
-      {
+      if ($relationship instanceof FieldRelationship) {
         $fieldIds = $this->getFieldIds($relationship);
-        if(!empty($fieldIds))
-        {
+        if (!empty($fieldIds)) {
           // we set the field ids in the condition, and fetch a collection of models with that id in a field
           $relationshipCondition->value = $fieldIds;
           $relationshipQuery->addCondition($relationshipCondition);
           $referencedEntities = $relationshipQuery->fetch();
 
-          if(!empty($referencedEntities))
-          {
+          if (!empty($referencedEntities)) {
             // Here we will build a collection of the entities we fetched
             $referencedModelType = null;
             $referencedRelationship = null; // the inverse relationship
             $referencedCollection = null;
-            foreach($referencedEntities as $referencedEntity)
-            {
+            foreach ($referencedEntities as $referencedEntity) {
               $referencedModel = null;
-              if($relationship->isPolymorphic || empty($referencedModelType))
-              {
+              if ($relationship->isPolymorphic || empty($referencedModelType)) {
                 // if the relationship is polymorphic we can get multiple bundles, so we must define the modeltype based on the bundle and entity of the current looping entity
                 // or if the related modeltype isn't set yet, we must set it once
                 $referencedEntityType = $referencedEntity->getEntityTypeId();
                 $referencedEntityBundle = null;
-                if(isset($referencedEntity->type->target_id))
-                {
+                if (isset($referencedEntity->type->target_id)) {
                   // with all entity references this shouldn't be a problem, however, in case of 'user', this is blank
                   // luckally we handle this correctly in getModelClassForEntityAndBundle
                   $referencedEntityBundle = $referencedEntity->type->target_id;
@@ -342,14 +315,10 @@ class Collection implements \IteratorAggregate, \Countable
                 $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
 
                 // lets also check if a collection has been made already, and if not, lets make one (keeping in mind polymorphic relationships)
-                if($referencedCollection == null)
-                {
-                  if($relationship->isPolymorphic)
-                  {
+                if ($referencedCollection == null) {
+                  if ($relationship->isPolymorphic) {
                     $referencedCollection = PolymorphicCollection::forgeNew(null);
-                  }
-                  else
-                  {
+                  } else {
                     $referencedCollection = Collection::forgeNew($referencedModelType);
                   }
                 }
@@ -365,46 +334,35 @@ class Collection implements \IteratorAggregate, \Countable
           }
         }
 
-        if(empty($returnValue))
-        {
-          if($relationship->isPolymorphic)
-          {
+        if (empty($returnValue)) {
+          if ($relationship->isPolymorphic) {
             $returnValue = PolymorphicCollection::forgeNew(null);
-          }
-          else
-          {
+          } else {
             $returnValue = Collection::forgeNew($relationship->modelType);
           }
         }
-      }
-      else if($relationship instanceof ReferencedRelationship)
-      {
+      } else if ($relationship instanceof ReferencedRelationship) {
         $modelIds = $this->getIds();
 
-        if(!empty($modelIds))
-        {
+        if (!empty($modelIds)) {
           $relationshipCondition->value = $modelIds;
           $relationshipQuery->addCondition($relationshipCondition);
 
           $referencingEntities = $relationshipQuery->fetch();
 
-          if(!empty($referencingEntities))
-          {
+          if (!empty($referencingEntities)) {
             $referencingCollection = null;
             $referencingModelType = null;
-            foreach($referencingEntities as $referencingEntity)
-            {
+            foreach ($referencingEntities as $referencingEntity) {
               $referencingModel = null;
-              if(empty($referencingModelType))
-              {
+              if (empty($referencingModelType)) {
                 // if the relationship is polymorphic we can get multiple bundles, so we must define the modeltype based on the bundle and entity of the current looping entity
                 // or if the referencing modeltype isn't set yet, we must set it once
                 $referencingEntityType = $referencingEntity->getEntityTypeId();
                 $referencingEntityBundle = $referencingEntity->type->target_id;
                 $referencingModelType = Model::getModelClassForEntityAndBundle($referencingEntityType, $referencingEntityBundle);
 
-                if($referencingCollection === null)
-                {
+                if ($referencingCollection === null) {
                   // referencedRelationships are never polymorphics
                   $referencingCollection = Collection::forgeNew($referencingModelType);
                 }
@@ -417,23 +375,19 @@ class Collection implements \IteratorAggregate, \Countable
             }
           }
 
-          if(!empty($referencingCollection))
-          {
+          if (!empty($referencingCollection)) {
             $this->putInverses($relationship, $referencingCollection);
           }
         }
 
-        if(empty($returnValue))
-        {
+        if (empty($returnValue)) {
           $returnValue = Collection::forgeNew($relationship->modelType);
         }
       }
-    }
-    else
-    {
+    } else {
       $secondToLastRelationshipName = substr($relationshipName, 0, $lastRelationshipNameIndex);
       $resultCollection = $this->get($secondToLastRelationshipName);
-      $lastRelationshipName = substr($relationshipName, $lastRelationshipNameIndex+1);
+      $lastRelationshipName = substr($relationshipName, $lastRelationshipNameIndex + 1);
       $returnValue = $resultCollection->fetch($lastRelationshipName, $queryToCopyFrom);
     }
 
@@ -445,16 +399,14 @@ class Collection implements \IteratorAggregate, \Countable
    *
    * @return array
    */
-  public function getIds() : array
+  public function getIds(): array
   {
     $models = $this->models;
 
     $ids = [];
-    foreach($models as $model)
-    {
+    foreach ($models as $model) {
       $id = $model->getId();
-      if(!empty($id))
-      {
+      if (!empty($id)) {
         $ids[$id] = $id;
       }
     }
@@ -468,22 +420,17 @@ class Collection implements \IteratorAggregate, \Countable
    * @param string $relationship
    * @return array
    */
-  public function getFieldIds(FieldRelationship $relationship) : array
+  public function getFieldIds(FieldRelationship $relationship): array
   {
     $fieldIds = [];
 
-    foreach($this->models as $model)
-    {
+    foreach ($this->models as $model) {
       /** @var Model $model */
       $fieldId = $model->getFieldId($relationship);
-      if(!empty($fieldId))
-      {
-        if(is_array($fieldId))
-        {
+      if (!empty($fieldId)) {
+        if (is_array($fieldId)) {
           $fieldIds = array_merge($fieldId, $fieldIds);
-        }
-        else
-        {
+        } else {
           $fieldIds[$fieldId] = $fieldId;
         }
       }
@@ -499,14 +446,13 @@ class Collection implements \IteratorAggregate, \Countable
    * @param string $fieldName
    * @return array
    */
-  public function buildArrayByFieldName(string $fieldName) : array
+  public function buildArrayByFieldName(string $fieldName): array
   {
     $modelType = $this->modelType;
     $fieldDefinition = $modelType::getFieldDefinition($fieldName);
     $column = null;
 
-    switch($fieldDefinition->getType())
-    {
+    switch ($fieldDefinition->getType()) {
       case 'address':
       case 'geolocation':
         throw new InvalidTypeException('You cant build an array by this field type');
@@ -525,8 +471,7 @@ class Collection implements \IteratorAggregate, \Countable
     }
 
     $array = [];
-    foreach($this->models as $model)
-    {
+    foreach ($this->models as $model) {
       $key = $model->entity->$fieldName->$column;
       $array[$key] = $model;
     }
@@ -540,7 +485,7 @@ class Collection implements \IteratorAggregate, \Countable
    * @param string|null $modelType
    * @return Collection
    */
-  public static function forgeNew(?string $modelType) : Collection
+  public static function forgeNew(?string $modelType): Collection
   {
     return static::forge($modelType, [], [], []);
   }
@@ -552,7 +497,7 @@ class Collection implements \IteratorAggregate, \Countable
    * @param array $ids
    * @return Collection
    */
-  public static function forgeByIds(?string $modelType, array $ids) : Collection
+  public static function forgeByIds(?string $modelType, array $ids): Collection
   {
     return static::forge($modelType, [], [], $ids);
   }
@@ -564,7 +509,7 @@ class Collection implements \IteratorAggregate, \Countable
    * @param array $models
    * @return Collection
    */
-  public static function forgeByModels(?string $modelType, array $models) : Collection
+  public static function forgeByModels(?string $modelType, array $models): Collection
   {
     return static::forge($modelType, $models, [], []);
   }
@@ -576,7 +521,7 @@ class Collection implements \IteratorAggregate, \Countable
    * @param array $entities
    * @return Collection
    */
-  public static function forgeByEntities(?string $modelType, array $entities) : Collection
+  public static function forgeByEntities(?string $modelType, array $entities): Collection
   {
     return static::forge($modelType, [], $entities, []);
   }
@@ -592,30 +537,27 @@ class Collection implements \IteratorAggregate, \Countable
    * @param ModelQuery $modelQuery
    * @return Collection
    */
-  private static function forge(string $modelType = null, ?array $models = [], ?array $entities = [], ?array $ids = [], ModelQuery $modelQuery = null) : Collection
+  private static function forge(string $modelType = null, ?array $models = [], ?array $entities = [], ?array $ids = [], ModelQuery $modelQuery = null): Collection
   {
     $collection = new static();
     $collection->modelType = $modelType;
 
-    if(is_array($ids) && !empty($ids))
-    {
+    if (is_array($ids) && !empty($ids)) {
       $entities = static::fetchEntities($modelType, $ids);
     }
 
-    if(is_array($entities) && !empty($entities))
-    {
+    if (is_array($entities) && !empty($entities)) {
       $models = static::transformEntitiesToModels($modelType, $entities);
     }
 
-    if(is_array($models) && !empty($models))
-    {
+    if (is_array($models) && !empty($models)) {
       $collection->putModels($models);
     }
 
     return $collection;
   }
 
-  private static function fetchEntities(string $modelType, array $ids) : array
+  private static function fetchEntities(string $modelType, array $ids): array
   {
     $query = new BundleQuery($modelType::entityType(), $modelType::bundle());
 
@@ -628,11 +570,10 @@ class Collection implements \IteratorAggregate, \Countable
    *
    * @return array
    */
-  public function getEntities() : array
+  public function getEntities(): array
   {
     $entities = [];
-    foreach($this->models as $model)
-    {
+    foreach ($this->models as $model) {
       $id = $model->getId();
 
       $entities[$id] = $model->entity;
@@ -641,11 +582,10 @@ class Collection implements \IteratorAggregate, \Countable
     return $entities;
   }
 
-  private static function transformEntitiesToModels(string $modelType, array $entities) : array
+  private static function transformEntitiesToModels(string $modelType, array $entities): array
   {
     $models = [];
-    foreach($entities as $entity)
-    {
+    foreach ($entities as $entity) {
       $models[] = $modelType::forgeByEntity($entity);
     }
     return $models;
@@ -657,10 +597,9 @@ class Collection implements \IteratorAggregate, \Countable
    * @param array $models
    * @return Collection
    */
-  private function putModels(array $models) : Collection
+  private function putModels(array $models): Collection
   {
-    foreach($models as $model)
-    {
+    foreach ($models as $model) {
       $this->put($model);
       $this->putOriginal($model);
     }
@@ -674,33 +613,25 @@ class Collection implements \IteratorAggregate, \Countable
    * @param Model|Collection $objectToPut
    * @return Collection
    */
-  public function put($objectToPut) : Collection
+  public function put($objectToPut): Collection
   {
-    if($objectToPut instanceof Collection)
-    {
-      foreach($objectToPut as $model)
-      {
+    if ($objectToPut instanceof Collection) {
+      foreach ($objectToPut as $model) {
         $this->put($model);
       }
 
       // Lets loop over the original models as well, we can potentially have original models that arent in the model list.
-      foreach($objectToPut->originalModels as $originalModel)
-      {
+      foreach ($objectToPut->originalModels as $originalModel) {
         $this->putOriginal($originalModel);
       }
-    }
-    else if($objectToPut instanceof Model)
-    {
+    } else if ($objectToPut instanceof Model) {
       $model = $objectToPut;
-      if(!($model instanceof $this->modelType))
-      {
-        throw new InvalidTypeException('Model is not of type: '.$this->modelType);
+      if (!($model instanceof $this->modelType)) {
+        throw new InvalidTypeException('Model is not of type: ' . $this->modelType);
       }
 
       $this->addModelToModels($model);
-    }
-    else
-    {
+    } else {
       throw new InvalidTypeException('Only objects of type Collection or Model can be put');
     }
 
@@ -713,28 +644,20 @@ class Collection implements \IteratorAggregate, \Countable
    * @param Model|Collection $objectToPut
    * @return Collection
    */
-  public function putOriginal($objectToPut) : Collection
+  public function putOriginal($objectToPut): Collection
   {
-    if($objectToPut instanceof Collection)
-    {
-      foreach($objectToPut as $model)
-      {
+    if ($objectToPut instanceof Collection) {
+      foreach ($objectToPut as $model) {
         $this->putOriginal($model);
       }
-    }
-    else if($objectToPut instanceof Model)
-    {
+    } else if ($objectToPut instanceof Model) {
       $model = $objectToPut;
-      if(!($model instanceof $this->modelType))
-      {
-        throw new InvalidTypeException('Model is not of type: '.$this->modelType);
+      if (!($model instanceof $this->modelType)) {
+        throw new InvalidTypeException('Model is not of type: ' . $this->modelType);
       }
 
       $this->addModelToOriginalModels($model);
-
-    }
-    else
-    {
+    } else {
       throw new InvalidTypeException('Only objects of type Collection or Model can be put');
     }
 
@@ -748,7 +671,7 @@ class Collection implements \IteratorAggregate, \Countable
    *
    * @return Model
    */
-  public function putNew() : Model
+  public function putNew(): Model
   {
     $modelType = $this->modelType;
     $newModel = $modelType::forgeNew();
@@ -762,10 +685,9 @@ class Collection implements \IteratorAggregate, \Countable
    * @param Model $model
    * @return Collection
    */
-  protected function addModelToModels(Model $model) : Collection
+  protected function addModelToModels(Model $model): Collection
   {
-    if(!array_key_exists($model->key, $this->models))
-    {
+    if (!array_key_exists($model->key, $this->models)) {
       $this->models[$model->key] = $model;
     }
 
@@ -778,10 +700,9 @@ class Collection implements \IteratorAggregate, \Countable
    * @param Model $model
    * @return Collection
    */
-  protected function addModelToOriginalModels(Model $model) : Collection
+  protected function addModelToOriginalModels(Model $model): Collection
   {
-    if(!array_key_exists($model->key, $this->originalModels))
-    {
+    if (!array_key_exists($model->key, $this->originalModels)) {
       $this->originalModels[$model->key] = $model;
     }
 
@@ -793,7 +714,7 @@ class Collection implements \IteratorAggregate, \Countable
    *
    * @return integer
    */
-  public function size() : int
+  public function size(): int
   {
     return count($this->models);
   }
@@ -803,7 +724,7 @@ class Collection implements \IteratorAggregate, \Countable
    *
    * @return boolean
    */
-  public function isEmpty() : bool
+  public function isEmpty(): bool
   {
     return empty($this->models);
   }
@@ -814,7 +735,7 @@ class Collection implements \IteratorAggregate, \Countable
    * @param string $key
    * @return boolean
    */
-  public function containsKey(string $key) : bool
+  public function containsKey(string $key): bool
   {
     return array_key_exists($key, $this->models);
   }
@@ -825,14 +746,11 @@ class Collection implements \IteratorAggregate, \Countable
    * @param string $key
    * @return Model|null
    */
-  public function getModel(string $key) : ?Model
+  public function getModel(string $key): ?Model
   {
-    if($this->containsKey($key))
-    {
+    if ($this->containsKey($key)) {
       return $this->models[$key];
-    }
-    else
-    {
+    } else {
       return null;
     }
   }
@@ -843,53 +761,40 @@ class Collection implements \IteratorAggregate, \Countable
    * @param string $relationshipName
    * @return Collection
    */
-  public function get(string $relationshipName) : Collection
+  public function get(string $relationshipName): Collection
   {
     $resultCollection = null;
     $modelType = $this->getModelType();
 
     $firstRelationshipNameIndex = strpos($relationshipName, '.');
 
-    if(empty($firstRelationshipNameIndex))
-    {
+    if (empty($firstRelationshipNameIndex)) {
       $relationship = $modelType::getRelationship($relationshipName);
       $resultCollection = null;
 
-      if($relationship instanceof ReferencedRelationship)
-      {
+      if ($relationship instanceof ReferencedRelationship) {
         $resultCollection = static::forgeNew($relationship->modelType);
-      }
-      else if($relationship instanceof FieldRelationship)
-      {
-        if($relationship->isPolymorphic)
-        {
+      } else if ($relationship instanceof FieldRelationship) {
+        if ($relationship->isPolymorphic) {
           $resultCollection = PolymorphicCollection::forgeNew(null);
-        }
-        else
-        {
+        } else {
           $resultCollection = static::forgeNew($relationship->modelType);
         }
-      }
-      else
-      {
+      } else {
         throw new InvalidTypeException('Invalid Relationship type ');
       }
 
-      foreach($this->models as $model)
-      {
+      foreach ($this->models as $model) {
         $relationshipModels = $model->get($relationship);
 
-        if(!empty($relationshipModels))
-        {
+        if (!empty($relationshipModels)) {
           $resultCollection->put($relationshipModels);
         }
       }
-    }
-    else
-    {
+    } else {
       $firstRelationshipName = substr($relationshipName, 0,  $firstRelationshipNameIndex);
       $newCollection = $this->get($firstRelationshipName);
-      $newRelationshipName = substr($relationshipName, $firstRelationshipNameIndex+1);
+      $newRelationshipName = substr($relationshipName, $firstRelationshipNameIndex + 1);
 
       $resultCollection = $newCollection->get($newRelationshipName);
     }
@@ -905,14 +810,11 @@ class Collection implements \IteratorAggregate, \Countable
    */
   public function __get($property)
   {
-    if (property_exists($this, $property))
-    {
+    if (property_exists($this, $property)) {
       return $this->$property;
-    }
-    else // lets check for pseudo properties
+    } else // lets check for pseudo properties
     {
-      switch($property)
-      {
+      switch ($property) {
         case "size":
           return $this->size();
           break;
@@ -934,15 +836,13 @@ class Collection implements \IteratorAggregate, \Countable
    */
   public function __set($property, $value)
   {
-    switch($property)
-    {
+    switch ($property) {
       case "models":
       case "originalModels":
-      break;
+        break;
 
       default:
-        if(property_exists($this, $property))
-        {
+        if (property_exists($this, $property)) {
           $this->$property = $value;
         }
         break;
@@ -968,7 +868,7 @@ class Collection implements \IteratorAggregate, \Countable
    *
    * @return \stdClass
    */
-  public function serialize() : \stdClass
+  public function serialize(): \stdClass
   {
     $root = new JsonApiRootNode();
 
@@ -983,12 +883,11 @@ class Collection implements \IteratorAggregate, \Countable
    *
    * @return JsonApiDataNode
    */
-  public function getJsonApiNode() : JsonApiDataNode
+  public function getJsonApiNode(): JsonApiDataNode
   {
     $data = new JsonApiDataNode();
 
-    foreach($this->models as $model)
-    {
+    foreach ($this->models as $model) {
       $node = $model->getJsonApiNode();
       $data->addNode($node);
     }
@@ -1003,43 +902,36 @@ class Collection implements \IteratorAggregate, \Countable
    * @param Collection $inverses
    * @return void
    */
-  private function putInverses(Relationship $relationship, Collection $inverses) : void
+  private function putInverses(Relationship $relationship, Collection $inverses): void
   {
     $relationshipName = null;
     $referencingCollection = null;
     $referencedCollection = null;
 
-    if($relationship instanceof FieldRelationship)
-    {
+    if ($relationship instanceof FieldRelationship) {
       $relationshipName = $relationship->getName();
       $referencingCollection = $this;
       $referencedCollection = $inverses;
-    }
-    else
-    {
+    } else {
       $relationshipName = $relationship->fieldRelationship->getName();
       $referencingCollection = $inverses;
       $referencedCollection = $this;
     }
 
     /** @var Model $referencingModel */
-    foreach($referencingCollection as $referencingModel)
-    {
+    foreach ($referencingCollection as $referencingModel) {
       $modelFieldRelationship = $referencingModel::getRelationship($relationshipName);
       $fieldIds = $referencingModel->getFieldId($modelFieldRelationship);
 
-      if(empty($fieldIds))
-      {
+      if (empty($fieldIds)) {
         $fieldIds = [];
       }
 
-      if(!is_array($fieldIds))
-      {
+      if (!is_array($fieldIds)) {
         $fieldIds = [$fieldIds];
       }
 
-      foreach($fieldIds as $fieldId)
-      {
+      foreach ($fieldIds as $fieldId) {
         $referencedModel = $referencedCollection->getModel($fieldId);
         $referencingModel->put($modelFieldRelationship, $referencedModel);
       }
@@ -1049,7 +941,7 @@ class Collection implements \IteratorAggregate, \Countable
   /**
    * Get the value of modelType
    */
-  public function getModelType() : string
+  public function getModelType(): string
   {
     return $this->modelType;
   }
@@ -1060,7 +952,7 @@ class Collection implements \IteratorAggregate, \Countable
    * @param string $relationshipName
    * @return boolean
    */
-  public function hasRelationship(string $relationshipName) : bool
+  public function hasRelationship(string $relationshipName): bool
   {
     $modelType = $this->getModelType();
 

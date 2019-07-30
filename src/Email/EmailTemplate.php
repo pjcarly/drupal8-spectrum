@@ -23,7 +23,7 @@ class EmailTemplate extends Model
   /**
    * @inheritDoc
    */
-  public static function entityType() : string
+  public static function entityType(): string
   {
     return 'template';
   }
@@ -31,7 +31,7 @@ class EmailTemplate extends Model
   /**
    * @inheritDoc
    */
-  public static function bundle() : string
+  public static function bundle(): string
   {
     return 'email';
   }
@@ -51,7 +51,8 @@ class EmailTemplate extends Model
   /**
    * @inheritDoc
    */
-  public static function getAccessPolicy(): AccessPolicyInterface {
+  public static function getAccessPolicy(): AccessPolicyInterface
+  {
     return new NoAccessPolicy;
   }
 
@@ -91,14 +92,14 @@ class EmailTemplate extends Model
    * @param Model $model
    * @return EmailTemplate
    */
-  public function addModelToScope(string $name, Model $model) : EmailTemplate
+  public function addModelToScope(string $name, Model $model): EmailTemplate
   {
     $this->scope[$name] = new SimpleModelWrapper($model);
 
     return $this;
   }
 
-  public function addCollectionToScope(string $name, Collection $collection) : EmailTemplate
+  public function addCollectionToScope(string $name, Collection $collection): EmailTemplate
   {
     $this->scope[$name] = new SimpleCollectionWrapper($collection);
 
@@ -112,7 +113,7 @@ class EmailTemplate extends Model
    * @param object $object
    * @return EmailTemplate
    */
-  public function addObjectToScope(string $name, $object) : EmailTemplate
+  public function addObjectToScope(string $name, $object): EmailTemplate
   {
     $this->scope[$name] = $object;
 
@@ -124,7 +125,7 @@ class EmailTemplate extends Model
    *
    * @return EmailTemplate
    */
-  public function render() : EmailTemplate
+  public function render(): EmailTemplate
   {
     $baseTemplate = $this->fetchBaseTemplateIfNeeded();
 
@@ -132,8 +133,7 @@ class EmailTemplate extends Model
     $html = $this->getHtml() ?? '';
     $text = $this->getText() ?? '';
 
-    if(!empty($baseTemplate))
-    {
+    if (!empty($baseTemplate)) {
       $this->addObjectToScope('baseTemplate', $baseTemplate->getHtml() ?? '');
       $html = '{% extends baseTemplate %}' . $html;
     }
@@ -149,14 +149,12 @@ class EmailTemplate extends Model
     return $this;
   }
 
-  public function fetchBaseTemplateIfNeeded() : ?BaseTemplate
+  public function fetchBaseTemplateIfNeeded(): ?BaseTemplate
   {
-    if(!empty($this->getBaseTemplateId()))
-    {
+    if (!empty($this->getBaseTemplateId())) {
       $baseTemplate = $this->getBaseTemplate();
 
-      if(empty($baseTemplate))
-      {
+      if (empty($baseTemplate)) {
         $baseTemplate = $this->fetch('base_template');
       }
 
@@ -172,7 +170,7 @@ class EmailTemplate extends Model
    * @param string $key
    * @return EmailTemplate
    */
-  public static function getByKey(string $key) : EmailTemplate
+  public static function getByKey(string $key): EmailTemplate
   {
     $query = new ModelQuery('Drupal\spectrum\Email\EmailTemplate');
     $query->addCondition(new Condition('field_key', '=', $key));
@@ -182,7 +180,7 @@ class EmailTemplate extends Model
   /**
    * @return string
    */
-  public function getSubject() : ?string
+  public function getSubject(): ?string
   {
     return $this->entity->field_subject->value;
   }
@@ -190,7 +188,7 @@ class EmailTemplate extends Model
   /**
    * @param string $subject
    */
-  public function setSubject(string $subject) : EmailTemplate
+  public function setSubject(string $subject): EmailTemplate
   {
     $this->entity->field_subject->value = $subject;
 
@@ -200,7 +198,7 @@ class EmailTemplate extends Model
   /**
    * @return string
    */
-  public function getHtml() : ?string
+  public function getHtml(): ?string
   {
     return $this->entity->field_html_body->value;
   }
@@ -208,7 +206,7 @@ class EmailTemplate extends Model
   /**
    * @param string $html
    */
-  public function setHtml(string $html) : EmailTemplate
+  public function setHtml(string $html): EmailTemplate
   {
     $this->entity->field_html_body->value = $html;
 
@@ -218,7 +216,7 @@ class EmailTemplate extends Model
   /**
    * @return string
    */
-  public function getText() : ?string
+  public function getText(): ?string
   {
     return $this->entity->field_text_body->value;
   }
@@ -226,7 +224,7 @@ class EmailTemplate extends Model
   /**
    * @param string $text
    */
-  public function setText(string $text) : EmailTemplate
+  public function setText(string $text): EmailTemplate
   {
     $this->entity->field_text_body->value = $text;
     return $this;
@@ -235,7 +233,7 @@ class EmailTemplate extends Model
   /**
    * @return string
    */
-  public function getKey() : ?string
+  public function getKey(): ?string
   {
     return $this->entity->field_key->value;
   }
@@ -243,7 +241,7 @@ class EmailTemplate extends Model
   /**
    * @param string $text
    */
-  public function setKey(string $text) : EmailTemplate
+  public function setKey(string $text): EmailTemplate
   {
     $this->entity->field_key->value = $text;
     return $this;
@@ -252,7 +250,7 @@ class EmailTemplate extends Model
   /**
    * @return string
    */
-  public function getBaseTemplate() : ?BaseTemplate
+  public function getBaseTemplate(): ?BaseTemplate
   {
     return $this->get('base_template');
   }
@@ -260,7 +258,7 @@ class EmailTemplate extends Model
   /**
    * @param string $text
    */
-  public function setBaseTemplate(BaseTemplate $baseTemplate) : EmailTemplate
+  public function setBaseTemplate(BaseTemplate $baseTemplate): EmailTemplate
   {
     $this->put('base_template', $baseTemplate);
 
@@ -270,7 +268,7 @@ class EmailTemplate extends Model
   /**
    * @return string
    */
-  public function getBaseTemplateId() : ?int
+  public function getBaseTemplateId(): ?int
   {
     return $this->entity->field_base_template->target_id;
   }
@@ -278,7 +276,7 @@ class EmailTemplate extends Model
   /**
    * @param string $text
    */
-  public function setBaseTemplateId(int $id) : EmailTemplate
+  public function setBaseTemplateId(int $id): EmailTemplate
   {
     $this->entity->field_base_template->target_id = $id;
 
@@ -290,7 +288,7 @@ class EmailTemplate extends Model
    *
    * @return string
    */
-  public function getRenderedHtml() : ?string
+  public function getRenderedHtml(): ?string
   {
     return $this->html;
   }
@@ -300,7 +298,7 @@ class EmailTemplate extends Model
    *
    * @return string
    */
-  public function getRenderedText() : ?string
+  public function getRenderedText(): ?string
   {
     return $this->text;
   }
@@ -310,7 +308,7 @@ class EmailTemplate extends Model
    *
    * @return string
    */
-  public function getRenderedSubject() : ?string
+  public function getRenderedSubject(): ?string
   {
     return $this->subject;
   }

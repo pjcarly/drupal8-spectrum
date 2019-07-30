@@ -10,5 +10,5 @@ interface ModelServiceInterface
    *
    * @return array
    */
-  public function getRegisteredModelClasses() : array;
+  public function getRegisteredModelClasses(): array;
 }

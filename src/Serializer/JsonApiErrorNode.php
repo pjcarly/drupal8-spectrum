@@ -47,33 +47,28 @@ class JsonApiErrorNode
    *
    * @return \stdClass
    */
-  public function serialize() : \stdClass
+  public function serialize(): \stdClass
   {
     $serialized = new \stdClass();
 
-    if(isset($this->status))
-    {
+    if (isset($this->status)) {
       $serialized->status = $this->status;
     }
 
-    if(isset($this->pointer))
-    {
+    if (isset($this->pointer)) {
       $serialized->source = new \stdClass();
       $serialized->source->pointer = $this->pointer;
     }
 
-    if(isset($this->code))
-    {
+    if (isset($this->code)) {
       $serialized->code = $this->code;
     }
 
-    if(isset($this->title))
-    {
+    if (isset($this->title)) {
       $serialized->title = $this->title;
     }
 
-    if(isset($this->detail))
-    {
+    if (isset($this->detail)) {
       $serialized->detail = $this->detail;
     }
 
@@ -85,7 +80,7 @@ class JsonApiErrorNode
    *
    * @return  string|null
    */
-  public function getStatus() : ?string
+  public function getStatus(): ?string
   {
     return $this->status;
   }
@@ -97,7 +92,7 @@ class JsonApiErrorNode
    *
    * @return  self
    */
-  public function setStatus($status) : JsonApiErrorNode
+  public function setStatus($status): JsonApiErrorNode
   {
     $this->status = $status;
 
@@ -121,7 +116,7 @@ class JsonApiErrorNode
    *
    * @return  self
    */
-  public function setCode($code) : JsonApiErrorNode
+  public function setCode($code): JsonApiErrorNode
   {
     $this->code = $code;
 
@@ -145,7 +140,7 @@ class JsonApiErrorNode
    *
    * @return  self
    */
-  public function setTitle($title) : JsonApiErrorNode
+  public function setTitle($title): JsonApiErrorNode
   {
     $this->title = $title;
 
@@ -157,7 +152,7 @@ class JsonApiErrorNode
    *
    * @return  string|null
    */
-  public function getDetail() : ?string
+  public function getDetail(): ?string
   {
     return $this->detail;
   }
@@ -169,7 +164,7 @@ class JsonApiErrorNode
    *
    * @return  self
    */
-  public function setDetail($detail) : JsonApiErrorNode
+  public function setDetail($detail): JsonApiErrorNode
   {
     $this->detail = $detail;
 
@@ -181,7 +176,7 @@ class JsonApiErrorNode
    *
    * @return  string
    */
-  public function getPointer() : ?string
+  public function getPointer(): ?string
   {
     return $this->pointer;
   }
@@ -193,7 +188,7 @@ class JsonApiErrorNode
    *
    * @return  self
    */
-  public function setPointer(string $pointer) : JsonApiErrorNode
+  public function setPointer(string $pointer): JsonApiErrorNode
   {
     $this->pointer = $pointer;
 

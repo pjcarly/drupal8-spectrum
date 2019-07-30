@@ -62,14 +62,11 @@ class Condition
    *
    * @return Condition
    */
-  public function validateValues() : Condition
+  public function validateValues(): Condition
   {
-    if(is_array($this->value) && !Condition::isValidMultipleModelsOperator($this->operator))
-    {
+    if (is_array($this->value) && !Condition::isValidMultipleModelsOperator($this->operator)) {
       throw new InvalidOperatorException();
-    }
-    else if(!is_array($this->value) && !Condition::isValidSingleModelOperator($this->operator))
-    {
+    } else if (!is_array($this->value) && !Condition::isValidSingleModelOperator($this->operator)) {
       throw new InvalidOperatorException();
     }
 
@@ -82,32 +79,22 @@ class Condition
    * @param \Drupal\Core\Entity\Query\QueryInterface|\Drupal\Core\Entity\Query\ConditionInterface $query
    * @return Condition
    */
-  public function addQueryCondition($query) : Condition
+  public function addQueryCondition($query): Condition
   {
-    if($this->value === 'null')
-    {
-      if($this->operator === '<>')
-      {
+    if ($this->value === 'null') {
+      if ($this->operator === '<>') {
         $query->exists($this->fieldName);
-      }
-      else
-      {
+      } else {
         $query->notExists($this->fieldName);
       }
-
-    }
-    else
-    {
-      if($this->operator === '<>' || $this->operator === 'NOT IN')
-      {
+    } else {
+      if ($this->operator === '<>' || $this->operator === 'NOT IN') {
         // Workaround for Drupal's lack of support for LEFT JOIN (else you would miss empty values)
         $orGroup = $query->orConditionGroup();
         $orGroup->condition($this->fieldName, $this->value, $this->operator);
         $orGroup->notExists($this->fieldName);
         $query->condition($orGroup);
-      }
-      else
-      {
+      } else {
         $query->condition($this->fieldName, $this->value, $this->operator);
       }
     }
@@ -121,7 +108,7 @@ class Condition
    * @param string $operator
    * @return boolean
    */
-  public static function isValidSingleModelOperator(string $operator) : bool
+  public static function isValidSingleModelOperator(string $operator): bool
   {
     return in_array(strtoupper($operator), Condition::$singleValueOperators);
   }
@@ -132,7 +119,7 @@ class Condition
    * @param string $operator
    * @return boolean
    */
-  public static function isValidMultipleModelsOperator(string $operator) : bool
+  public static function isValidMultipleModelsOperator(string $operator): bool
   {
     return in_array(strtoupper($operator), Condition::$multipleValueOperators);
   }
@@ -142,7 +129,7 @@ class Condition
    *
    * @return string
    */
-  public function getFieldName() : string
+  public function getFieldName(): string
   {
     return $this->fieldName;
   }
@@ -152,7 +139,7 @@ class Condition
    *
    * @return string
    */
-  public function getOperator() : string
+  public function getOperator(): string
   {
     return $this->operator;
   }

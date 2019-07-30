@@ -1,4 +1,5 @@
 <?php
+
 namespace Drupal\spectrum\Runnable;
 
 use Drupal\spectrum\Model\Model;
@@ -24,7 +25,7 @@ class RegisteredJob extends Model
    *
    * @return string
    */
-  public static function entityType() : string
+  public static function entityType(): string
   {
     return 'runnable';
   }
@@ -34,7 +35,7 @@ class RegisteredJob extends Model
    *
    * @return string
    */
-  public static function bundle() : string
+  public static function bundle(): string
   {
     return 'registered_job';
   }
@@ -48,7 +49,8 @@ class RegisteredJob extends Model
   /**
    * @inheritDoc
    */
-  public static function getAccessPolicy(): AccessPolicyInterface {
+  public static function getAccessPolicy(): AccessPolicyInterface
+  {
     return new PublicAccessPolicy;
   }
 
@@ -57,17 +59,14 @@ class RegisteredJob extends Model
    *
    * @return void
    */
-  public final function singleRun() : void
+  public final function singleRun(): void
   {
-    try
-    {
+    try {
       $job = $this->createJobInstance();
       $job->setCliContext($this->cliContext);
       $job->execute();
-    }
-    catch(\Exception $ex)
-    {
-      $message = 'Runnable execution failed ('.$job->entity->field_class->value.'): '.$ex->getMessage();
+    } catch (\Exception $ex) {
+      $message = 'Runnable execution failed (' . $job->entity->field_class->value . '): ' . $ex->getMessage();
       $this->print($message);
       \Drupal::logger('spectrum_cron')->error($message);
     }
@@ -78,12 +77,11 @@ class RegisteredJob extends Model
    *
    * @return RunnableModel
    */
-  public final function createJobInstance() : RunnableModel
+  public final function createJobInstance(): RunnableModel
   {
     $class = $this->entity->field_class->value;
 
-    if(!class_exists($class))
-    {
+    if (!class_exists($class)) {
       throw new \Exception('Class does not exist');
     }
 
@@ -96,15 +94,12 @@ class RegisteredJob extends Model
    * @param string $message
    * @return void
    */
-  public function print(string $message) : void
+  public function print(string $message): void
   {
-    if($this->cliContext)
-    {
+    if ($this->cliContext) {
       drush_print($message);
-    }
-    else
-    {
-      print($message.'<br/>');
+    } else {
+      print($message . '<br/>');
     }
   }
 
@@ -114,7 +109,7 @@ class RegisteredJob extends Model
    * @param boolean $cliContext
    * @return RegisteredJob
    */
-  public function setCliContext(bool $cliContext) : RegisteredJob
+  public function setCliContext(bool $cliContext): RegisteredJob
   {
     $this->cliContext = $cliContext;
     return $this;
@@ -126,7 +121,7 @@ class RegisteredJob extends Model
    * @param string $key
    * @return RegisteredJob|null
    */
-  public static function getByKey(string $key) : ?RegisteredJob
+  public static function getByKey(string $key): ?RegisteredJob
   {
     $query = static::getModelQuery();
     $query->addCondition(new Condition('title', '=', $key));

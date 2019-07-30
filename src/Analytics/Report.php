@@ -15,7 +15,7 @@ class Report extends Model
    *
    * @return string
    */
-  public static function entityType() : string
+  public static function entityType(): string
   {
     return 'query';
   }
@@ -25,7 +25,7 @@ class Report extends Model
    *
    * @return string
    */
-  public static function bundle() : string
+  public static function bundle(): string
   {
     return 'report';
   }
@@ -36,15 +36,13 @@ class Report extends Model
    * @return void
    */
   public static function relationships()
-  {
-
-  }
+  { }
 
   /**
    * @inheritDoc
    */
-  public static function getAccessPolicy(): AccessPolicyInterface {
+  public static function getAccessPolicy(): AccessPolicyInterface
+  {
     return new PublicAccessPolicy;
   }
-
 }

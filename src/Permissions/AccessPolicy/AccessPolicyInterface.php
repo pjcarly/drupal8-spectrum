@@ -10,7 +10,8 @@ use Drupal\spectrum\Model\Model;
  *
  * @package Drupal\spectrum\Permissions\AccessPolicy
  */
-interface AccessPolicyInterface {
+interface AccessPolicyInterface
+{
 
   /**
    * @var string
@@ -43,5 +44,4 @@ interface AccessPolicyInterface {
    * @return bool
    */
   public function userHasAccess(Model $model, int $uid): bool;
-
 }

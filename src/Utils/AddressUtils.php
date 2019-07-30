@@ -14,20 +14,21 @@ class AddressUtils
    * @param FieldItemList $addressField
    * @return Address|null
    */
-  public static function getAddress(FieldItemList $addressField) : ?Address
+  public static function getAddress(FieldItemList $addressField): ?Address
   {
     $address = null;
 
-    if(!empty($addressField->country_code))
-    {
-      $address = new Address($addressField->country_code,
-      $addressField->administrative_area,
-      $addressField->locality,
-      $addressField->dependent_locality,
-      $addressField->postal_code,
-      $addressField->sorting_code,
-      $addressField->address_line1,
-      $addressField->address_line2);
+    if (!empty($addressField->country_code)) {
+      $address = new Address(
+        $addressField->country_code,
+        $addressField->administrative_area,
+        $addressField->locality,
+        $addressField->dependent_locality,
+        $addressField->postal_code,
+        $addressField->sorting_code,
+        $addressField->address_line1,
+        $addressField->address_line2
+      );
     }
 
     return $address;
@@ -39,7 +40,7 @@ class AddressUtils
    * @param FieldItemList $addressField
    * @return string|null
    */
-  public static function formatField(FieldItemList $addressField) : ?string
+  public static function formatField(FieldItemList $addressField): ?string
   {
     $address = static::getAddress($addressField);
     return static::format($address);
@@ -51,10 +52,9 @@ class AddressUtils
    * @param Address|null $address
    * @return string|null
    */
-  public static function format(?Address $address) : ?string
+  public static function format(?Address $address): ?string
   {
-    if(empty($address))
-    {
+    if (empty($address)) {
       return '';
     }
 

@@ -50,11 +50,10 @@ class BaseApiController implements ContainerAwareInterface
    * @param Request $request
    * @return string C, R, U or D (C = POST, R = GET,  U = PATCH, D = DELETE)
    */
-  private function getAccessForRequestMethod(Request $request) : string
+  private function getAccessForRequestMethod(Request $request): string
   {
     $access = '';
-    switch($request->getMethod())
-    {
+    switch ($request->getMethod()) {
       case 'GET':
         $access = 'R';
         break;
@@ -83,54 +82,39 @@ class BaseApiController implements ContainerAwareInterface
    * @param string $action An optional Action you want to execute on the APIHandler (for example publish)
    * @return Response
    */
-  public function handle(RouteMatchInterface $routeMatch, Request $request, string $api = NULL, string $slug = NULL, string $action = NULL) : Response
+  public function handle(RouteMatchInterface $routeMatch, Request $request, string $api = NULL, string $slug = NULL, string $action = NULL): Response
   {
     $response = new Response(null, 500, []);
     $permissionService = Model::getPermissionsService();
 
     // Permissions are different with or without an action
-    if(empty($action))
-    {
-      if($permissionService->apiPermissionExists($routeMatch->getRouteName(), $api))
-      {
+    if (empty($action)) {
+      if ($permissionService->apiPermissionExists($routeMatch->getRouteName(), $api)) {
         $user = User::loggedInUser();
         $access = $this->getAccessForRequestMethod($request);
-        if($user->hasApiPermission($routeMatch->getRouteName(), $api, $access))
-        {
+        if ($user->hasApiPermission($routeMatch->getRouteName(), $api, $access)) {
           $response->setStatusCode(204); // OK, no content
           $response->setContent(null);
-        }
-        else
-        {
+        } else {
           $response->setStatusCode(423); // Failed Locked
           $response->setContent(null);
         }
-      }
-      else
-      {
+      } else {
         $response->setStatusCode(404); // Failed not found
         $response->setContent(null);
       }
-    }
-    else
-    {
+    } else {
       // The request is to an Action
-      if($permissionService->apiActionPermissionExists($routeMatch->getRouteName(), $api))
-      {
+      if ($permissionService->apiActionPermissionExists($routeMatch->getRouteName(), $api)) {
         $user = User::loggedInUser();
-        if($user->hasApiActionPermission($routeMatch->getRouteName(), $api, $action))
-        {
+        if ($user->hasApiActionPermission($routeMatch->getRouteName(), $api, $action)) {
           $response->setStatusCode(204); // OK, no content
           $response->setContent(null);
-        }
-        else
-        {
+        } else {
           $response->setStatusCode(423); // Failed Locked
           $response->setContent(null);
         }
-      }
-      else
-      {
+      } else {
         $response->setStatusCode(404); // Failed not found
         $response->setContent(null);
       }

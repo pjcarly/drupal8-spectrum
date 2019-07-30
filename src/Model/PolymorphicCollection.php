@@ -1,4 +1,5 @@
 <?php
+
 namespace Drupal\spectrum\Model;
 
 use Drupal\spectrum\Query\Query;
@@ -35,11 +36,10 @@ class PolymorphicCollection extends Collection
    * @param string $relationshipName DO NOT USE
    * @return Collection
    */
-  public function save(string $relationshipName = NULL) : Collection
+  public function save(string $relationshipName = NULL): Collection
   {
-    if(!empty($relationshipName))
-    {
-      throw new PolymorphicException('Relationship path "'.$relationshipName.'" has no meaning for polymorphic collections');
+    if (!empty($relationshipName)) {
+      throw new PolymorphicException('Relationship path "' . $relationshipName . '" has no meaning for polymorphic collections');
     }
 
     return parent::save();
@@ -52,11 +52,10 @@ class PolymorphicCollection extends Collection
    * @param string $relationshipName DO NOT USE
    * @return Validation
    */
-  public function validate(string $relationshipName = NULL) : Validation
+  public function validate(string $relationshipName = NULL): Validation
   {
-    if(!empty($relationshipName))
-    {
-      throw new PolymorphicException('Relationship path "'.$relationshipName.'" has no meaning for polymorphic collections');
+    if (!empty($relationshipName)) {
+      throw new PolymorphicException('Relationship path "' . $relationshipName . '" has no meaning for polymorphic collections');
     }
 
     return parent::validate();
@@ -69,14 +68,13 @@ class PolymorphicCollection extends Collection
    * @param string $relationshipName
    * @return Collection
    */
-  public function fetch(string $relationshipName, ?Query $queryToCopyFrom = null) : Collection
+  public function fetch(string $relationshipName, ?Query $queryToCopyFrom = null): Collection
   {
     $this->checkRelationship($relationshipName);
 
     $resultCollection = Collection::forgeNew(null);
 
-    if(sizeof($this) === 0)
-    {
+    if (sizeof($this) === 0) {
       return $resultCollection;
     }
 
@@ -91,25 +89,18 @@ class PolymorphicCollection extends Collection
    * @param object $objectToPut
    * @return Collection
    */
-  public function put($objectToPut) : Collection
+  public function put($objectToPut): Collection
   {
-    if($objectToPut instanceof Collection)
-    {
-      foreach($objectToPut as $model)
-      {
+    if ($objectToPut instanceof Collection) {
+      foreach ($objectToPut as $model) {
         $this->put($model);
       }
-    }
-    else
-    {
+    } else {
       $model = $objectToPut;
       // it is only possible to have models with a shared entity in a collection
-      if(empty($this->entityType))
-      {
+      if (empty($this->entityType)) {
         $this->entityType = $model::entityType();
-      }
-      else if($this->entityType !== $model::entityType())
-      {
+      } else if ($this->entityType !== $model::entityType()) {
         throw new PolymorphicException('Only models with a shared entity type are allowed in a polymorphic collection');
       }
 
@@ -130,25 +121,18 @@ class PolymorphicCollection extends Collection
    * @param object $objectToPut
    * @return Collection
    */
-  public function putOriginal($objectToPut) : Collection
+  public function putOriginal($objectToPut): Collection
   {
-    if($objectToPut instanceof Collection)
-    {
-      foreach($objectToPut as $model)
-      {
+    if ($objectToPut instanceof Collection) {
+      foreach ($objectToPut as $model) {
         $this->putOriginal($model);
       }
-    }
-    else
-    {
+    } else {
       $model = $objectToPut;
       // it is only possible to have models with a shared entity in a collection
-      if(empty($this->entityType))
-      {
+      if (empty($this->entityType)) {
         $this->entityType = $model::entityType();
-      }
-      else if($this->entityType !== $model::entityType())
-      {
+      } else if ($this->entityType !== $model::entityType()) {
         throw new PolymorphicException('Only models with a shared entity type are allowed in a polymorphic collection');
       }
 
@@ -167,7 +151,7 @@ class PolymorphicCollection extends Collection
    *
    * @return Model
    */
-  public function putNew() : Model
+  public function putNew(): Model
   {
     throw new PolymorphicException('PutNew has no meaning for polymorphic collections, we can\'t know the type of model to create');
   }
@@ -178,14 +162,13 @@ class PolymorphicCollection extends Collection
    * @param string $relationshipName
    * @return Collection
    */
-  public function get(string $relationshipName) : Collection
+  public function get(string $relationshipName): Collection
   {
     $this->checkRelationship($relationshipName);
 
     $resultCollection = Collection::forgeNew(null);
 
-    if(sizeof($this) === 0)
-    {
+    if (sizeof($this) === 0) {
       return $resultCollection;
     }
 
@@ -199,7 +182,7 @@ class PolymorphicCollection extends Collection
    * @param string $relationshipName
    * @return boolean
    */
-  public function hasRelationship(string $relationshipName) : bool
+  public function hasRelationship(string $relationshipName): bool
   {
     throw new PolymorphicException('hasRelationship has no meaning for polymorphic collections');
   }
@@ -209,12 +192,11 @@ class PolymorphicCollection extends Collection
    *
    * @return string[]
    */
-  public function getModelTypesInModels() : array
+  public function getModelTypesInModels(): array
   {
     $modelTypes = [];
 
-    foreach($this->models as $model)
-    {
+    foreach ($this->models as $model) {
       $modelTypes[] = get_class($model);
     }
 
@@ -226,7 +208,7 @@ class PolymorphicCollection extends Collection
    *
    * @return PolymorphicCollection
    */
-  public function setModelTypes() : PolymorphicCollection
+  public function setModelTypes(): PolymorphicCollection
   {
     $this->modelTypes = $this->getModelTypesInModels();
     return $this;
@@ -237,7 +219,7 @@ class PolymorphicCollection extends Collection
    *
    * @return string[]
    */
-  public function getModelTypes() : array
+  public function getModelTypes(): array
   {
     return $this->modelTypes;
   }
@@ -249,8 +231,7 @@ class PolymorphicCollection extends Collection
    */
   public function getModelType(): string
   {
-    if(empty($this->modelTypes) && sizeof($this->models) > 0)
-    {
+    if (empty($this->modelTypes) && sizeof($this->models) > 0) {
       $this->setModelTypes();
     }
 
@@ -266,34 +247,27 @@ class PolymorphicCollection extends Collection
    */
   public function checkRelationship(string $relationshipName)
   {
-    if(empty($this->modelTypes) && sizeof($this->models) > 0)
-    {
+    if (empty($this->modelTypes) && sizeof($this->models) > 0) {
       $this->setModelTypes();
     }
 
     /** @var Relationship $relationship */
     $relationship = null;
-    foreach($this->modelTypes as $modelType)
-    {
-      if(!$modelType::hasDeepRelationship($relationshipName))
-      {
+    foreach ($this->modelTypes as $modelType) {
+      if (!$modelType::hasDeepRelationship($relationshipName)) {
         throw new InvalidTypeException(strtr('Relationship @relationship does not exist on @modelType', [
           '@relationship' => $relationshipName,
           '@modelType' => $modelType
         ]));
       }
 
-      if(empty($relationship))
-      {
+      if (empty($relationship)) {
         $relationship = $modelType::getDeepRelationship($relationshipName);
-      }
-      else
-      {
+      } else {
         /** @var Relationship $checkRelationship */
         $checkRelationship = $modelType::getDeepRelationship($relationshipName);
 
-        if($checkRelationship->getModelType() !== $relationship->getModelType())
-        {
+        if ($checkRelationship->getModelType() !== $relationship->getModelType()) {
           throw new InvalidTypeException(strtr('Not all relationships with name @relationship are for the same modelTypes', [
             '@relationship' => $relationshipName,
           ]));

@@ -17,7 +17,7 @@ class BaseTemplate extends Model
   /**
    * @inheritDoc
    */
-  public static function entityType() : string
+  public static function entityType(): string
   {
     return 'template';
   }
@@ -25,7 +25,7 @@ class BaseTemplate extends Model
   /**
    * @inheritDoc
    */
-  public static function bundle() : string
+  public static function bundle(): string
   {
     return 'base';
   }
@@ -33,14 +33,15 @@ class BaseTemplate extends Model
   /**
    * @inheritDoc
    */
-  public static function getAccessPolicy(): AccessPolicyInterface {
+  public static function getAccessPolicy(): AccessPolicyInterface
+  {
     return new NoAccessPolicy;
   }
 
   /**
    * @return string
    */
-  public function getHtml() : ?string
+  public function getHtml(): ?string
   {
     return $this->entity->field_html_body->value;
   }
@@ -48,7 +49,7 @@ class BaseTemplate extends Model
   /**
    * @param string $html
    */
-  public function setHtml(string $html) : BaseTemplate
+  public function setHtml(string $html): BaseTemplate
   {
     $this->entity->field_html_body->value = $html;
 

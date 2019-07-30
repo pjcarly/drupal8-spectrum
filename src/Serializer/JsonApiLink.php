@@ -46,7 +46,7 @@ class JsonApiLink
    * @param string|int $value The value of the query param: https://baseurl?name=value
    * @return JsonApiLink
    */
-  public function addParam(string $name, $value) : JsonApiLink
+  public function addParam(string $name, $value): JsonApiLink
   {
     $this->params[$name] = $value;
     return $this;
@@ -57,7 +57,7 @@ class JsonApiLink
    *
    * @return string
    */
-  public function getUrl() : string
+  public function getUrl(): string
   {
     return empty($this->params) ? $this->baseUrl : $this->baseUrl . '?' . http_build_query($this->params);
   }

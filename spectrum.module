@@ -42,7 +42,8 @@ function spectrum_query_spectrum_query_alter(AlterableInterface $drupalQuery)
  *
  * @param \Drupal\Core\Database\Query\AlterableInterface $drupalQuery
  */
-function spectrum_query_spectrum_query_use_access_policy_alter(AlterableInterface $drupalQuery) {
+function spectrum_query_spectrum_query_use_access_policy_alter(AlterableInterface $drupalQuery)
+{
   /** @var \Drupal\spectrum\Query\ModelQuery $query */
   $query = $drupalQuery->getMetaData('spectrum_query');
   $query->executeAccessPolicy($drupalQuery);
