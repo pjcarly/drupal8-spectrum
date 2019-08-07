@@ -1,12 +1,5 @@
 <?php
 
-/**
- * Created by PhpStorm.
- * User: bart
- * Date: 14/12/18
- * Time: 10:35
- */
-
 namespace Drupal\spectrum\Data;
 
 use Drupal\Core\Entity\EntityStorageInterface;
