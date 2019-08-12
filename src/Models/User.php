@@ -5,6 +5,7 @@ namespace Drupal\spectrum\Models;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
 use Drupal\spectrum\Permissions\AccessPolicy\PublicAccessPolicy;
+use Drupal\user\Entity\User as DrupalUser;
 
 /**
  * Class User
@@ -184,6 +185,21 @@ class User extends Model
   }
 
   /**
+   * Sets the Unhashed password on the User
+   *
+   * @param string $value
+   * @return User
+   */
+  public function setPassword(string $value): User
+  {
+    /** @var DrupalUser $entity */
+    $entity = $this->entity;
+
+    $entity->setPassword($value);
+    return $this;
+  }
+
+  /**
    * @param string $value
    *
    * @return User
@@ -195,6 +211,14 @@ class User extends Model
   }
 
   /**
+   * @return string
+   */
+  public function getEmail(): string
+  {
+    return $this->entity->mail->value;
+  }
+
+  /**
    * @param string $value
    *
    * @return User
@@ -203,6 +227,14 @@ class User extends Model
   {
     $this->entity->name->value = $value;
     return $this;
+  }
+
+  /**
+   * @return string
+   */
+  public function getUsername(): string
+  {
+    return $this->entity->name->value;
   }
 
   /**
