@@ -21,27 +21,37 @@ interface AccessPolicyInterface
   /**
    * Called when a model is saved.
    *
-   * @param \Drupal\spectrum\Model\Model $model
+   * @param Model $model
    */
   public function onSave(Model $model): void;
 
   /**
-   * @param \Drupal\spectrum\Model\Model $model
+   * @param Model $model
    */
   public function onDelete(Model $model): void;
 
   /**
-   * @param \Drupal\Core\Database\Query\Select $query
+   * @param Select $query
    *
-   * @return \Drupal\Core\Database\Query\Select
+   * @return Select
    */
   public function onQuery(Select $query): Select;
 
   /**
-   * @param \Drupal\spectrum\Model\Model $model
+   * @param Model $model
    * @param int $uid
    *
    * @return bool
    */
   public function userHasAccess(Model $model, int $uid): bool;
+
+  /**
+   * This function is called whenever a change to a model is picked up by the platform.
+   * The implementation of the Access Policy should return TRUE when the access policy should be recalculated
+   * And false if it shouldnt
+   *
+   * @param Model $model
+   * @return boolean
+   */
+  public function shouldSetAccessPolicy(Model $model): bool;
 }

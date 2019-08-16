@@ -9,8 +9,6 @@ use Drupal\spectrum\Model\ReferencedRelationship;
 use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
 use Drupal\spectrum\Permissions\AccessPolicy\PublicAccessPolicy;
 use Drupal\spectrum\Query\BundleQuery;
-use Drupal\spectrum\Query\Condition;
-use Drupal\spectrum\Query\Order;
 
 class ListView extends Model
 {
@@ -41,8 +39,8 @@ class ListView extends Model
    */
   public static function relationships()
   {
-    static::addRelationship(new ReferencedRelationship('conditions', 'Drupal\spectrum\Analytics\Condition', 'parent', ReferencedRelationship::$CASCADE_ON_DELETE));
-    static::addRelationship(new ReferencedRelationship('sort_orders', 'Drupal\spectrum\Analytics\Order', 'parent', ReferencedRelationship::$CASCADE_ON_DELETE));
+    static::addRelationship(new ReferencedRelationship('conditions', Condition::class, 'parent', ReferencedRelationship::$CASCADE_ON_DELETE));
+    static::addRelationship(new ReferencedRelationship('sort_orders', Order::class, 'parent', ReferencedRelationship::$CASCADE_ON_DELETE));
   }
 
   /**

@@ -89,4 +89,12 @@ class PublicAccessPolicy implements AccessPolicyInterface
   {
     return TRUE;
   }
+
+  /**
+   * @inheritDoc
+   */
+  public function shouldSetAccessPolicy(Model $model): bool
+  {
+    return $model->isNew();
+  }
 }

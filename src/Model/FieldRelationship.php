@@ -47,11 +47,6 @@ class FieldRelationship extends Relationship
   public $fieldCardinality;
 
   /**
-   * @var int
-   */
-  protected $parentPriority;
-
-  /**
    * @var string
    */
   protected $class;
@@ -60,22 +55,16 @@ class FieldRelationship extends Relationship
    * FieldRelationship constructor.
    *
    * @param string $relationshipName
-   * @param string $relationshipField
+   * @param string $relationshipField The fieldname of the drupal entity that stores this relationship, should be `field.column` for example `field_user.target_id`
    * @param int $cascade
-   * @param string|NULL $class
-   * @param int $parentPriority
    */
   public function __construct(
     string $relationshipName,
     string $relationshipField,
-    int $cascade = 0,
-    string $class = NULL,
-    int $parentPriority = 0
+    int $cascade = 0
   ) {
     parent::__construct($relationshipName, $cascade);
     $this->relationshipField = $relationshipField;
-    $this->class = $class;
-    $this->parentPriority = $parentPriority;
   }
 
   /**
@@ -209,21 +198,5 @@ class FieldRelationship extends Relationship
           break;
       }
     }
-  }
-
-  /**
-   * @return int
-   */
-  public function getParentPriority(): int
-  {
-    return $this->parentPriority;
-  }
-
-  /**
-   * @return string
-   */
-  public function getClass(): ?string
-  {
-    return $this->class;
   }
 }

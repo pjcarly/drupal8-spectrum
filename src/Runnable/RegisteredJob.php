@@ -43,7 +43,7 @@ class RegisteredJob extends Model
   public static function relationships()
   {
     parent::relationships();
-    static::addRelationship(new ReferencedRelationship('queued_jobs', 'Drupal\spectrum\Runnable\QueuedJob', 'job'));
+    static::addRelationship(new ReferencedRelationship('queued_jobs', QueuedJob::class, 'job'));
   }
 
   /**

@@ -3,6 +3,7 @@
 namespace Drupal\spectrum\Permissions\AccessPolicy;
 
 use Drupal\Core\Database\Query\Select;
+use Drupal\spectrum\Model\ParentAccessFieldRelationship;
 use Drupal\spectrum\Model\FieldRelationship;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Model\Relationship;
@@ -45,10 +46,10 @@ class ParentAccessPolicy implements AccessPolicyInterface
 
       if ($values = $this->queryValues($tree, $class, $model, $root, $values)) {
         $columns = ['entity_type', 'entity_id', 'root_entity_type', 'root_entity_id'];
-        $query = strtr('INSERT IGNORE INTO @table (@columns) VALUES @values', [
-          '@table' => self::TABLE_ENTITY_ROOT,
-          '@columns' => implode(', ', $columns),
-          '@values' => implode(', ', $values)
+        $query = strtr('INSERT IGNORE INTO %table (%columns) VALUES %values', [
+          '%table' => self::TABLE_ENTITY_ROOT,
+          '%columns' => implode(', ', $columns),
+          '%values' => implode(', ', $values)
         ]);
         \Drupal::database()->query($query)->execute();
       }
@@ -60,18 +61,6 @@ class ParentAccessPolicy implements AccessPolicyInterface
    */
   public function onDelete(Model $model): void
   {
-    //    $class = get_class($model);
-    //    $tree = $this->childrenForClass($class, []);
-    //
-    //    if ($values = $this->queryValues($tree, $class, $model, $model, [])) {
-    //      $columns = ['entity_type', 'entity_id', 'root_entity_type', 'root_entity_id'];
-    //      $query = strtr('DELETE FROM @table WHERE (@columns) IN (@values)', [
-    //        '@table' => self::TABLE_ENTITY_ROOT,
-    //        '@columns' => implode(', ', $columns),
-    //        '@values' => implode(', ', $values)
-    //      ]);
-    //      \Drupal::database()->query($query)->execute();
-    //    }
     \Drupal::database()
       ->delete(self::TABLE_ENTITY_ROOT)
       ->condition('root_entity_type', $model::entityType())
@@ -98,10 +87,32 @@ class ParentAccessPolicy implements AccessPolicyInterface
   }
 
   /**
+   * @inheritDoc
+   */
+  /**
+   * @inheritDoc
+   */
+  public function shouldSetAccessPolicy(Model $model): bool
+  {
+    $checkFields = [];
+
+    foreach (self::getRelationships() as $relationship) {
+      /** @var \Drupal\spectrum\Model\ParentAccessFieldRelationship $relationship */
+      if ($relationship instanceof ParentAccessFieldRelationship) {
+        $checkFields[] = $relationship->getField();
+      }
+    }
+
+    $checkFields = array_unique($checkFields);
+
+    return ($this->isNew() || $model->someFieldsChanged($checkFields));
+  }
+
+  /**
    * @param array $tree
    * @param string $class
-   * @param \Drupal\spectrum\Model\Model $model
-   * @param \Drupal\spectrum\Model\Model $root
+   * @param Model $model
+   * @param Model $root
    * @param array $queryValues
    *
    * @return array
@@ -176,7 +187,7 @@ class ParentAccessPolicy implements AccessPolicyInterface
   }
 
   /**
-   * @param \Drupal\spectrum\Model\Model $model
+   * @param Model $model
    *
    * @return array
    */
@@ -201,18 +212,16 @@ class ParentAccessPolicy implements AccessPolicyInterface
   }
 
   /**
-   * @param \Drupal\spectrum\Model\Model $model
+   * @param Model $model
    *
-   * @return \Drupal\spectrum\Model\Model[]|null
+   * @return Model[]|null
    */
   protected function parentModelsForModel(Model $model): array
   {
     $parents = [];
 
     $parentRelationships = array_filter($model::getRelationships(), function (Relationship $relationship) {
-      /** @var FieldRelationship $relationship */
-      return is_a($relationship, FieldRelationship::class)
-        && $relationship->getClass() !== NULL;
+      return ($relationship instanceof ParentAccessFieldRelationship);
     });
 
     $parentRelationships = array_values($parentRelationships);
@@ -271,9 +280,11 @@ class ParentAccessPolicy implements AccessPolicyInterface
       }
 
       foreach ($model::getRelationships() as $relationship) {
-        if (is_a($relationship, FieldRelationship::class)) {
-          /** @var FieldRelationship $relationship*/
-          $parent = $relationship->getClass();
+        if ($relationship instanceof ParentAccessFieldRelationship) {
+          /** @var ParentAccessFieldRelationship $relationship */
+          $parent = $relationship->getModelType();
+
+          /** @var string $model */
           if (is_a($class, $parent, TRUE)) {
             $children[$class][$model] = $relationship;
             $children = $this->childrenForClass($model, $children);

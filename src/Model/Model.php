@@ -13,7 +13,6 @@ use Drupal\spectrum\Exceptions\PolymorphicException;
 use Drupal\spectrum\Exceptions\RelationshipNotDefinedException;
 use Drupal\spectrum\Models\User;
 use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
-use Drupal\spectrum\Permissions\AccessPolicy\PrivateAccessPolicy;
 use Drupal\spectrum\Permissions\PermissionServiceInterface;
 use Drupal\spectrum\Query\BundleQuery;
 use Drupal\spectrum\Query\Condition;
@@ -211,44 +210,22 @@ abstract class Model
   }
 
   /**
-   *
+   * This function will be called from the triggers to set the access policy on the model that is being saved.
    */
   public function setAccessPolicy(): void
   {
-    $checkFields = [];
-    $checkFields[] = 'field_organization';
-    $checkFields[] = 'field_contact';
-    $checkFields[] = 'field_company';
+    $accessPolicy = static::getAccessPolicy();
 
-    foreach (self::getRelationships() as $relationship) {
-      /** @var \Drupal\spectrum\Model\FieldRelationship $relationship */
-      if (
-        is_a($relationship, FieldRelationship::class)
-        && $relationship->getClass() !== NULL
-      ) {
-        $checkFields[] = $relationship->getField();
-      }
-    }
-
-    $checkFields = array_unique($checkFields);
-
-    $fieldChanged = FALSE;
-
-    foreach ($checkFields as $field) {
-      if ($this->fieldChanged($field, TRUE)) {
-        $fieldChanged = TRUE;
-        break;
-      }
-    }
-
-    if (($this->isNew() && !is_a($this::getAccessPolicy(), PrivateAccessPolicy::class))
-      || $fieldChanged
-    ) {
-      // Recalculate permissions.
-      static::getAccessPolicy()->onSave($this);
+    if ($accessPolicy->shouldSetAccessPolicy($this)) {
+      $accessPolicy->onSave($this);
     }
   }
 
+  /**
+   * This function will be called from the triggers to remove the model from the access policy (because the model is being deleted)
+   *
+   * @return void
+   */
   public function unsetAccessPolicy(): void
   {
     static::getAccessPolicy()->onDelete($this);
@@ -961,7 +938,7 @@ abstract class Model
    * @param mixed $oldValue what the old value should be, to return true for
    * @return boolean
    */
-  protected function fieldChangedFrom(string $fieldName, $oldValue): bool
+  public function fieldChangedFrom(string $fieldName, $oldValue): bool
   {
     $returnValue = false;
 
@@ -1007,7 +984,7 @@ abstract class Model
    * @param mixed $newValue what the old value should be
    * @return boolean
    */
-  protected function fieldChangedFromTo(string $fieldName, $oldValue, $newValue): bool
+  public function fieldChangedFromTo(string $fieldName, $oldValue, $newValue): bool
   {
     $returnValue = false;
     $isNew = $this->isNewlyInserted();
@@ -1049,7 +1026,7 @@ abstract class Model
    * @param mixed $oldValue what the new value should be, to return true for
    * @return boolean
    */
-  protected function fieldChangedTo(string $fieldName, $newValue): bool
+  public function fieldChangedTo(string $fieldName, $newValue): bool
   {
     $returnValue = false;
     // Next we check if the field actually changed
@@ -1081,6 +1058,26 @@ abstract class Model
   }
 
   /**
+   * Returns TRUE if any of the fields provided in the array changed value
+   *
+   * @param string[] $fieldNames
+   * @param boolean $ignoreFieldDoesNotExist
+   * @return boolean
+   */
+  public function someFieldsChanged(array $fieldNames, bool $ignoreFieldDoesNotExist = FALSE): bool
+  {
+    $returnValue = false;
+
+    foreach ($fieldNames as $fieldName) {
+      if ($this->fieldChanged($fieldName, $ignoreFieldDoesNotExist)) {
+        $returnValue = true;
+        break;
+      }
+    }
+
+    return $returnValue;
+  }
+  /**
    * Helper function for trigger methods. Returns true if the value of the field changed compared to the value stored in the database
    * This can be used to only execute certain code when a field changes. (For Example when setting the Title of a User based on the first and lastname, only execute the method when the first of the lastname changes)
    *
@@ -1089,7 +1086,7 @@ abstract class Model
    *
    * @return bool
    */
-  protected function fieldChanged(string $fieldName, bool $ignoreFieldDoesNotExist = FALSE): bool
+  public function fieldChanged(string $fieldName, bool $ignoreFieldDoesNotExist = FALSE): bool
   {
     $returnValue = $this->isNewlyInserted();
 
