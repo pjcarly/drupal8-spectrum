@@ -45,4 +45,12 @@ class NoAccessPolicy implements AccessPolicyInterface
   {
     return FALSE;
   }
+
+  /**
+   * @inheritDoc
+   */
+  public function shouldSetAccessPolicy(Model $model): bool {
+    return FALSE;
+  }
+
 }
