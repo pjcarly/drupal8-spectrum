@@ -96,7 +96,7 @@ class ParentAccessPolicy implements AccessPolicyInterface
   {
     $checkFields = [];
 
-    foreach (self::getRelationships() as $relationship) {
+    foreach ($model::getRelationships() as $relationship) {
       /** @var \Drupal\spectrum\Model\ParentAccessFieldRelationship $relationship */
       if ($relationship instanceof ParentAccessFieldRelationship) {
         $checkFields[] = $relationship->getField();
