@@ -5,6 +5,7 @@ namespace Drupal\spectrum\Models;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
 use Drupal\spectrum\Permissions\AccessPolicy\PublicAccessPolicy;
+use Drupal\user\Entity\Role;
 use Drupal\user\Entity\User as DrupalUser;
 
 /**
@@ -150,6 +151,18 @@ class User extends Model
   {
     $roles = $this->getRoles();
     return in_array($role, $roles);
+  }
+
+  /**
+   * Gives a Role to a User
+   *
+   * @param Role $role
+   * @return User
+   */
+  public function addRole(Role $role): User
+  {
+    $this->entity->addRole($role->id());
+    return $this;
   }
 
   /**
