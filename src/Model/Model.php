@@ -1172,7 +1172,7 @@ abstract class Model
   }
 
   /**
-   * Checks if the Relationshipname exists
+   * Checks if the provided Relationship Name exists as a Relationship
    *
    * @param string $relationshipName
    * @return boolean

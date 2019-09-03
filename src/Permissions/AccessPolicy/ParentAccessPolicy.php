@@ -30,7 +30,7 @@ class ParentAccessPolicy implements AccessPolicyInterface
     $roots = $this->getRootsForModel($model);
 
     $class = get_class($model);
-    $tree = $this->childrenForClass($class, []);
+    $tree = $this->getChildModelClassesForModelClass($class, []);
 
     $values = [];
 
@@ -256,7 +256,7 @@ class ParentAccessPolicy implements AccessPolicyInterface
   public function getChildren(string $class, array $children): array
   {
     foreach ($children[$class] as $child => $relationship) {
-      $children[$child] = $this->childrenForClass($child, $children);
+      $children[$child] = $this->getChildModelClassesForModelClass($child, $children);
     }
 
     return $children;
@@ -268,26 +268,32 @@ class ParentAccessPolicy implements AccessPolicyInterface
    *
    * @return array
    */
-  protected function childrenForClass(string $class, array $children): array
+  protected function getChildModelClassesForModelClass(string $modelClass, array $children): array
   {
-    $models = Model::getModelService()->getRegisteredModelClasses();
+    $allModelClasses = Model::getModelService()->getRegisteredModelClasses();
 
-    /** @var Model $model */
-    foreach ($models as $model) {
-      $accessPolicy = $model::getAccessPolicy();
+    // We start of by looping over every registered model class
+    // And see if we can find our a ParentAccessFieldRelationship defined to our ModelClass we need to check
+    /** @var Model $modelClassToCheck */
+    foreach ($allModelClasses as $modelClassToCheck) {
+      $accessPolicy = $modelClassToCheck::getAccessPolicy();
       if (!is_a($accessPolicy, ParentAccessPolicy::class)) {
+        // The Access Policy isnt a ParentAccessPolicy
+        // So our modelclass we want to check cannot be a Parent, we continue to the next
         continue;
       }
 
-      foreach ($model::getRelationships() as $relationship) {
+      // The Access Policy is a ParentAccess Policy
+      // Now we need to check whether our provided class is defined as a ParentAccessFieldRelationship on this Model Class
+      foreach ($modelClassToCheck::getRelationships() as $relationship) {
         if ($relationship instanceof ParentAccessFieldRelationship) {
           /** @var ParentAccessFieldRelationship $relationship */
-          $parent = $relationship->getModelType();
+          $relationshipClass = $relationship->getModelType();
 
-          /** @var string $model */
-          if (is_a($class, $parent, TRUE)) {
-            $children[$class][$model] = $relationship;
-            $children = $this->childrenForClass($model, $children);
+          /** @var string $modelClassToCheck */
+          if (is_a($modelClass, $relationshipClass, TRUE)) {
+            $children[$modelClass][$modelClassToCheck] = $relationship;
+            $children = $this->getChildModelClassesForModelClass($modelClassToCheck, $children);
           }
         }
       }
