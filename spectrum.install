@@ -1,11 +1,13 @@
 <?php
 
 use Drupal\Core\Database\Database;
+use Drupal\spectrum\Permissions\AccessPolicy\ParentAccessPolicy;
 
 /**
  * Implements hook_schema().
  */
-function spectrum_schema() {
+function spectrum_schema()
+{
   $schema['spectrum_entity_access'] = [
     'description' => 'A map between entities and the users that have permission to access them.',
     'fields' => [
@@ -68,7 +70,8 @@ function spectrum_schema() {
 /**
  * Installs spectrum_entity_access schema.
  */
-function spectrum_update_8001() {
+function spectrum_update_8001()
+{
   $spec = [
     'description' => '',
     'fields' => [
@@ -100,7 +103,8 @@ function spectrum_update_8001() {
 /**
  * Installs spectrum_entity_root for ParentAccessPolicy.
  */
-function spectrum_update_8002() {
+function spectrum_update_8002()
+{
   $spec = [
     'description' => '',
     'fields' => [
@@ -132,5 +136,5 @@ function spectrum_update_8002() {
     'primary key' => ['entity_type', 'entity_id', 'root_entity_type', 'root_entity_id'],
   ];
   $schema = Database::getConnection()->schema();
-  $schema->createTable('spectrum_entity_root', $spec);
+  $schema->createTable(ParentAccessPolicy::TABLE_ENTITY_ROOT, $spec);
 }

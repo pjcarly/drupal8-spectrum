@@ -57,7 +57,7 @@ class User extends Model
   public function afterInsert()
   {
     parent::afterInsert();
-    Model::getPermissionsService()->updateUserAccessPolicy($this->getId());
+    Model::getPermissionsService()->rebuildAccessPoliciesForUser($this);
   }
 
   /**
@@ -66,7 +66,7 @@ class User extends Model
   public function afterUpdate()
   {
     parent::afterUpdate();
-    Model::getPermissionsService()->updateUserAccessPolicy($this->getId());
+    Model::getPermissionsService()->rebuildAccessPoliciesForUser($this);
   }
 
   /**
@@ -75,7 +75,7 @@ class User extends Model
   public function beforeDelete()
   {
     parent::beforeDelete();
-    Model::getPermissionsService()->removeUserFromAccessPolicy($this->getId());
+    Model::getPermissionsService()->removeUserFromAccessPolicies($this);
   }
 
   /**

@@ -10,26 +10,12 @@ use Drupal\spectrum\Model\Model;
  *
  * @package Drupal\spectrum\Permissions\AccessPolicy
  */
-class PublicAccessPolicy implements AccessPolicyInterface
+class PublicAccessPolicy extends AccessPolicyBase
 {
-
-  /**
-   * @var \Drupal\Core\Database\Connection
-   */
-  protected $database;
-
-  /**
-   * PublicAccessPolicy constructor.
-   */
-  public function __construct()
-  {
-    $this->database = \Drupal::database();
-  }
-
   /**
    * @inheritDoc
    */
-  public function onSave(Model $model): void
+  public function onSave(Model $model): AccessPolicyInterface
   {
     $insertQuery = $this->database->insert(self::TABLE_ENTITY_ACCESS)
       ->fields([
@@ -52,26 +38,19 @@ class PublicAccessPolicy implements AccessPolicyInterface
 
     // Set the root model for all children.
     (new ParentAccessPolicy)->onSave($model);
+
+    return $this;
   }
 
   /**
    * @inheritDoc
    */
-  public function onDelete(Model $model): void
+  public function onDelete(Model $model): AccessPolicyInterface
   {
     $this->removeAccess($model);
     (new ParentAccessPolicy())->onDelete($model);
-  }
 
-  /**
-   * @param \Drupal\spectrum\Model\Model $model
-   */
-  protected function removeAccess(Model $model): void
-  {
-    $this->database->delete(self::TABLE_ENTITY_ACCESS)
-      ->condition('entity_type', $model::entityType())
-      ->condition('entity_id', (int) $model->getId())
-      ->execute();
+    return $this;
   }
 
   /**

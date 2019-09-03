@@ -14,7 +14,7 @@ use Drupal\spectrum\Query\Condition;
  *
  * @package Drupal\spectrum\Permissions\AccessPolicy
  */
-class ParentAccessPolicy implements AccessPolicyInterface
+class ParentAccessPolicy extends AccessPolicyBase
 {
 
   /**
@@ -25,7 +25,7 @@ class ParentAccessPolicy implements AccessPolicyInterface
   /**
    * @inheritDoc
    */
-  public function onSave(Model $model): void
+  public function onSave(Model $model): AccessPolicyInterface
   {
     $roots = $this->getRootsForModel($model);
 
@@ -51,21 +51,26 @@ class ParentAccessPolicy implements AccessPolicyInterface
           '%columns' => implode(', ', $columns),
           '%values' => implode(', ', $values)
         ]);
-        \Drupal::database()->query($query)->execute();
+
+        $this->database->query($query)->execute();
       }
     }
+
+    return $this;
   }
 
   /**
    * @inheritDoc
    */
-  public function onDelete(Model $model): void
+  public function onDelete(Model $model): AccessPolicyInterface
   {
-    \Drupal::database()
+    $this->database
       ->delete(self::TABLE_ENTITY_ROOT)
       ->condition('root_entity_type', $model::entityType())
       ->condition('root_entity_id', (int) $model->getId())
       ->execute();
+
+    return $this;
   }
 
   /**
@@ -84,6 +89,17 @@ class ParentAccessPolicy implements AccessPolicyInterface
     }
 
     return $access;
+  }
+
+  /**
+   * No need to rebuild the Access Policy in case of ParentAccessPolicy, this will be done automatically in the Parent onSave
+   *
+   * @param string $modelClass
+   * @return AccessPolicyInterface
+   */
+  public function rebuildForModelClass(string $modelClass): AccessPolicyInterface
+  {
+    return $this;
   }
 
   /**

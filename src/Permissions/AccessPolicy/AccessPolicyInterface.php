@@ -4,6 +4,7 @@ namespace Drupal\spectrum\Permissions\AccessPolicy;
 
 use Drupal\Core\Database\Query\Select;
 use Drupal\spectrum\Model\Model;
+use Drupal\spectrum\Models\User;
 
 /**
  * Interface AccessPolicyInterface
@@ -23,12 +24,12 @@ interface AccessPolicyInterface
    *
    * @param Model $model
    */
-  public function onSave(Model $model): void;
+  public function onSave(Model $model): AccessPolicyInterface;
 
   /**
    * @param Model $model
    */
-  public function onDelete(Model $model): void;
+  public function onDelete(Model $model): AccessPolicyInterface;
 
   /**
    * @param Select $query
@@ -54,4 +55,20 @@ interface AccessPolicyInterface
    * @return boolean
    */
   public function shouldSetAccessPolicy(Model $model): bool;
+
+  /**
+   * Rebuilds the Entire Access Policy table for the provided Model Class
+   *
+   * @param string $modelClass
+   * @return void
+   */
+  public function rebuildForModelClass(string $modelClass): AccessPolicyInterface;
+
+  /**
+   * Returns the Access for all the entities of a modelclass
+   *
+   * @param User $user
+   * @return AccessPolicyEntity[]
+   */
+  public function getUserAccessForModelClass(User $user, string $modelClass): array;
 }

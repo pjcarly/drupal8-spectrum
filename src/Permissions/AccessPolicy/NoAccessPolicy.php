@@ -4,6 +4,7 @@ namespace Drupal\spectrum\Permissions\AccessPolicy;
 
 use Drupal\Core\Database\Query\Select;
 use Drupal\spectrum\Model\Model;
+use Drupal\spectrum\Models\User;
 
 /**
  * Class NoAccessPolicy
@@ -16,17 +17,17 @@ class NoAccessPolicy implements AccessPolicyInterface
   /**
    * @inheritDoc
    */
-  public function onSave(Model $model): void
+  public function onSave(Model $model): AccessPolicyInterface
   {
-    // Do nothing.
+    return $this;
   }
 
   /**
    * @inheritDoc
    */
-  public function onDelete(Model $model): void
+  public function onDelete(Model $model): AccessPolicyInterface
   {
-    // Do nothing.
+    return $this;
   }
 
   /**
@@ -49,8 +50,24 @@ class NoAccessPolicy implements AccessPolicyInterface
   /**
    * @inheritDoc
    */
-  public function shouldSetAccessPolicy(Model $model): bool {
+  public function shouldSetAccessPolicy(Model $model): bool
+  {
     return FALSE;
   }
 
+  /**
+   * @inheritDoc
+   */
+  public function getUserAccessForModelClass(User $user, string $modelClass): array
+  {
+    return [];
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public function rebuildForModelClass(string $modelClass): AccessPolicyInterface
+  {
+    return $this;
+  }
 }
