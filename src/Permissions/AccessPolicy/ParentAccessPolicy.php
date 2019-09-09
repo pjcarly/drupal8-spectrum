@@ -121,7 +121,7 @@ class ParentAccessPolicy extends AccessPolicyBase
 
     $checkFields = array_unique($checkFields);
 
-    return ($this->isNew() || $model->someFieldsChanged($checkFields));
+    return ($model->isNew() || $model->someFieldsChanged($checkFields));
   }
 
   /**
