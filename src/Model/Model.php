@@ -1019,12 +1019,17 @@ abstract class Model
   }
 
   /**
-   * This method checks whether a field changed to a certain new value (independently of what it was before, as long as it actually changed)
-   * It is especially useful in triggermethods to determine  if certain logic should be executed
+   * This method checks whether a field changed to a certain new value
+   * (independently of what it was before, as long as it actually changed) It
+   * is especially useful in triggermethods to determine  if certain logic
+   * should be executed
    *
-   * @param string $fieldName the fieldname you want to check (for example field_body)
-   * @param mixed $oldValue what the new value should be, to return true for
+   * @param string $fieldName the fieldname you want to check (for example
+   *   field_body)
+   * @param $newValue
+   *
    * @return boolean
+   * @throws \Drupal\spectrum\Exceptions\InvalidFieldException
    */
   public function fieldChangedTo(string $fieldName, $newValue): bool
   {
