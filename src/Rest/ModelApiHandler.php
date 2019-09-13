@@ -207,8 +207,6 @@ class ModelApiHandler extends BaseApiHandler
    */
   public function get(Request $request): Response
   {
-    $debugId = uniqid();
-
     $modelClassName = $this->modelClassName;
     /** @var \Drupal\spectrum\Query\ModelQuery $query */
     $query = $modelClassName::getModelQuery();
@@ -324,7 +322,7 @@ class ModelApiHandler extends BaseApiHandler
       }
 
       $result = $query->fetchCollection();
-      \Drupal::logger('access-policy')->debug($debugId . '-n: ' . $result->size());
+
       if (!$result->isEmpty) {
         // We load the translations on the response
         $this->loadLanguages($request, $result);
@@ -485,10 +483,6 @@ class ModelApiHandler extends BaseApiHandler
         $responseCode = 404;
       }
     }
-
-    $query->setUseAccessPolicy(FALSE);
-    $check = $query->fetchCollection();
-    \Drupal::logger('access-policy')->debug($debugId . '-o: ' . $check->size());
 
     return new Response(json_encode($this->serialize($jsonapi)), $responseCode, []);
   }
@@ -717,7 +711,9 @@ class ModelApiHandler extends BaseApiHandler
     if (!empty($jsonapidocument->data->id) && !empty($jsonapidocument->data->type)) {
       // First we'll build the root model from the json api document
       // since we're talking about a patch here, the model must already exist in the database
+      /** @var ModelQuery $query */
       $query = $modelClassName::getModelQuery();
+      $query->setUseAccessPolicy(TRUE);
       $query->addCondition(new Condition($modelClassName::getIdField(), '=', $jsonapidocument->data->id));
 
       // We musn't forget to add all the conditions that were potentially added to this ApiHandler
@@ -836,7 +832,9 @@ class ModelApiHandler extends BaseApiHandler
       return new Response(null, 405, []);
     }
 
+    /** @var ModelQuery $query */
     $query = $modelClassName::getModelQuery();
+    $query->setUseAccessPolicy(TRUE);
     $query->addCondition(new Condition($modelClassName::getIdField(), '=', $this->slug));
 
     // We musn't forget to add all the conditions that were potentially added to this ApiHandler
