@@ -7,10 +7,16 @@ use Drupal\spectrum\Model\SimpleCollectionWrapper;
 use Drupal\spectrum\Models\Image;
 use Drupal\spectrum\Models\File;
 use Drupal\spectrum\Utils\DateUtils;
+use Drupal\spectrum\Utils\NumberUtils;
 use Drupal\spectrum\Utils\StringUtils;
 use Drupal\spectrum\Utils\LanguageUtils;
 use Drupal\spectrum\Utils\AddressUtils;
 use CommerceGuys\Addressing\Address;
+use Money\Currencies\CurrencyList;
+use Money\Currencies\ISOCurrencies;
+use Money\Formatter\DecimalMoneyFormatter;
+use Money\Formatter\IntlMoneyFormatter;
+use Money\Money;
 
 /**
  * THis class contains a whole list of Twig Filters to make it easier to use model functionality in twig renders
@@ -98,13 +104,19 @@ class TwigFilters extends \Twig_Extension
   /**
    * Returns a formatted price with Currency
    *
-   * @param number|string $price
+   * @param number|string|Money $price
    * @param string $currency
    * @return string
    */
   public static function price($price, string $currency = null): string
   {
-    return number_format((float) $price, 2, ',', ' ') . ' ' . $currency;
+    if (!is_a($price, Money::class)) {
+      return number_format((float) $price, 2, ',', ' ') . ' ' . $currency;
+    }
+    else {
+      /** @var Money $price */
+      return number_format((float) NumberUtils::getDecimal($price), 2, ',', ' ') . ' ' . $price->getCurrency();
+    }
   }
 
   /**
