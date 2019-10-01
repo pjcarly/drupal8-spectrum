@@ -149,6 +149,17 @@ class ModelApiHandler extends BaseApiHandler
   }
 
   /**
+   * Indicate whether or not to use the access policy
+   * This can be overridden by the implementation, but in most cases this should stay as it is
+   *
+   * @return boolean
+   */
+  protected function shouldUseAccessPolicy(): bool
+  {
+    return TRUE;
+  }
+
+  /**
    * This function will add all the Conditions in this ApiHandler to the provided Query
    *
    * @param ModelQuery $query The query you want to add the conditions to
@@ -210,7 +221,7 @@ class ModelApiHandler extends BaseApiHandler
     $modelClassName = $this->modelClassName;
     /** @var \Drupal\spectrum\Query\ModelQuery $query */
     $query = $modelClassName::getModelQuery();
-    $query->setUseAccessPolicy(TRUE);
+    $query->setUseAccessPolicy($this->shouldUseAccessPolicy());
     $limit = 0;
     $page = 0;
     $sort = '';
@@ -713,7 +724,7 @@ class ModelApiHandler extends BaseApiHandler
       // since we're talking about a patch here, the model must already exist in the database
       /** @var ModelQuery $query */
       $query = $modelClassName::getModelQuery();
-      $query->setUseAccessPolicy(TRUE);
+      $query->setUseAccessPolicy($this->shouldUseAccessPolicy());
       $query->addCondition(new Condition($modelClassName::getIdField(), '=', $jsonapidocument->data->id));
 
       // We musn't forget to add all the conditions that were potentially added to this ApiHandler
@@ -834,7 +845,7 @@ class ModelApiHandler extends BaseApiHandler
 
     /** @var ModelQuery $query */
     $query = $modelClassName::getModelQuery();
-    $query->setUseAccessPolicy(TRUE);
+    $query->setUseAccessPolicy($this->shouldUseAccessPolicy());
     $query->addCondition(new Condition($modelClassName::getIdField(), '=', $this->slug));
 
     // We musn't forget to add all the conditions that were potentially added to this ApiHandler
