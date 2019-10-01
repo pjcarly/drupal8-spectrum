@@ -37,16 +37,20 @@ abstract class Model
   use \Drupal\spectrum\Serializer\ModelSQLHelperMixin;
 
   /**
-   * The entity type of this model (for example "node"), this should be defined in every subclass
+   * The entity type of this model (for example "node"), this should be defined
+   * in every subclass
    *
    * @var string
+   * @return string
    */
   public abstract static function entityType(): string;
 
   /**
-   * The bundle of this model (for example "article"), this should be defined in every subclass
+   * The bundle of this model (for example "article"), this should be defined
+   * in every subclass
    *
    * @var string
+   * @return string
    */
   public abstract static function bundle(): string;
 
