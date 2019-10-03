@@ -148,15 +148,21 @@ trait ModelSerializerMixin
           $idsThatHaveBeenset = [];
           foreach ($this->entity->get($fieldName) as $referencedEntity) {
             $target_id = $referencedEntity->target_id;
+            $targetEntity = $referencedEntity->entity;
 
-            if (!array_key_exists($target_id, $idsThatHaveBeenset)) {
+            // 1) We only set references once, here we make sure an id hasnt already been set
+            //    This can happen when the record was added twice to the entity reference field
+            // 2) We must also be careful, Drupal doesnt cleanup references in target_id fields
+            //    So we must also check whether the entity exists before we can add the target_id
+            //    In case it has been deleted
+            if (!array_key_exists($target_id, $idsThatHaveBeenset) && !empty($targetEntity)) {
               $idsThatHaveBeenset[$target_id] = $target_id;
               $relationshipNode = new JsonApiNode();
               $relationshipNode->setId($referencedEntity->target_id);
 
               // Lets see if we have a modelclass to get the type from
-              $targetBundle = $referencedEntity->entity->bundle();
-              $targetEntityType = $referencedEntity->entity->getEntityType()->id();
+              $targetBundle = $targetEntity->bundle();
+              $targetEntityType = $targetEntity->getEntityType()->id();
 
               if (Model::hasModelClassForEntityAndBundle($targetEntityType, $targetBundle)) {
                 $targetModelClass = Model::getModelClassForEntityAndBundle($targetEntityType, $targetBundle);
@@ -164,7 +170,7 @@ trait ModelSerializerMixin
                 $relationshipNode->setType($targetModelClass::getSerializationType());
               } else {
                 // nothing found. Lets use the bundle
-                $relationshipNode->setType($referencedEntity->entity->bundle());
+                $relationshipNode->setType($targetEntity->bundle());
               }
 
               $relationshipDataNode->addNode($relationshipNode);
