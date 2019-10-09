@@ -74,6 +74,6 @@ class PublicAccessPolicy extends AccessPolicyBase
    */
   public function shouldSetAccessPolicy(Model $model): bool
   {
-    return $model->isNew();
+    return !isset($model->entity->original);
   }
 }
