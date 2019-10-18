@@ -811,6 +811,7 @@ abstract class Model
 
   /**
    * Put a new Model on the provided Relationship
+   * If relationship is referenced relationship save static first
    *
    * @param string|FieldRelationship|ReferencedRelationship $relationship
    * @return Model
@@ -2017,10 +2018,23 @@ abstract class Model
    * @param string $value
    * @return Model|null
    */
-  public static function findInStoreByFieldValue(string $fieldName, string $value = null): ?Model
+  public static function findModelInStoreByFieldValue(string $fieldName, string $value = null): ?Model
   {
     $modelStore = static::getModelStore();
-    return $modelStore->getByFieldValue(get_called_class(), $fieldName, $value);
+    return $modelStore->getModelByFieldValue(get_called_class(), $fieldName, $value);
+  }
+
+  /**
+   * Find a Collection of Models in the DataStore by the fieldName and value
+   *
+   * @param string $fieldName
+   * @param string $value
+   * @return Collection
+   */
+  public static function findCollectionInStoreByFieldValue(string $fieldName, string $value = null): Collection
+  {
+    $modelStore = static::getModelStore();
+    return $modelStore->getCollectionByFieldValue(get_called_class(), $fieldName, $value);
   }
 
   /**

@@ -26,7 +26,7 @@ class ModelStore implements ModelStoreInterface
    * @param string $value Value of the Field
    * @return Model|null
    */
-  public function getByFieldValue(string $modelClass, string $fieldName, string $value = null): ?Model
+  public function getModelByFieldValue(string $modelClass, string $fieldName, string $value = null): ?Model
   {
     $model = null;
 
@@ -40,6 +40,21 @@ class ModelStore implements ModelStoreInterface
     }
 
     return $model;
+  }
+
+  public function getCollectionByFieldValue(string $modelClass, string $fieldName, string $value): Collection
+  {
+    $collection = Collection::forgeNew($modelClass);
+
+    if (!empty($value) && array_key_exists($modelClass, $this->data)) {
+      foreach ($this->data[$modelClass] as $cachedModel) {
+        if ($cachedModel->entity->$fieldName->value === $value) {
+          $collection->put($cachedModel);
+        }
+      }
+    }
+
+    return $collection;
   }
 
   /**

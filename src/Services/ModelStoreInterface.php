@@ -12,14 +12,24 @@ use Drupal\spectrum\Model\Collection;
 interface ModelStoreInterface
 {
   /**
-   * Finds a Model by a value of a provided fieldname
+   * Finds a single Model by a value of a provided fieldname. If multiple Models have the same value, the first one is returned
    *
    * @param string $modelClass
    * @param string $fieldName Name of the Field
    * @param string $value Value of the Field
    * @return Model|null
    */
-  public function getByFieldValue(string $modelClass, string $fieldName, string $value): ?Model;
+  public function getModelByFieldValue(string $modelClass, string $fieldName, string $value): ?Model;
+
+  /**
+   * Finds all Models in the store by a provided field value
+   *
+   * @param string $modelClass
+   * @param string $fieldName Name of the Field
+   * @param string $value Value of the Field
+   * @return Collection
+   */
+  public function getCollectionByFieldValue(string $modelClass, string $fieldName, string $value): Collection;
 
   /**
    * Adds a Model to the DataStore
