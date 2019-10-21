@@ -4,6 +4,7 @@ namespace Drupal\spectrum\Model;
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\Core\Field\Plugin\Field\FieldType\EntityReferenceItem;
 use Drupal\spectrum\Exceptions\InvalidFieldException;
 use Drupal\spectrum\Exceptions\InvalidTypeException;
 use Drupal\spectrum\Exceptions\ModelClassNotDefinedException;
@@ -775,9 +776,33 @@ abstract class Model
 
         $currentId = $this->getId();
         if (!empty($currentId)) {
-          $fieldRelationshipField = $relationship->getFieldRelationship()->getField();
-          $fieldRelationshipColumn = $relationship->getFieldRelationship()->getColumn();
-          $objectToPut->entity->$fieldRelationshipField->$fieldRelationshipColumn = $currentId;
+          $fieldRelationship = $relationship->getFieldRelationship();
+          $fieldRelationshipField = $fieldRelationship->getField();
+          $fieldRelationshipColumn = $fieldRelationship->getColumn();
+
+          if ($fieldRelationship->isMultiple) {
+            // We know multiple values can exist. Lets see if the ID already exists
+            // Because we want to avoid setting the value multiple times
+
+            $fieldValues = $objectToPut->entity->$fieldRelationshipField;
+            $valueExists = false;
+
+            /** @var EntityReferenceItem $fieldValue */
+            foreach ($fieldValues as $fieldValue) {
+              if ($fieldValue->$fieldRelationshipColumn == $currentId) {
+                $valueExists = true;
+                break;
+              }
+            }
+
+            if (!$valueExists) {
+              $objectToPut->entity->$fieldRelationshipField->appendItem([
+                $fieldRelationshipColumn => $currentId
+              ]);
+            }
+          } else {
+            $objectToPut->entity->$fieldRelationshipField->$fieldRelationshipColumn = $currentId;
+          }
         }
 
         if ($includeInOriginalModels) {
@@ -1931,6 +1956,28 @@ abstract class Model
     }
 
     return $this;
+  }
+
+  /**
+   * Returns the Created date. Returns null if the entity is unsaved.
+   *
+   * @return \DateTime|null
+   */
+  public function getCreatedDate(): ?\DateTime
+  {
+    $timestamp = $this->entity->created->value;
+    return empty($timestamp) ? null : \DateTime::createFromFormat('U', $timestamp);
+  }
+
+  /**
+   * Returns the last modified date of the entity. Returns null if the entity is unsaved
+   *
+   * @return \DateTime|null
+   */
+  public function getLastModifiedDate(): ?\DateTime
+  {
+    $timestamp = $this->entity->changed->value;
+    return empty($timestamp) ? null : \DateTime::createFromFormat('U', $timestamp);
   }
 
   /**
