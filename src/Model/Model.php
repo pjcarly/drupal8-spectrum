@@ -1965,7 +1965,7 @@ abstract class Model
    */
   public function getCreatedDate(): ?\DateTime
   {
-    $timestamp = $this->entity->created->value;
+    $timestamp = $this->entity->{'created'}->value;
     return empty($timestamp) ? null : \DateTime::createFromFormat('U', $timestamp);
   }
 
