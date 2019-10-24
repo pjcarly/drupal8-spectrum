@@ -2,6 +2,8 @@
 
 namespace Drupal\spectrum\Utils;
 
+use Drupal\Core\Site\Settings;
+
 /**
  * This class provides Url helper functions used throughout the application
  */
@@ -14,15 +16,6 @@ class UrlUtils
    */
   public static function getBaseURL(): string
   {
-    $request = \Drupal::request();
-    $rootUrl = $request->getSchemeAndHttpHost() . base_path();
-    $config = \Drupal::config('spectrum.settings');
-
-    if ($rootUrl === 'http://default/') // Executed from CLI
-    {
-      $rootUrl = $config->get('default_base_path');
-    }
-
-    return $rootUrl;
+    return Settings::get('base_url');
   }
 }
