@@ -27,6 +27,16 @@ class LanguageUtils
   }
 
   /**
+   * Returns the currently active Force Language
+   *
+   * @return string|null
+   */
+  public static function getForcedLanguage(): ?string
+  {
+    return static::$forcedLanguage;
+  }
+
+  /**
    * Translate the passed in value through the Drupal t function, extra varialbes can be passed
    *
    * @param string $value
