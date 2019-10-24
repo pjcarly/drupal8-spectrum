@@ -32,7 +32,7 @@ class ModelStore implements ModelStoreInterface
 
     if (!empty($value) && array_key_exists($modelClass, $this->data)) {
       foreach ($this->data[$modelClass] as $cachedModel) {
-        if ($cachedModel->entity->$fieldName->value === $value) {
+        if ($cachedModel->entity->{$fieldName}->value === $value) {
           $model = $cachedModel;
           break;
         }
@@ -48,7 +48,7 @@ class ModelStore implements ModelStoreInterface
 
     if (!empty($value) && array_key_exists($modelClass, $this->data)) {
       foreach ($this->data[$modelClass] as $cachedModel) {
-        if ($cachedModel->entity->$fieldName->value === $value) {
+        if ($cachedModel->entity->{$fieldName}->value === $value) {
           $collection->put($cachedModel);
         }
       }

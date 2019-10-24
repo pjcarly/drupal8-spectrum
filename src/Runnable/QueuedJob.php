@@ -191,7 +191,7 @@ class QueuedJob extends RunnableModel
       $copiedJob->entity->field_end_time->value = null;
       $copiedJob->entity->field_start_time->value = null;
       $copiedJob->entity->field_error_message->value = null;
-      $copiedJob->entity->created->value = $created;
+      $copiedJob->entity->{'created'}->value = $created;
       $copiedJob->entity->field_job_status->value = 'Queued';
       $copiedJob->entity->field_scheduled_time->value = $newScheduledTime->format('Y-m-d\TH:i:s');
       $copiedJob->save();
