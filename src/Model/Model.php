@@ -1354,6 +1354,10 @@ abstract class Model
    */
   public static function forgeById($id): ?Model
   {
+    if (!isset($id)) {
+      throw new \Exception('Id provided to forgeById is null');
+    }
+
     return static::forge(null, $id);
   }
 
