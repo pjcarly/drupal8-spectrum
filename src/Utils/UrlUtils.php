@@ -16,6 +16,12 @@ class UrlUtils
    */
   public static function getBaseURL(): string
   {
-    return Settings::get('base_url');
+    $settingsBaseUrl = Settings::get('base_url');
+
+    if (empty($settingsBaseUrl)) {
+      throw new \Exception('Setting base_url is missing from settings.php');
+    }
+
+    return $settingsBaseUrl;
   }
 }
