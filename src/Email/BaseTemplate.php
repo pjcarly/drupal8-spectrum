@@ -43,7 +43,7 @@ class BaseTemplate extends Model
    */
   public function getHtml(): ?string
   {
-    return $this->entity->field_html_body->value;
+    return $this->entity->{'field_html_body'}->value;
   }
 
   /**
@@ -51,7 +51,7 @@ class BaseTemplate extends Model
    */
   public function setHtml(string $html): BaseTemplate
   {
-    $this->entity->field_html_body->value = $html;
+    $this->entity->{'field_html_body'}->value = $html;
 
     return $this;
   }

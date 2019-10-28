@@ -57,6 +57,6 @@ class Order extends Model
    */
   public function buildQueryOrder(): QueryOrder
   {
-    return new QueryOrder($this->entity->field_field->value, $this->entity->field_direction->value);
+    return new QueryOrder($this->entity->{'field_field'}->value, $this->entity->{'field_direction'}->value);
   }
 }

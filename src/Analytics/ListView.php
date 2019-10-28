@@ -58,7 +58,7 @@ class ListView extends Model
    */
   public function buildQuery(): BundleQuery
   {
-    $query = new BundleQuery($this->entity->field_entity->value, $this->entity->field_bundle->value);
+    $query = new BundleQuery($this->entity->{'field_entity'}->value, $this->entity->{'field_bundle'}->value);
     foreach ($this->conditions as $condition) {
       $query->addCondition($condition->buildQueryCondition());
     }
@@ -75,8 +75,8 @@ class ListView extends Model
    */
   public function getDrupalFieldDefinitions(): array
   {
-    $entityType = $this->entity->field_entity->value;
-    $bundle = $this->entity->field_bundle->value;
+    $entityType = $this->entity->{'field_entity'}->value;
+    $bundle = $this->entity->{'field_bundle'}->value;
     if (empty($bundle)) {
       return \Drupal::service('entity_field.manager')->getFieldDefinitions($entityType, $entityType);
     } else {

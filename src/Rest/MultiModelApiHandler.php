@@ -756,7 +756,7 @@ class MultiModelApiHandler extends BaseApiHandler
       if (!empty($listViewParameterValue) && is_numeric($listViewParameterValue)) {
         $listview = ListView::forgeById($listViewParameterValue);
 
-        if (!empty($listview) && $listview->entity->field_entity->value === $entityType) {
+        if (!empty($listview) && $listview->entity->{'field_entity'}->value === $entityType) {
           return $listview;
         }
       }

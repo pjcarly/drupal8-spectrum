@@ -31,9 +31,8 @@ abstract class RunnableModel extends Model
    */
   public final function run(): void
   {
-    $currentTime = gmdate('Y-m-d\TH:i:s');
     try {
-      $job = $this->fetch('job');
+      $this->fetch('job');
 
       $this->preExecution();
       $this->execute();

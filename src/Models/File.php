@@ -159,7 +159,7 @@ class File extends Model
    */
   public function getHash(): string
   {
-    return md5($this->entity->uuid->value);
+    return md5($this->entity->{'uuid'}->value);
   }
 
   /**
@@ -232,7 +232,7 @@ class File extends Model
       // we put the status on 0, if it is attached somewhere, Drupal will make sure it is not deleted
       // When the attached record is deleted, the corresponding file will follow suit aswell.
       // 6 hours after last modified date for a file, and not attached to a record, cron will clean up the file
-      $file->entity->status->value = 0;
+      $file->entity->{'status'}->value = 0;
       $file->save();
 
       return $file;

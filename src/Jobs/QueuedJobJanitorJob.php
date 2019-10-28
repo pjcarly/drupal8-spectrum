@@ -15,7 +15,7 @@ class QueuedJobJanitorJob extends QueuedJob
    */
   public function execute(): void
   {
-    $variable = json_decode($this->entity->field_variable->value);
+    $variable = json_decode($this->entity->{'field_variable'}->value);
 
     if (!empty($variable) && isset($variable->maxAgeInDays) && $variable->maxAgeInDays > 0) {
       $utc = new \DateTimeZone('UTC');

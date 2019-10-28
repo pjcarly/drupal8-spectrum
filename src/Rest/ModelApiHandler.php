@@ -1128,7 +1128,7 @@ class ModelApiHandler extends BaseApiHandler
       if (!empty($listViewParameterValue) && is_numeric($listViewParameterValue)) {
         $listview = ListView::forgeById($listViewParameterValue);
 
-        if (!empty($listview) && $listview->entity->field_entity->value === $modelClassName::entityType() && $listview->entity->field_bundle->value === $modelClassName::bundle()) {
+        if (!empty($listview) && $listview->entity->{'field_entity'}->value === $modelClassName::entityType() && $listview->entity->{'field_bundle'}->value === $modelClassName::bundle()) {
           return $listview;
         }
       }

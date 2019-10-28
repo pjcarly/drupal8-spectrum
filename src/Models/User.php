@@ -182,7 +182,7 @@ class User extends Model
    */
   public function activate(): User
   {
-    $this->entity->status->value = TRUE;
+    $this->entity->{'status'}->value = TRUE;
     return $this;
   }
 
@@ -193,7 +193,7 @@ class User extends Model
    */
   public function block(): User
   {
-    $this->entity->status->value = FALSE;
+    $this->entity->{'status'}->value = FALSE;
     return $this;
   }
 
@@ -219,7 +219,7 @@ class User extends Model
    */
   public function setEmail(string $value): User
   {
-    $this->entity->mail->value = $value;
+    $this->entity->{'mail'}->value = $value;
     return $this;
   }
 
@@ -228,7 +228,7 @@ class User extends Model
    */
   public function getEmail(): string
   {
-    return $this->entity->mail->value;
+    return $this->entity->{'mail'}->value;
   }
 
   /**
@@ -238,7 +238,7 @@ class User extends Model
    */
   public function setName(string $value): User
   {
-    $this->entity->name->value = $value;
+    $this->entity->{'name'}->value = $value;
     return $this;
   }
 
@@ -247,7 +247,7 @@ class User extends Model
    */
   public function getUsername(): string
   {
-    return $this->entity->name->value;
+    return $this->entity->{'name'}->value;
   }
 
   /**

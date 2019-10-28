@@ -32,9 +32,9 @@ class FileUnpublishUnreferencedFilesBatch extends BatchJob
 
     foreach ($files as $file) {
       if ($file->isInUse()) {
-        $file->entity->status->value = 1;
+        $file->entity->{'status'}->value = 1;
       } else {
-        $file->entity->status->value = 0;
+        $file->entity->{'status'}->value = 0;
       }
     }
 

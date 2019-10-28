@@ -182,7 +182,7 @@ class EmailTemplate extends Model
    */
   public function getSubject(): ?string
   {
-    return $this->entity->field_subject->value;
+    return $this->entity->{'field_subject'}->value;
   }
 
   /**
@@ -190,7 +190,7 @@ class EmailTemplate extends Model
    */
   public function setSubject(string $subject): EmailTemplate
   {
-    $this->entity->field_subject->value = $subject;
+    $this->entity->{'field_subject'}->value = $subject;
 
     return $this;
   }
@@ -200,7 +200,7 @@ class EmailTemplate extends Model
    */
   public function getHtml(): ?string
   {
-    return $this->entity->field_html_body->value;
+    return $this->entity->{'field_html_body'}->value;
   }
 
   /**
@@ -208,7 +208,7 @@ class EmailTemplate extends Model
    */
   public function setHtml(string $html): EmailTemplate
   {
-    $this->entity->field_html_body->value = $html;
+    $this->entity->{'field_html_body'}->value = $html;
 
     return $this;
   }
@@ -218,7 +218,7 @@ class EmailTemplate extends Model
    */
   public function getText(): ?string
   {
-    return $this->entity->field_text_body->value;
+    return $this->entity->{'field_text_body'}->value;
   }
 
   /**
@@ -226,7 +226,7 @@ class EmailTemplate extends Model
    */
   public function setText(string $text): EmailTemplate
   {
-    $this->entity->field_text_body->value = $text;
+    $this->entity->{'field_text_body'}->value = $text;
     return $this;
   }
 
@@ -235,7 +235,7 @@ class EmailTemplate extends Model
    */
   public function getKey(): ?string
   {
-    return $this->entity->field_key->value;
+    return $this->entity->{'field_key'}->value;
   }
 
   /**
@@ -243,7 +243,7 @@ class EmailTemplate extends Model
    */
   public function setKey(string $text): EmailTemplate
   {
-    $this->entity->field_key->value = $text;
+    $this->entity->{'field_key'}->value = $text;
     return $this;
   }
 
@@ -270,7 +270,7 @@ class EmailTemplate extends Model
    */
   public function getBaseTemplateId(): ?int
   {
-    return $this->entity->field_base_template->target_id;
+    return $this->entity->{'field_base_template'}->target_id;
   }
 
   /**
@@ -278,7 +278,7 @@ class EmailTemplate extends Model
    */
   public function setBaseTemplateId(int $id): EmailTemplate
   {
-    $this->entity->field_base_template->target_id = $id;
+    $this->entity->{'field_base_template'}->target_id = $id;
 
     return $this;
   }

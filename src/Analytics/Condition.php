@@ -96,8 +96,8 @@ class Condition extends Model
    */
   public function buildQueryCondition(): QueryCondition
   {
-    $field = $this->entity->field_field->value;
-    $operator = static::$operationMapping[$this->entity->field_operator->value];
+    $field = $this->entity->{'field_field'}->value;
+    $operator = static::$operationMapping[$this->entity->{'field_operator'}->value];
     $value = $this->getValue(); // This parses possible literals
 
     if (in_array($operator, QueryCondition::$multipleValueOperators)) {
@@ -115,7 +115,7 @@ class Condition extends Model
    */
   public function getValue()
   {
-    $value = $this->entity->field_value->value;
+    $value = $this->entity->{'field_value'}->value;
 
     if (in_array($value, static::$userLiterals) || in_array($value, static::$dateLiterals)) {
       $fieldDefinition = $this->getDrupalFieldDefinition();
@@ -152,7 +152,7 @@ class Condition extends Model
    */
   private function getDrupalFieldDefinition()
   {
-    $fieldName = $this->entity->field_field->value;
+    $fieldName = $this->entity->{'field_field'}->value;
     $fieldDefinitions = $this->get('parent')->getDrupalFieldDefinitions();
 
     if (array_key_exists($fieldName, $fieldDefinitions)) {
