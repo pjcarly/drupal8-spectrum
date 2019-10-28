@@ -214,6 +214,8 @@ class ParentAccessPolicy extends AccessPolicyBase
     $accessPolicy = $model::getAccessPolicy();
     if (!is_a($accessPolicy, ParentAccessPolicy::class)) {
       return [$model];
+    } else if($accessPolicy->modelIsRoot($model)){
+      return [$model];
     }
 
     if ($parents = $this->parentModelsForModel($model)) {
@@ -316,5 +318,17 @@ class ParentAccessPolicy extends AccessPolicyBase
     }
 
     return $children;
+  }
+
+  /**
+   * Returns if the model is the root model.
+   * This will always return false in case of ParentAccesspolicy, this is used to distinguish between parent and Orphanaccesspolicy.
+   * @param \Drupal\spectrum\Model\Model $model
+   *
+   * @return bool
+   */
+  protected function modelIsRoot(Model $model): bool
+  {
+    return false;
   }
 }
