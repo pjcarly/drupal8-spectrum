@@ -220,7 +220,7 @@ class ParentAccessPolicy extends AccessPolicyBase
 
     if ($parents = $this->parentModelsForModel($model)) {
       foreach ($parents as $parent) {
-        $roots = array_merge($roots, $this->getRootsForModel($parent));
+        $roots = array_merge($roots, $parent::getAccessPolicy()->getRootsForModel($parent));
       }
     } else {
       new \RuntimeException;
