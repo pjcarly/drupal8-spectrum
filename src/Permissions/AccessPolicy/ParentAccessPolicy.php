@@ -207,7 +207,7 @@ class ParentAccessPolicy extends AccessPolicyBase
    *
    * @return array
    */
-  protected function getRootsForModel(Model $model): array
+  public function getRootsForModel(Model $model): array
   {
     $roots = [];
 
