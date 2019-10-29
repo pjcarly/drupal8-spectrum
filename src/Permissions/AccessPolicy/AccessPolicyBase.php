@@ -82,4 +82,15 @@ abstract class AccessPolicyBase implements AccessPolicyInterface, LoggerAwareInt
   {
     return [];
   }
+
+
+  /**
+   * @param \Drupal\spectrum\Model\Model $model
+   *
+   * @return array
+   */
+  public function getRootsForModel(Model $model): array
+  {
+    return [$model];
+  }
 }

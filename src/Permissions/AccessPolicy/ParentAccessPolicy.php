@@ -207,18 +207,20 @@ class ParentAccessPolicy extends AccessPolicyBase
    *
    * @return array
    */
-  protected function getRootsForModel(Model $model): array
+  public function getRootsForModel(Model $model): array
   {
     $roots = [];
 
     $accessPolicy = $model::getAccessPolicy();
     if (!is_a($accessPolicy, ParentAccessPolicy::class)) {
       return [$model];
+    } else if($accessPolicy->modelIsRoot($model)){
+      return [$model];
     }
 
     if ($parents = $this->parentModelsForModel($model)) {
       foreach ($parents as $parent) {
-        $roots = array_merge($roots, $this->getRootsForModel($parent));
+        $roots = array_merge($roots, $parent::getAccessPolicy()->getRootsForModel($parent));
       }
     } else {
       new \RuntimeException;
@@ -316,5 +318,17 @@ class ParentAccessPolicy extends AccessPolicyBase
     }
 
     return $children;
+  }
+
+  /**
+   * Returns if the model is the root model.
+   * This will always return false in case of ParentAccesspolicy, this is used to distinguish between parent and Orphanaccesspolicy.
+   * @param \Drupal\spectrum\Model\Model $model
+   *
+   * @return bool
+   */
+  protected function modelIsRoot(Model $model): bool
+  {
+    return false;
   }
 }
