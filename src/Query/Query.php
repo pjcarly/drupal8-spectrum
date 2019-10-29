@@ -6,6 +6,7 @@ use Drupal\Core\Database\Query\Condition as DrupalCondition;
 use Drupal\Core\Database\Query\Select as DrupalSelectQuery;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\Query\QueryInterface;
+use Drupal\spectrum\Data\ChunkedIterator;
 use Drupal\spectrum\Runnable\BatchableInterface;
 
 /**
@@ -26,13 +27,6 @@ abstract class Query implements BatchableInterface
    * @var array
    */
   protected $batchIds = [];
-
-  /**
-   * Here we store the current page we are on in our batch cycle
-   *
-   * @var int
-   */
-  protected $batchPage;
 
   /**
    * This array holds the base conditions, no matter what, they will always be applied on the query, regardless of logic or implementation
@@ -123,33 +117,15 @@ abstract class Query implements BatchableInterface
   /**
    * {@inheritdoc}
    */
-  public function getNextBatch(): array
+  public function getBatchGenerator(): \Generator
   {
-    $this->batchPage++;
-
-    // We get all the keys we need to handle, in an array with consecutive numbers starting at 0 as the key
-    $keys = array_keys($this->batchIds);
-
-    // Next we generate an array with consecutive numbers starting at the page we are currently handleing, and for the max range of the batchsize
-    $range = range(($this->batchPage - 1) * $this->batchSize, ($this->batchPage * $this->batchSize) - 1);
-    $range = array_flip($range);
-
-    // Next we generate the intersection, between the range and the keys, so we only have the keys that we need to handle in this batch
-    $nextBatchIds = array_intersect_key($keys, $range);
-
-    if (empty($nextBatchIds)) {
-      return [];
-    }
-
-    // Now we need to find the Id Field of the entity type, as this can be different per entity in Drupal
-    $entityTypeManager = \Drupal::entityTypeManager();
-    $entityTypeDefinition = $entityTypeManager->getDefinition($this->getEntityType());
-    $idField = $entityTypeDefinition->getKeys()['id'];
-
     // Now we copy the current query, and add a condition for the IDS we need to handle
-    $query = $this->copy();
-    $query->addCondition(new Condition($idField, 'IN', array_values($nextBatchIds)));
-    return $query->fetch();
+    $storage = \Drupal::entityTypeManager()->getStorage($this->entityType);
+    $entities = new ChunkedIterator($storage, $this->batchIds, $this->batchSize);
+
+    foreach ($entities as $entity) {
+      yield $entity;
+    }
   }
 
   /**
@@ -161,7 +137,6 @@ abstract class Query implements BatchableInterface
   public function setBatchSize(int $batchSize): BatchableInterface
   {
     $this->batchSize = $batchSize;
-    $this->batchPage = 0;
     $this->batchIds = $this->fetchIds();
 
     return $this;

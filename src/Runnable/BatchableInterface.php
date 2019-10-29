@@ -9,7 +9,7 @@ interface BatchableInterface
    *
    * @return array
    */
-  public function getNextBatch(): array;
+  public function getBatchGenerator(): \Generator;
 
   /**
    * Returns the total amount of records that will pass through the batch job.

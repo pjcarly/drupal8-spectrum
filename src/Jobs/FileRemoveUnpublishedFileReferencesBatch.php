@@ -2,6 +2,7 @@
 
 namespace Drupal\spectrum\Jobs;
 
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\spectrum\Runnable\BatchJob;
 use Drupal\spectrum\Runnable\BatchableInterface;
 use Drupal\spectrum\Models\File;
@@ -26,11 +27,9 @@ class FileRemoveUnpublishedFileReferencesBatch extends BatchJob
   /**
    * {@inheritdoc}
    */
-  protected function processBatch(array $batch): void
+  protected function process(EntityInterface $entity): void
   {
-    $files = Collection::forgeByEntities(File::class, $batch);
-    foreach ($files as $file) {
-      $file->removeFromReferences();
-    }
+    $file = File::forgeByEntity($entity);
+    $file->removeFromReferences();
   }
 }

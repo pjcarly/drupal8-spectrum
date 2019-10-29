@@ -30,8 +30,16 @@ class ModelTrigger
 
     if (Model::hasModelClassForEntityAndBundle($entityType, $bundle)) {
       $modelClass = Model::getModelClassForEntityAndBundle($entityType, $bundle);
-      /** @var Model $model */
-      $model = $modelClass::forgeByEntity($entity);
+
+      // We check the model reference on the entity itself, this way we can reuse the previous model state in the triggers
+      $modelOnEntity = $entity->__spectrumModel;
+      if ($modelOnEntity && $modelOnEntity::entityType() === $entityType && $modelOnEntity::bundle() === $bundle) {
+        /** @var Model $model */
+        $model = $modelOnEntity;
+      } else {
+        /** @var Model $model */
+        $model = $modelClass::forgeByEntity($entity);
+      }
 
       switch ($trigger) {
         case 'presave':

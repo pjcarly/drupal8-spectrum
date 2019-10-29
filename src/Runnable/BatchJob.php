@@ -2,8 +2,8 @@
 
 namespace Drupal\spectrum\Runnable;
 
-use React\EventLoop\Factory;
-use Drupal\spectrum\Model\Model;
+use Drupal\Core\Entity\EntityInterface;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 abstract class BatchJob extends QueuedJob
 {
@@ -19,21 +19,22 @@ abstract class BatchJob extends QueuedJob
     }
 
     if (empty($date)) {
-      $utc = new \DateTimeZone('UTC');
-      $date = new \DateTime();
-      $date->setTimezone($utc);
+      $date = new \DateTime('now', new \DateTimeZone('UTC'));
     }
 
+    /** @var BatchJob $queuedJob */
     $queuedJob = $registeredJob->createJobInstance();
-    $queuedJob->entity->title->value = $jobName;
+    $queuedJob->setTitle($jobName);
 
     if (!empty($variable)) {
-      $queuedJob->entity->field_variable->value = $variable;
+      $queuedJob->setVariable($variable);
     }
 
-    $queuedJob->entity->field_batch_size->value = $batchSize;
-    $queuedJob->entity->field_minutes_to_failure->value = 10;
-    $queuedJob->entity->field_scheduled_time->value = $date->format('Y-m-d\TH:i:s');
+    $queuedJob->setBatchSize($batchSize);
+    $queuedJob->setMinutesToFailure(10);
+    $queuedJob->setScheduledTime($date);
+
+
     $queuedJob->put('job', $registeredJob);
     $queuedJob->save();
 
@@ -45,53 +46,48 @@ abstract class BatchJob extends QueuedJob
     $batchable = $this->getBatchable();
     $batchSize = $this->getBatchSize();
     $batchable->setBatchSize($batchSize);
-
     $totalRecords = $batchable->getTotalBatchedRecords();
 
-    $sleep = $this->getSleep();
-    $loop = Factory::create();
+    $progressBar = new ProgressBar($this->output, $totalRecords);
+    $progressBar->setFormat('debug');
+    $progressBar->start();
 
-    $loopCycle = 0;
-    $loop->addPeriodicTimer($sleep, function () use (&$loop, &$batchable, &$batchSize, &$totalRecords, &$loopCycle) {
-      $batch = $batchable->getNextBatch();
-      $loopCycle++;
+    foreach ($batchable->getBatchGenerator() as $entity) {
+      $this->process($entity);
+      $progressBar->advance();
+    }
 
-      if (!empty($batch)) {
-        $recordsProcessed = (($loopCycle - 1) * $batchSize) + sizeof($batch);
-        $memory = memory_get_usage() / 1024;
-        $memoryUsage = ($memory < 1024) ? number_format($memory, 2, ',', ' ') . ' KB' : number_format($memory / 1024, 2, ',', ' ') . ' MB';
-
-        if (!empty($totalRecords)) {
-          $this->print(sprintf('(%s) Processing %u/%u (%s)', $this->entity->title->value, $recordsProcessed, $totalRecords, $memoryUsage));
-        } else {
-          $this->print(sprintf('(%s) Processing %u (%s)', $this->entity->title->value, $recordsProcessed, $memoryUsage));
-        }
-
-        $this->processBatch($batch);
-
-        Model::clearAllDrupalStaticEntityCaches();
-      }
-
-      if (empty($batch) || sizeof($batch) < $batchSize) {
-        $loop->stop();
-      }
-    });
-
-    $loop->run();
+    $progressBar->finish();
+    $this->getOutput()->writeln('');
   }
 
-  protected function getBatchSize(): int
-  {
-    $batchSize = $this->entity->field_batch_size->value;
-    return empty($batchSize) ? 200 : $batchSize;
-  }
-
+  /**
+   * @return float
+   */
   protected function getSleep(): float
   {
-    $sleep = $this->entity->field_sleep->value;
-    return empty($sleep) || ($sleep <= 0) ? 0.02 : $sleep;
+    $sleep = $this->entity->{'field_sleep'}->value;
+    return empty($sleep) || ($sleep <= 0) ? 0 : $sleep;
   }
 
-  protected abstract function processBatch(array $batch): void;
+  /**
+   * @return int
+   */
+  public function getBatchSize(): int
+  {
+    return $this->entity->{'field_batch_size'}->value ?? 200;
+  }
+
+  /**
+   * @param int $value
+   * @return self
+   */
+  public function setBatchSize(?int $value): QueuedJob
+  {
+    $this->entity->{'field_batch_size'}->value = $value;
+    return $this;
+  }
+
+  protected abstract function process(EntityInterface $entity): void;
   protected abstract function getBatchable(): BatchableInterface;
 }

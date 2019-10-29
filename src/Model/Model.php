@@ -144,6 +144,11 @@ abstract class Model
   public function __construct(EntityInterface $entity)
   {
     $this->entity = $entity;
+
+    // TODO: implement __spectrumModel for Triggers
+    // We set the new instance of the Model on the entity, this way we can reuse the model state in triggers
+    //$entity->__spectrumModel = $this;
+
     $id = $this->getId();
 
     if (isset($id)) {
@@ -259,7 +264,7 @@ abstract class Model
 
           foreach ($referencedModels as $referencedModel) {
             $referencedEntityType = $referencedModel->entity->getEntityTypeId();
-            $referencedEntityBundle = empty($referencedModel->entity->type) ? null : $referencedModel->entity->type->target_id;
+            $referencedEntityBundle = empty($referencedModel->entity->type) ? null : $referencedModel->entity->{'type'}->target_id;
             $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
 
             // we must also check for an inverse relationship and, if found, put the inverse as well
@@ -274,7 +279,7 @@ abstract class Model
 
           if (!empty($referencedModel)) {
             $referencedEntityType = $referencedModel->entity->getEntityTypeId();
-            $referencedEntityBundle = empty($referencedModel->entity->type) ? null : $referencedModel->entity->type->target_id;
+            $referencedEntityBundle = empty($referencedModel->entity->type) ? null : $referencedModel->entity->{'type'}->target_id;
             $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
 
             // we must also check for an inverse relationship and, if found, put the inverse as well
@@ -681,7 +686,7 @@ abstract class Model
     // if the relationship is polymorphic we can get multiple bundles, so we must define the modeltype based on the bundle and entity of the current looping entity
     // or if the related modeltype isn't set yet, we must set it once
     $referencedEntityType = $referencedModel->entity->getEntityTypeId();
-    $referencedEntityBundle = empty($referencedModel->entity->type) ? null : $referencedModel->entity->type->target_id;
+    $referencedEntityBundle = empty($referencedModel->entity->type) ? null : $referencedModel->entity->{'type'}->target_id;
     $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
 
     // we must also check for an inverse relationship and, if found, put the inverse as well
@@ -1974,15 +1979,36 @@ abstract class Model
   }
 
   /**
+   * @param \DateTime $value
+   * @return self
+   */
+  public function setCreatedDate(\DateTime $value): Model
+  {
+    $this->entity->{'created'}->value = $value->format('u');
+    return $this;
+  }
+
+  /**
    * Returns the last modified date of the entity. Returns null if the entity is unsaved
    *
    * @return \DateTime|null
    */
   public function getLastModifiedDate(): ?\DateTime
   {
-    $timestamp = $this->entity->changed->value;
+    $timestamp = $this->entity->{'changed'}->value;
     return empty($timestamp) ? null : \DateTime::createFromFormat('U', $timestamp);
   }
+
+  /**
+   * @param \DateTime $value
+   * @return self
+   */
+  public function setLastModifiedDate(\DateTime $value): Model
+  {
+    $this->entity->{'created'}->value = $value->format('u');
+    return $this;
+  }
+
 
   /**
    * Checks if there is a Model Class defined for the Entity / Bundle

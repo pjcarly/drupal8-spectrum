@@ -2,11 +2,11 @@
 
 namespace Drupal\spectrum\Jobs;
 
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\spectrum\Runnable\BatchJob;
 use Drupal\spectrum\Runnable\BatchableInterface;
 use Drupal\spectrum\Models\File;
 use Drupal\spectrum\Query\Condition;
-use Drupal\spectrum\Model\Collection;
 
 /**
  * This batch job will unpublish all files which arent in use by other models or drupal
@@ -26,18 +26,16 @@ class FileUnpublishUnreferencedFilesBatch extends BatchJob
   /**
    * {@inheritdoc}
    */
-  protected function processBatch(array $batch): void
+  protected function process(EntityInterface $entity): void
   {
-    $files = Collection::forgeByEntities(File::class, $batch);
+    $file = File::forgeByEntity($entity);
 
-    foreach ($files as $file) {
-      if ($file->isInUse()) {
-        $file->entity->{'status'}->value = 1;
-      } else {
-        $file->entity->{'status'}->value = 0;
-      }
+    if ($file->isInUse()) {
+      $file->entity->{'status'}->value = 1;
+    } else {
+      $file->entity->{'status'}->value = 0;
     }
 
-    $files->save();
+    $file->save();
   }
 }

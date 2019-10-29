@@ -2,11 +2,11 @@
 
 namespace Drupal\spectrum\Jobs;
 
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\spectrum\Runnable\BatchJob;
 use Drupal\spectrum\Runnable\BatchableInterface;
 use Drupal\spectrum\Models\File;
 use Drupal\spectrum\Query\Condition;
-use Drupal\spectrum\Model\Collection;
 
 /**
  * This Batch job will remove unpublished files from the database and filesystem (through drupal triggers)
@@ -27,14 +27,10 @@ class FileRemoveUnpublishedFilesBatch extends BatchJob
   /**
    * {@inheritdoc}
    */
-  protected function processBatch(array $batch): void
+  protected function process(EntityInterface $entity): void
   {
-    $files = Collection::forgeByEntities(File::class, $batch);
+    $file = File::forgeByEntity($entity);
 
-    foreach ($files as $file) {
-      $files->removeModel($file);
-    }
-
-    $files->save();
+    $file->delete();
   }
 }

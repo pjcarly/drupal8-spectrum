@@ -55,21 +55,19 @@ class RegisteredJob extends Model
   }
 
   /**
-   * Execute the Registered Job a single time. You can call this method without needing to schedule the job
-   *
-   * @return void
+   * @return boolean
    */
-  public final function singleRun(): void
+  public function isActive(): bool
   {
-    try {
-      $job = $this->createJobInstance();
-      $job->setCliContext($this->cliContext);
-      $job->execute();
-    } catch (\Exception $ex) {
-      $message = 'Runnable execution failed (' . $job->entity->field_class->value . '): ' . $ex->getMessage();
-      $this->print($message);
-      \Drupal::logger('spectrum_cron')->error($message);
-    }
+    return $this->entity->{'field_active'}->value ?? false;
+  }
+
+  /**
+   * @return string
+   */
+  public function getJobClass(): ?string
+  {
+    return $this->entity->{'field_class'}->value;
   }
 
   /**
@@ -79,7 +77,7 @@ class RegisteredJob extends Model
    */
   public final function createJobInstance(): RunnableModel
   {
-    $class = $this->entity->field_class->value;
+    $class = $this->getJobClass();
 
     if (!class_exists($class)) {
       throw new \Exception('Class does not exist');

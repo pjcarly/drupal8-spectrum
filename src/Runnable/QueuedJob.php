@@ -3,11 +3,13 @@
 namespace Drupal\spectrum\Runnable;
 
 use Drupal\Core\Session\AnonymousUserSession;
-use Drupal\Core\Session\AccountSwitcher;
+use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface;
 use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
 use Drupal\spectrum\Permissions\AccessPolicy\PublicAccessPolicy;
 use Drupal\spectrum\Runnable\RegisteredJob;
 use Drupal\spectrum\Exceptions\JobTerminateException;
+use Drupal\spectrum\Model\FieldRelationship;
+use Drupal\spectrum\Models\User;
 
 /**
  * A queued job is an implementation of RunnableModel, it can be scheduled to be executed on a later time.
@@ -16,6 +18,14 @@ use Drupal\spectrum\Exceptions\JobTerminateException;
  */
 class QueuedJob extends RunnableModel
 {
+  const STATUS_QUEUED = 'Queued';
+  const STATUS_RUNNING = 'Running';
+  const STATUS_COMPLETED = 'Completed';
+  const STATUS_FAILED = 'Failed';
+  const RESCHEDULE_FROM_SCHEDULED_TIME = 'Scheduled Time';
+  const RESCHEDULE_FROM_START_TIME = 'Start Time';
+  const RESCHEDULE_FROM_END_TIME = 'End Time';
+
   /**
    * The entityType for this model
    *
@@ -54,6 +64,7 @@ class QueuedJob extends RunnableModel
   public static function relationships()
   {
     parent::relationships();
+    static::addRelationship(new FieldRelationship('run_as', 'field_run_as.target_id'));
   }
 
   /**
@@ -64,24 +75,254 @@ class QueuedJob extends RunnableModel
    */
   public final function preExecution(): void
   {
-    $currentTime = gmdate('Y-m-d\TH:i:s');
-    $this->print('Job with ID: ' . $this->getId() . ' STARTED at ' . $currentTime . ' (' . $this->entity->title->value . ')');
+    $currentTime = new \DateTime('now', new \DateTimeZone('UTC'));
+    $this->print('Job with ID: ' . $this->getId() . ' STARTED at ' . $currentTime->format('Y-m-d\TH:i:s') . ' (' . $this->getTitle() . ')');
 
-    $this->entity->field_job_status->value = 'Running';
-    $this->entity->field_start_time->value = $currentTime;
-    $this->entity->field_error_message->value = null;
-    $this->entity->field_end_time->value = null;
+    $this->setStatus(QueuedJob::STATUS_RUNNING);
+    $this->setStartTime($currentTime);
+    $this->setEndTime(null);
+    $this->setErrorMessage(null);
     $this->save();
 
     // Check the user context we need to execute in, and switch to the provided user if necessary.
     // If no provided user, execute as anonymous
 
     $this->accountSwitcher = \Drupal::service('account_switcher');
-    if (empty($this->entity->field_run_as->target_id) || $this->entity->field_run_as->target_id === 0 || empty($this->entity->field_run_as->entity)) {
+    if (empty($this->getRunAsUserId()) || $this->getRunAsUserId() === 0 || empty($this->fetch('run_as'))) {
       $this->accountSwitcher->switchTo(new AnonymousUserSession());
     } else {
-      $this->accountSwitcher->switchTo($this->entity->field_run_as->entity);
+      $this->accountSwitcher->switchTo($this->getRunAsUser());
     }
+  }
+
+  /**
+   * @return User|null
+   */
+  public function getRunAsUser(): ?User
+  {
+    return $this->get('user');
+  }
+
+  /**
+   * @return integer|null
+   */
+  public function getRunAsUserId(): ?int
+  {
+    return $this->entity->{'field_run_as'}->target_id;
+  }
+
+  /**
+   * @return string
+   */
+  public function getTitle(): string
+  {
+    return $this->entity->{'title'}->value;
+  }
+
+  /**
+   * @param string $value
+   * @return self
+   */
+  public function setTitle(string $value): QueuedJob
+  {
+    $this->entity->{'title'}->value = $value;
+    return $this;
+  }
+
+  /**
+   * @return string|null
+   */
+  public function getVariable(): ?string
+  {
+    return $this->entity->{'field_variable'}->value;
+  }
+
+  /**
+   * @param string|null $value
+   * @return self
+   */
+  public function setVariable(?string $value): QueuedJob
+  {
+    $this->entity->{'field_variable'}->value = $value;
+    return $this;
+  }
+
+  /**
+   * @return \DateTime|null
+   */
+  public function getStartTime(): ?\DateTime
+  {
+    if (empty($this->entity->{'field_start_time'}->value)) {
+      return null;
+    }
+
+    return \DateTime::createFromFormat(DateTimeItemInterface::DATETIME_STORAGE_FORMAT, $this->entity->{'field_start_time'}->value, new \DateTimeZone(DateTimeItemInterface::STORAGE_TIMEZONE));
+  }
+
+  public function setStartTime(?\DateTime $value): QueuedJob
+  {
+    if (empty($value)) {
+      $this->entity->{'field_start_time'}->value = null;
+      return $this;
+    }
+
+    $value = clone $value;
+
+    $this->entity->{'field_start_time'}->value = $value
+      ->setTimezone(new \DateTimeZone(DateTimeItemInterface::STORAGE_TIMEZONE))
+      ->format(DateTimeItemInterface::DATETIME_STORAGE_FORMAT);
+
+    return $this;
+  }
+
+  /**
+   * @return \DateTime|null
+   */
+  public function getEndTime(): ?\DateTime
+  {
+    if (empty($this->entity->{'field_end_time'}->value)) {
+      return null;
+    }
+
+    return \DateTime::createFromFormat(DateTimeItemInterface::DATETIME_STORAGE_FORMAT, $this->entity->{'field_end_time'}->value, new \DateTimeZone(DateTimeItemInterface::STORAGE_TIMEZONE));
+  }
+
+  public function setEndTime(?\DateTime $value): QueuedJob
+  {
+    if (empty($value)) {
+      $this->entity->{'field_end_time'}->value = null;
+      return $this;
+    }
+
+    $value = clone $value;
+
+    $this->entity->{'field_end_time'}->value = $value
+      ->setTimezone(new \DateTimeZone(DateTimeItemInterface::STORAGE_TIMEZONE))
+      ->format(DateTimeItemInterface::DATETIME_STORAGE_FORMAT);
+
+    return $this;
+  }
+
+  /**
+   * @return \DateTime|null
+   */
+  public function getScheduledTime(): ?\DateTime
+  {
+    if (empty($this->entity->{'field_scheduled_time'}->value)) {
+      return null;
+    }
+
+    return \DateTime::createFromFormat(DateTimeItemInterface::DATETIME_STORAGE_FORMAT, $this->entity->{'field_scheduled_time'}->value, new \DateTimeZone(DateTimeItemInterface::STORAGE_TIMEZONE));
+  }
+
+  /**
+   * @param \DateTime|null $value
+   * @return QueuedJob
+   */
+  public function setScheduledTime(?\DateTime $value): QueuedJob
+  {
+    if (empty($value)) {
+      $this->entity->{'field_scheduled_time'}->value = null;
+      return $this;
+    }
+
+    $value = clone $value;
+
+    $this->entity->{'field_scheduled_time'}->value = $value
+      ->setTimezone(new \DateTimeZone(DateTimeItemInterface::STORAGE_TIMEZONE))
+      ->format(DateTimeItemInterface::DATETIME_STORAGE_FORMAT);
+
+    return $this;
+  }
+
+  /**
+   * @return string|null
+   */
+  public function getErrorMessage(): ?string
+  {
+    return $this->entity->{'field_error_message'}->value;
+  }
+
+  /**
+   * @param string|null $value
+   * @return self
+   */
+  public function setErrorMessage(?string $value): QueuedJob
+  {
+    $this->entity->{'field_error_message'}->value = $value;
+    return $this;
+  }
+
+  /**
+   * @return string
+   */
+  public function getStatus(): string
+  {
+    return $this->entity->{'field_job_status'}->value;
+  }
+
+  /**
+   * @param string $value
+   * @return self
+   */
+  public function setStatus(string $value): QueuedJob
+  {
+    $this->entity->{'field_job_status'}->value = $value;
+    return $this;
+  }
+
+  /**
+   * @return int
+   */
+  public function getMinutesToFailure(): int
+  {
+    return $this->entity->{'field_minutes_to_failure'}->value;
+  }
+
+  /**
+   * @param int $value
+   * @return self
+   */
+  public function setMinutesToFailure(int $value): QueuedJob
+  {
+    $this->entity->{'field_minutes_to_failure'}->value = $value;
+    return $this;
+  }
+
+  /**
+   * @return int
+   */
+  public function getRescheduleIn(): ?int
+  {
+    return $this->entity->{'field_reschedule_in'}->value;
+  }
+
+  /**
+   * @param int $value
+   * @return self
+   */
+  public function setRescheduleIn(?int $value): QueuedJob
+  {
+    $this->entity->{'field_reschedule_in'}->value = $value;
+    return $this;
+  }
+
+  /**
+   * @return string|null
+   */
+  public function getRescheduleFrom(): ?string
+  {
+    return $this->entity->{'field_reschedule_from'}->value;
+  }
+
+  /**
+   * @param string|null $value
+   * @return self
+   */
+  public function setRescheduleFrom(?string $value): QueuedJob
+  {
+    $this->entity->{'field_reschedule_from'}->value = $value;
+    return $this;
   }
 
   /**
@@ -109,21 +350,20 @@ class QueuedJob extends RunnableModel
     }
 
     if (empty($date)) {
-      $utc = new \DateTimeZone('UTC');
-      $date = new \DateTime();
-      $date->setTimezone($utc);
+      $date = new \DateTime('now', new \DateTimeZone('UTC'));
     }
 
+    /** @var QueuedJob $queuedJob */
     $queuedJob = $registeredJob->createJobInstance();
-    $queuedJob->entity->title->value = $jobName;
+    $queuedJob->setTitle($jobName);
 
     if (!empty($variable)) {
-      $queuedJob->entity->field_variable->value = $variable;
+      $queuedJob->setVariable($variable);
     }
 
-    $queuedJob->entity->field_minutes_to_failure->value = 10;
-    $queuedJob->entity->field_scheduled_time->value = $date->format('Y-m-d\TH:i:s');
-    $queuedJob->put('job', $registeredJob);
+    $queuedJob->setMinutesToFailure(10);
+    $queuedJob->setScheduledTime($date);
+    $queuedJob->setRegisteredJob($registeredJob);
     $queuedJob->save();
 
     return $queuedJob;
@@ -153,32 +393,44 @@ class QueuedJob extends RunnableModel
     $this->accountSwitcher->switchBack();
 
     // Lets put the job to completed
-    $currentTime = gmdate('Y-m-d\TH:i:s');
-    $this->print('Job with ID: ' . $this->getId() . ' FINISHED at ' . $currentTime . ' (' . $this->entity->title->value . ')');
+    $currentTime = new \DateTime('now', new \DateTimeZone('UTC'));
+    $this->print(strtr('Job with ID: @jobId FINISHED at @finishedTime (@jobName)', [
+      '@jobId' => $this->getId(),
+      '@finishedTime' => $currentTime->format(DateTimeItemInterface::DATETIME_STORAGE_FORMAT),
+      '@jobName' => $this->getTitle()
+    ]));
 
-    if ($this->entity->field_job_status->value === 'Running') {
-      $this->entity->field_job_status->value = 'Completed';
+    if ($this->getStatus() === QueuedJob::STATUS_RUNNING) {
+      $this->setStatus(QueuedJob::STATUS_COMPLETED);
     }
 
-    $this->entity->field_end_time->value = $currentTime;
+    $this->setEndTime($currentTime);
     $this->save();
 
     // And check if we need to reschedule this job
-    $rescheduleIn = $this->entity->field_reschedule_in->value;
-    $rescheduleFrom = $this->entity->field_reschedule_from->value;
-    if (!empty($rescheduleIn) && $rescheduleIn > 0 && !empty($rescheduleFrom)) {
-      $newScheduledTime = null;
-      $utc = new \DateTimeZone('UTC');
-      $now = new \DateTime();
-      $now->setTimezone($utc);
-      $created = $now->format('U');
+    $this->checkForReschedule();
+  }
 
-      if ($rescheduleFrom === 'Scheduled Time') {
-        $newScheduledTime = new \DateTime($this->entity->field_scheduled_time->value, $utc);
-      } else if ($rescheduleFrom === 'Start Time') {
-        $newScheduledTime = new \DateTime($this->entity->field_start_time->value, $utc);
-      } else if ($rescheduleFrom === 'End Time') {
-        $newScheduledTime = new \DateTime($this->entity->field_end_time->value, $utc);
+  /**
+   * T
+   *
+   * @return QueuedJob
+   */
+  private final function checkForReschedule(): QueuedJob
+  {
+    $rescheduleIn = $this->getRescheduleIn();
+    $rescheduleFrom = $this->getRescheduleFrom();
+    if (!empty($rescheduleIn) && $rescheduleIn > 0 && !empty($rescheduleFrom)) {
+
+      $now = new \DateTime('now', new \DateTimeZone('UTC'));
+      $newScheduledTime = null;
+
+      if ($rescheduleFrom === QueuedJob::RESCHEDULE_FROM_SCHEDULED_TIME) {
+        $newScheduledTime = $this->getScheduledTime();
+      } else if ($rescheduleFrom === QueuedJob::RESCHEDULE_FROM_START_TIME) {
+        $newScheduledTime = $this->getStartTime();
+      } else if ($rescheduleFrom === QueuedJob::RESCHEDULE_FROM_END_TIME) {
+        $newScheduledTime = $this->getEndTime();
       }
 
       if ($newScheduledTime < $now) {
@@ -187,17 +439,24 @@ class QueuedJob extends RunnableModel
 
       $newScheduledTime->modify('+' . $rescheduleIn . ' minutes');
 
+      /** @var QueuedJob $copiedJob */
       $copiedJob = $this->getCopiedModel();
-      $copiedJob->entity->field_end_time->value = null;
-      $copiedJob->entity->field_start_time->value = null;
-      $copiedJob->entity->field_error_message->value = null;
-      $copiedJob->entity->{'created'}->value = $created;
-      $copiedJob->entity->field_job_status->value = 'Queued';
-      $copiedJob->entity->field_scheduled_time->value = $newScheduledTime->format('Y-m-d\TH:i:s');
+      $copiedJob->setEndTime(null);
+      $copiedJob->setStartTime(null);
+      $copiedJob->setErrorMessage(null);
+      $copiedJob->setCreatedDate($now);
+      $copiedJob->setStatus(QueuedJob::STATUS_QUEUED);
+      $copiedJob->setScheduledTime($newScheduledTime);
       $copiedJob->save();
 
-      $this->print('Job with ID: ' . $copiedJob->getId() . ' RESCHEDULED at ' . $newScheduledTime->format('Y-m-d\TH:i:s') . ' (' . $copiedJob->entity->title->value . ')');
+      $this->print(strtr('Job with ID: @jobId RESCHEDULED at @finishedTime (@jobName)', [
+        '@jobId' => $copiedJob->getId(),
+        '@finishedTime' => $newScheduledTime->format(DateTimeItemInterface::DATETIME_STORAGE_FORMAT),
+        '@jobName' => $copiedJob->getTitle()
+      ]));
     }
+
+    return $this;
   }
 
   /**
@@ -212,11 +471,16 @@ class QueuedJob extends RunnableModel
     // Execution failed, set the status to failed
     // Set a possible error message
 
-    $currentTime = gmdate('Y-m-d\TH:i:s');
-    $this->print('Job with ID: ' . $this->getId() . ' FAILED at ' . $currentTime . ' (' . $this->entity->title->value . ')');
+    $currentTime = new \DateTime('now', new \DateTimeZone('UTC'));
 
-    $this->entity->field_job_status->value = 'Failed';
-    $this->entity->field_end_time->value = $currentTime;
+    $this->print(strtr('Job with ID: @jobId FAILED at @finishedTime (@jobName)', [
+      '@jobId' => $this->getId(),
+      '@finishedTime' => $currentTime->format(DateTimeItemInterface::DATETIME_STORAGE_FORMAT),
+      '@jobName' => $this->getTitle()
+    ]));
+
+    $this->setStatus(QueuedJob::STATUS_FAILED);
+    $this->setEndTime($currentTime);
 
     if (!empty($ex)) {
       $message = $ex->getMessage();
@@ -226,12 +490,13 @@ class QueuedJob extends RunnableModel
         \Drupal::logger('spectrum_cron')->error($ex->getMessage() . ' ' . $ex->getTraceAsString());
       }
 
-      $this->entity->field_error_message->value = $message;
+      $this->setErrorMessage($message);
     } else if (!empty($message)) {
-      $this->entity->field_error_message->value = $message;
+      $this->setErrorMessage($message);
     }
 
     $this->save();
+    $this->checkForReschedule();
   }
 
   public final function runtimeError(\Error $error): void
@@ -239,11 +504,16 @@ class QueuedJob extends RunnableModel
     // Execution failed, set the status to failed
     // Set a possible error message
 
-    $currentTime = gmdate('Y-m-d\TH:i:s');
-    $this->print('Job with ID: ' . $this->getId() . ' generated RUNTIME ERROR at ' . $currentTime . ' (' . $this->entity->title->value . ')');
+    $currentTime = new \DateTime('now', new \DateTimeZone('UTC'));
 
-    $this->entity->field_job_status->value = 'Failed';
-    $this->entity->field_end_time->value = $currentTime;
+    $this->print(strtr('Job with ID: @jobId generated RUNTIME ERROR at @finishedTime (@jobName)', [
+      '@jobId' => $this->getId(),
+      '@finishedTime' => $currentTime->format(DateTimeItemInterface::DATETIME_STORAGE_FORMAT),
+      '@jobName' => $this->getTitle()
+    ]));
+
+    $this->setStatus(QueuedJob::STATUS_FAILED);
+    $this->setEndTime($currentTime);
 
     $message = $error->getMessage();
     $message = '(' . $message . ') ' . $error->getTraceAsString();
@@ -251,7 +521,8 @@ class QueuedJob extends RunnableModel
     \Drupal::logger('spectrum_cron')->error($error->getMessage());
     \Drupal::logger('spectrum_cron')->error($error->getTraceAsString());
 
-    $this->entity->field_error_message->value = $message;
+    $this->setErrorMessage($message);
     $this->save();
+    $this->checkForReschedule();
   }
 }

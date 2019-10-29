@@ -1,0 +1,6 @@
+services:
+  spectrum.cron:
+    class: Drupal\spectrum\Command\CronCommand
+    arguments: []
+    tags:
+      - { name: drupal.command }

@@ -4,6 +4,7 @@ namespace Drupal\spectrum\Runnable;
 
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Model\FieldRelationship;
+use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * The standard implementation class of All Runnable models. The scheduler will call the run() method on this class.
@@ -11,6 +12,11 @@ use Drupal\spectrum\Model\FieldRelationship;
  */
 abstract class RunnableModel extends Model
 {
+  /**
+   * @var OutputInterface
+   */
+  protected $output;
+
   /**
    * A way to mark the Context as CLI or not. Based on this, a different print will be done
    *
@@ -22,6 +28,42 @@ abstract class RunnableModel extends Model
   {
     parent::relationships();
     static::addRelationship(new FieldRelationship('job', 'field_job.target_id'));
+  }
+
+  /**
+   * @return RegisteredJob
+   */
+  public function getRegisteredJob(): RegisteredJob
+  {
+    return $this->get('job');
+  }
+
+  /**
+   * @param RegisteredJob $value
+   * @return self
+   */
+  public function setRegisteredJob(RegisteredJob $value): RunnableModel
+  {
+    $this->put('job', $value);
+    return $this;
+  }
+
+  /**
+   * @param OutputInterface $output
+   * @return self
+   */
+  public function setOutput(OutputInterface $output): RunnableModel
+  {
+    $this->output = $output;
+    return $this;
+  }
+
+  /**
+   * @return OutputInterface
+   */
+  public function getOutput(): OutputInterface
+  {
+    return $this->output;
   }
 
   /**
@@ -52,11 +94,7 @@ abstract class RunnableModel extends Model
    */
   public function print(string $message): void
   {
-    if ($this->cliContext) {
-      drush_print($message);
-    } else {
-      print($message . '<br/>');
-    }
+    $this->output->writeln($message);
   }
 
   /**
