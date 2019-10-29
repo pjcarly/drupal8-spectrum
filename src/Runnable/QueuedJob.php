@@ -100,7 +100,7 @@ class QueuedJob extends RunnableModel
    */
   public function getRunAsUser(): ?User
   {
-    return $this->get('user');
+    return $this->get('run_as');
   }
 
   /**
