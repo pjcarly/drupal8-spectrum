@@ -91,7 +91,7 @@ class QueuedJob extends RunnableModel
     if (empty($this->getRunAsUserId()) || $this->getRunAsUserId() === 0 || empty($this->fetch('run_as'))) {
       $this->accountSwitcher->switchTo(new AnonymousUserSession());
     } else {
-      $this->accountSwitcher->switchTo($this->getRunAsUser());
+      $this->accountSwitcher->switchTo($this->getRunAsUser()->entity);
     }
   }
 
