@@ -6,14 +6,10 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Drupal\Console\Core\Command\ContainerAwareCommand;
 use Drupal\Console\Annotations\DrupalCommand;
-use Symfony\Component\Console\Helper\ProgressBar;
-use Drupal\spectrum\Query\EntityQuery;
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Query\Order;
-use Drupal\spectrum\Runnable\BatchJob;
 use Drupal\spectrum\Runnable\QueuedJob;
 use React\EventLoop\Factory;
 
