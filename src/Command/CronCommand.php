@@ -35,6 +35,7 @@ class CronCommand extends ContainerAwareCommand
   {
     $this
       ->setName('spectrum:cron:start')
+      ->setAliases(['sp:cron'])
       ->setDescription('Starts the Cron Event Loop');
   }
 
@@ -43,6 +44,8 @@ class CronCommand extends ContainerAwareCommand
    */
   protected function execute(InputInterface $input, OutputInterface $output)
   {
+    $this->getIo()->info('Spectrum Cron Started');
+
     $loop = Factory::create();
 
     $loop->addPeriodicTimer(1 / 4, function () use (&$loop, &$output) {
