@@ -82,6 +82,9 @@ class CronCommand extends ContainerAwareCommand
         /** @var \Drupal\Core\Cache\MemoryCache\MemoryCacheInterface $cache */
         $cache = \Drupal::service('entity.memory_cache');
         $cache->deleteAll();
+
+        // And finally clear the model store of any data as well
+        Model::getModelStore()->clearAll();
       }
     });
 

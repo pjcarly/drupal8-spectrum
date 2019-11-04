@@ -19,12 +19,7 @@ class ModelStore implements ModelStoreInterface
   private $data = [];
 
   /**
-   * Finds a Model by a value of a provided fieldname
-   *
-   * @param string $modelClass
-   * @param string $fieldName Name of the Field
-   * @param string $value Value of the Field
-   * @return Model|null
+   * {@inheritdoc}
    */
   public function getModelByFieldValue(string $modelClass, string $fieldName, string $value = null): ?Model
   {
@@ -42,6 +37,9 @@ class ModelStore implements ModelStoreInterface
     return $model;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getCollectionByFieldValue(string $modelClass, string $fieldName, string $value): Collection
   {
     $collection = Collection::forgeNew($modelClass);
@@ -58,12 +56,9 @@ class ModelStore implements ModelStoreInterface
   }
 
   /**
-   * Adds a Model to the DataStore
-   *
-   * @param Model $model
-   * @return self
+   * {@inheritdoc}
    */
-  public function addModel(Model $model): ModelStore
+  public function addModel(Model $model): ModelStoreInterface
   {
     $modelClass = $model->getModelName();
 
@@ -77,17 +72,23 @@ class ModelStore implements ModelStoreInterface
   }
 
   /**
-   * Add every Model in the Collection to the datastore
-   *
-   * @param Collection $collection
-   * @return self
+   * {@inheritdoc}
    */
-  public function addCollection(Collection $collection): ModelStore
+  public function addCollection(Collection $collection): ModelStoreInterface
   {
     foreach ($collection as $model) {
       $this->addModel($model);
     }
 
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function clearAll(): ModelStoreInterface
+  {
+    $this->data = [];
     return $this;
   }
 }

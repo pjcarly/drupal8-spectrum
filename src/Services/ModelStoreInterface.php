@@ -37,7 +37,7 @@ interface ModelStoreInterface
    * @param Model $model
    * @return self
    */
-  public function addModel(Model $model): ModelStore;
+  public function addModel(Model $model): ModelStoreInterface;
 
   /**
    * Add every Model in the Collection to the datastore
@@ -45,5 +45,12 @@ interface ModelStoreInterface
    * @param Collection $collection
    * @return self
    */
-  public function addCollection(Collection $collection): ModelStore;
+  public function addCollection(Collection $collection): ModelStoreInterface;
+
+  /**
+   * Clears the entire model store of all the data
+   *
+   * @return self
+   */
+  public function clearAll(): ModelStoreInterface;
 }
