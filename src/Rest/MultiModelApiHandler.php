@@ -17,7 +17,8 @@ use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Serializer\JsonApiRootNode;
 use Drupal\spectrum\Serializer\JsonApiBaseNode;
 use Drupal\spectrum\Serializer\JsonApiLink;
-use Drupal\spectrum\Analytics\ListView;
+use Drupal\spectrum\Analytics\AnalyticsServiceInterface;
+use Drupal\spectrum\Analytics\ListViewInterface;
 
 use Drupal\spectrum\Exceptions\InvalidTypeException;
 use Drupal\spectrum\Model\PolymorphicCollection;
@@ -287,20 +288,8 @@ class MultiModelApiHandler extends BaseApiHandler
           // Lets see if a listView was passed and found (done in the conditionListforfliterarray function)
           $listview = static::getListViewForFilterArray($this->entityType, $filter);
           if (!empty($listview)) {
-            $listview->fetch('conditions');
-            $listview->fetch('sort_orders');
-            // a matching listview was found
-            $listviewQuery = $listview->buildQuery();
-
-            foreach ($listviewQuery->conditions as $condition) {
-              $query->addCondition($condition);
-            }
-
-            foreach ($listviewQuery->sortOrders as $sortOrder) {
-              if (!$query->hasSortOrderForField($sortOrder->fieldName)) {
-                $query->addSortOrder($sortOrder);
-              }
-            }
+            // a matching listview was found, we now apply the query to be adjusted by the list view
+            $listview->applyListViewOnQuery($query);
           }
         }
       }
@@ -754,9 +743,12 @@ class MultiModelApiHandler extends BaseApiHandler
     if (array_key_exists('_listview', $filter)) {
       $listViewParameterValue = $filter['_listview'];
       if (!empty($listViewParameterValue) && is_numeric($listViewParameterValue)) {
-        $listview = ListView::forgeById($listViewParameterValue);
 
-        if (!empty($listview) && $listview->entity->{'field_entity'}->value === $entityType) {
+        /** @var AnalyticsServiceInterface $analyticsService */
+        $analyticsService = \Drupal::service(AnalyticsServiceInterface::SERVICE_NAME);
+        $listview = $analyticsService->getListViewById($listViewParameterValue);
+
+        if (!empty($listview) && $listview->getEntityName() === $entityType) {
           return $listview;
         }
       }
