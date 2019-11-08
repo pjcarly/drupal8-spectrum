@@ -2,6 +2,8 @@
 
 namespace Drupal\spectrum\Query;
 
+use Drupal\Core\Entity\Query\ConditionInterface;
+use Drupal\Core\Entity\Query\QueryInterface;
 use Drupal\spectrum\Exceptions\InvalidOperatorException;
 
 /**
@@ -76,16 +78,17 @@ class Condition
   /**
    * Apply this condition to a DrupalEntityQuery. This can both be a drupal query or a condition (in order to create nested groups)
    *
-   * @param \Drupal\Core\Entity\Query\QueryInterface|\Drupal\Core\Entity\Query\ConditionInterface $query
+   * @param QueryInterface|ConditionInterface $base where you want to put the condition on (can either be the base query, or another condition)
+   * @param QueryInterface $query The base query (needed to create conditionGroups)
    * @return Condition
    */
-  public function addQueryCondition($query): Condition
+  public function addQueryCondition($base, QueryInterface $query): Condition
   {
     if ($this->value === 'null') {
       if ($this->operator === '<>') {
-        $query->exists($this->fieldName);
+        $base->exists($this->fieldName);
       } else {
-        $query->notExists($this->fieldName);
+        $base->notExists($this->fieldName);
       }
     } else {
       if ($this->operator === '<>' || $this->operator === 'NOT IN') {
@@ -93,9 +96,9 @@ class Condition
         $orGroup = $query->orConditionGroup();
         $orGroup->condition($this->fieldName, $this->value, $this->operator);
         $orGroup->notExists($this->fieldName);
-        $query->condition($orGroup);
+        $base->condition($orGroup);
       } else {
-        $query->condition($this->fieldName, $this->value, $this->operator);
+        $base->condition($this->fieldName, $this->value, $this->operator);
       }
     }
 

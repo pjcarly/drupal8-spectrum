@@ -340,7 +340,7 @@ abstract class Query implements BatchableInterface
     // Base conditions must always be applied, regardless of the logic
     foreach ($this->baseConditions as $condition) {
       if (!$this->hasExpression($condition->getFieldName())) {
-        $condition->addQueryCondition($query);
+        $condition->addQueryCondition($query, $query);
       }
     }
 
@@ -348,7 +348,7 @@ abstract class Query implements BatchableInterface
     if (empty($this->conditionLogic)) {
       foreach ($this->conditions as $condition) {
         if (!$this->hasExpression($condition->getFieldName())) {
-          $condition->addQueryCondition($query);
+          $condition->addQueryCondition($query, $query);
         }
       }
     } else {

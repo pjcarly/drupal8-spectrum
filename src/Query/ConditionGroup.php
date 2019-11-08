@@ -144,7 +144,7 @@ class ConditionGroup
         // check for condition in list
         if (array_key_exists($value - 1, $this->conditions)) {
           $condition = $this->conditions[$value - 1];
-          $condition->addQueryCondition($base);
+          $condition->addQueryCondition($base, $drupalQuery);
         } else {
           // Condition doesnt exist, ignore it
         }

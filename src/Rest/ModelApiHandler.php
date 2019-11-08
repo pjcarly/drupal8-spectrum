@@ -1025,7 +1025,7 @@ class ModelApiHandler extends BaseApiHandler
    *
    * @param string $modelClassName
    * @param array $filter
-   * @return array
+   * @return Condition[]
    */
   public static function getConditionListForFilterArray(string $modelClassName, array $filters): array
   {
