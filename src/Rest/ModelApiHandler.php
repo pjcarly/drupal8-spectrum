@@ -1039,9 +1039,17 @@ class ModelApiHandler extends BaseApiHandler
         $prettyFieldParts = explode('.', $filter['field']);
         if (array_key_exists($prettyFieldParts[0], $prettyToFieldsMap)) {
           $field = $prettyToFieldsMap[$prettyFieldParts[0]];
-          $operator = (array_key_exists('operator', $filter) && Condition::isValidSingleModelOperator($filter['operator'])) ? $filter['operator'] : '=';
+          $operator = array_key_exists('operator', $filter) ? $filter['operator'] : '=';
           $value = array_key_exists('value', $filter) ? $filter['value'] : null;
           $id = array_key_exists('id', $filter) ? $filter['id'] : null;
+
+          $isMultiValueOperator = Condition::isValidMultipleModelsOperator($operator);
+          $operator = (Condition::isValidSingleModelOperator($operator) || $isMultiValueOperator) ? $operator : '=';
+
+          if ($isMultiValueOperator) {
+            $value = isset($value) ? explode(',', $value) : [];
+            $id = isset($id) ? explode(',', $id) : [];
+          }
 
           // Now that we filtered everything out the filter arrays, we can build our actual Condition
           if (!empty($operator) && !empty($field) && (!empty($value) || !empty($id))) {
