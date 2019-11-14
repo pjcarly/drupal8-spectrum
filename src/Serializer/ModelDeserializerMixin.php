@@ -116,6 +116,9 @@ trait ModelDeserializerMixin
     if (static::currentUserHasFieldPermission($fieldName, 'edit')) // Only allow fields the user has access to
     {
       switch ($fieldDefinition->getType()) {
+        case 'autonumber':
+          // Do nothing. This is automatically set
+          break;
         case 'boolean':
           $this->entity->$fieldName->value = $attributeValue ? '1' : '0'; // cannot be stricly typed, drupal uses true/false as '1' and '0' interchangeably
           break;
