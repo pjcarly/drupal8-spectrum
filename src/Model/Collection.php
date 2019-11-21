@@ -19,8 +19,24 @@ use Drupal\spectrum\Serializer\JsonApiDataNode;
  */
 class Collection implements \IteratorAggregate, \Countable
 {
+  /**
+   * The FQCN of the models in this Collection
+   *
+   * @var string
+   */
   public $modelType;
+
+  /**
+   * Array containing all the Models of the Collection. The array is keyed by the "key" property of the model. In case the model exists in the DB this is the ID, if not this is a placeholder key
+   * @var Model[]
+   */
   public $models;
+
+  /**
+   * Array containing all the original Models of the Collection. The array is keyed by the "key" property of the model. In case the model exists in the DB this is the ID, if not this is a placeholder key
+   * When saving a collection, all the models that exist in the `originalModels` array, but do not exist in the `models` array are removed
+   * @var Model[]
+   */
   public $originalModels;
 
   public function __construct()
@@ -221,6 +237,36 @@ class Collection implements \IteratorAggregate, \Countable
 
     return $this;
   }
+
+  /**
+   * Sets the selected flag of every model in the collection to TRUE
+   *
+   * @return self
+   */
+  public function selectAll(): Collection
+  {
+    foreach ($this->models as $model) {
+      $model->selected = true;
+    }
+
+    return $this;
+  }
+
+  /**
+   * Sets the selected flag of every model in the collection to FALSE
+   *
+   * @return self
+   */
+  public function deselectAll(): Collection
+  {
+    foreach ($this->models as $model) {
+      $model->selected = false;
+    }
+
+    return $this;
+  }
+
+
 
   /**
    * Validate all the models in this collection, if a relationshipName was passed get the relationship and validate that
@@ -854,7 +900,7 @@ class Collection implements \IteratorAggregate, \Countable
   /**
    * Magic isset method, for use by the Twig rendering engine
    *
-   * @param [type] $property
+   * @param string $property
    * @return boolean
    */
   public function __isset($property)

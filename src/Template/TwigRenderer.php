@@ -2,9 +2,6 @@
 
 namespace Drupal\spectrum\Template;
 
-use Drupal\spectrum\Model\Model;
-use Drupal\spectrum\Model\SimpleModelWrapper;
-
 /**
  * This class exposes a render function to render Twig Templates with.
  */

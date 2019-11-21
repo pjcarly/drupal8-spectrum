@@ -2308,4 +2308,46 @@ abstract class Model
 
     return $this;
   }
+
+  /**
+   * Sets the selected flag on every model of a relationship to true
+   *
+   * @param string $relationshipName
+   * @return self
+   */
+  public function setRelationshipSelected(string $relationshipName): Model
+  {
+    $valuesToSet = $this->get($relationshipName);
+
+    if (isset($valuesToSet)) {
+      if ($valuesToSet instanceof Model) {
+        $valuesToSet->selected = true;
+      } else if ($valuesToSet instanceof Collection) {
+        $valuesToSet->selectAll();
+      }
+    }
+
+    return $this;
+  }
+
+  /**
+   * Sets the selected flag on every model of a relationship to false
+   *
+   * @param string $relationshipName
+   * @return self
+   */
+  public function setRelationshipDeselected(string $relationshipName): Model
+  {
+    $valuesToSet = $this->get($relationshipName);
+
+    if (isset($valuesToSet)) {
+      if ($valuesToSet instanceof Model) {
+        $valuesToSet->selected = false;
+      } else if ($valuesToSet instanceof Collection) {
+        $valuesToSet->deselectAll();
+      }
+    }
+
+    return $this;
+  }
 }
