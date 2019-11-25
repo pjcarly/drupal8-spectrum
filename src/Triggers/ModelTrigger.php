@@ -34,34 +34,39 @@ class ModelTrigger
       // We check the model reference on the entity itself, this way we can reuse the previous model state in the triggers
       $modelOnEntity = $entity->__spectrumModel;
       if ($modelOnEntity && $modelOnEntity::entityType() === $entityType && $modelOnEntity::bundle() === $bundle) {
-        /** @var Model $model */
         $model = $modelOnEntity;
       } else {
-        /** @var Model $model */
         $model = $modelClass::forgeByEntity($entity);
       }
 
+      /** @var Model $model */
       switch ($trigger) {
         case 'presave':
           if ($model->entity->isNew()) {
+            $model->__setIsNewlyInserted(TRUE);
             $model->beforeInsert();
           } else {
+            $model->__setIsNewlyInserted(FALSE);
             $model->beforeUpdate();
           }
           break;
         case 'insert':
+          $model->__setIsNewlyInserted(TRUE);
           $model->setAccessPolicy();
           $model->afterInsert();
           break;
         case 'update':
+          $model->__setIsNewlyInserted(FALSE);
           $model->setAccessPolicy();
           $model->afterUpdate();
           break;
         case 'predelete':
+          $model->__setIsNewlyInserted(FALSE);
           $model->beforeDelete();
           $model->unsetAccessPolicy();
           break;
         case 'delete':
+          $model->__setIsNewlyInserted(FALSE);
           $model->afterDelete();
           $model->doCascadingDeletes();
           break;

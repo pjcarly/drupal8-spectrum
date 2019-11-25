@@ -121,6 +121,13 @@ abstract class Model
   public $selected = false;
 
   /**
+   * This flag will be set by the trigger when the Model is created through the insert triggers
+   *
+   * @var boolean
+   */
+  private $__isNewlyInserted = false;
+
+  /**
    * An array containing all the FieldRelationships to this Entity, with as Key the relationship name
    * The value will most likely be a Model, but can also be a Collection in case of a entity reference field with multiple values (fieldCardinality > 0)
    *
@@ -955,6 +962,20 @@ abstract class Model
     return $clone;
   }
 
+
+  /**
+   * PRIVATE API. DO NOT USE!
+   * Sets the isNewlyInserted flag
+   *
+   * @param boolean $value
+   * @return Model
+   */
+  public function __setIsNewlyInserted(bool $value): Model
+  {
+    $this->__isNewlyInserted = $value;
+    return $this;
+  }
+
   /**
    * Helper function for trigger methods, this way we can check if the Model being inserted is new or not (we cant use the ID as this will be filled in)
    *
@@ -962,7 +983,7 @@ abstract class Model
    */
   protected function isNewlyInserted(): bool
   {
-    return empty($this->entity->original);
+    return $this->__isNewlyInserted;
   }
 
   /**
@@ -1132,6 +1153,12 @@ abstract class Model
 
     if ($returnValue) {
       return true;
+    }
+
+    if (!isset($this->entity->original)) {
+      // Original isnt set on insert and delete. On insert function will return TRUE (see above)
+      // On delete this should return false.
+      return false;
     }
 
     $fieldDefinition = static::getFieldDefinition($fieldName);
