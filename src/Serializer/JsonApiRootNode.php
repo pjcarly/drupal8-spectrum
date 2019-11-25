@@ -10,6 +10,8 @@ use Drupal\spectrum\Exceptions\InvalidTypeException;
  */
 class JsonApiRootNode extends JsonApiDataNode
 {
+  const HEADER_CONTENT_TYPE = 'application/vnd.api+json';
+
   /**
    * Holds a list of JsonApiNodes which should be Included with the original results
    *

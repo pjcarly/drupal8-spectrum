@@ -109,7 +109,7 @@ class ModelApiHandler extends BaseApiHandler
       $modelClassName::entityType(),
       $modelClassName::bundle()
     );
-    $this->defaultHeaders['Content-Type'] = 'application/vnd.api+json';
+    $this->defaultHeaders['Content-Type'] = JsonApiRootNode::HEADER_CONTENT_TYPE;
   }
 
   /**
