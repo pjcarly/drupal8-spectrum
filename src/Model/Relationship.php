@@ -26,6 +26,11 @@ abstract class Relationship
   public static $CASCADE_ON_DELETE = 1;
 
   /**
+   * @var integer
+   */
+  public static $CASCADE_NO_DELETE = 2;
+
+  /**
    * The name you wish to give your relationship
    *
    * @var string
@@ -40,11 +45,11 @@ abstract class Relationship
   protected $relationshipSource;
 
   /**
-   * Whether this relationship will be cascading deleted (default = false)
+   * Cascade type, 0 = no cascade; 1 = cascade on delete; 2 = cascade no delete
    *
    * @var boolean
    */
-  public $cascadingDelete = false;
+  public $cascadeType = 0;
 
   /**
    * The fully qualified classname of the model you wish to relate. This might not be the FQC passed in the constructor, a lookup will be done to see if another registered (overridden) modelclass exists
@@ -60,18 +65,12 @@ abstract class Relationship
   public function __construct(string $name, int $cascade = 0)
   {
     $this->name = $name;
-    $this->setCascadingDelete($cascade === 1);
+    $this->setCascadeType($cascade);
   }
 
-  /**
-   * Set the cascading delete flag
-   *
-   * @param boolean $cascadingDelete
-   * @return Relationship
-   */
-  public function setCascadingDelete(bool $cascadingDelete): Relationship
+  public function setCascadeType(int $value): Relationship
   {
-    $this->cascadingDelete = $cascadingDelete;
+    $this->cascadeType = $value;
     return $this;
   }
 
@@ -140,4 +139,28 @@ abstract class Relationship
    * @return Condition
    */
   public abstract function getCondition(): Condition;
+
+  /**
+   * @return bool
+   */
+  public function isCascadeOnDelete(): bool
+  {
+    return $this->cascadeType === $this::$CASCADE_ON_DELETE;
+  }
+
+  /**
+   * @return bool
+   */
+  public function isCascadeNoDelete(): bool
+  {
+    return $this->cascadeType === $this::$CASCADE_NO_DELETE;
+  }
+
+  /**
+   * @return bool
+   */
+  public function isNoCascade(): bool
+  {
+    return $this->cascadeType === $this::$NO_CASCADE;
+  }
 }

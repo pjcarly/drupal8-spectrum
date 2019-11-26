@@ -5,6 +5,7 @@ namespace Drupal\spectrum\Model;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\Plugin\Field\FieldType\EntityReferenceItem;
+use Drupal\spectrum\Exceptions\CascadeNoDeleteException;
 use Drupal\spectrum\Exceptions\InvalidFieldException;
 use Drupal\spectrum\Exceptions\InvalidTypeException;
 use Drupal\spectrum\Exceptions\ModelClassNotDefinedException;
@@ -1954,14 +1955,28 @@ abstract class Model
    * This method will automatically do cascading deletes for relationships (both Field and ReferencedRelationships) that have the cascading defined in the Relationship
    *
    * @return void
+   * @throws CascadeNoDeleteException
    */
   public function doCascadingDeletes()
   {
     $relationships = static::getRelationships();
     foreach ($relationships as $relationship) {
-      if ($relationship->cascadingDelete) {
+      if ($relationship->isCascadeOnDelete()) {
         $fetchedRelationship = $this->fetch($relationship->getName());
         if (!empty($fetchedRelationship)) {
+          if ($fetchedRelationship instanceof Collection) {
+            foreach ($fetchedRelationship as $model) {
+              $model->delete();
+            }
+          } else if ($fetchedRelationship instanceof Model) {
+            $fetchedRelationship->delete();
+          }
+        }
+      } else if($relationship->isCascadeNoDelete()){
+        $fetchedRelationship = $this->fetch($relationship->getName());
+        if(!empty($fetchedRelationship)){
+          throw new CascadeNoDeleteException('Trying to delete '. $this::getBundleKey() . ' when there are ' . $relationship->getName() . ' present.');
+        } else {
           if ($fetchedRelationship instanceof Collection) {
             foreach ($fetchedRelationship as $model) {
               $model->delete();
