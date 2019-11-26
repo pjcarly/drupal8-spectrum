@@ -2,6 +2,9 @@
 
 namespace Drupal\spectrum\Rest;
 
+use Drupal\spectrum\Exceptions\CascadeNoDeleteException;
+use Drupal\spectrum\Serializer\JsonApiErrorNode;
+use Drupal\spectrum\Serializer\JsonApiErrorRootNode;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -1514,5 +1517,34 @@ class ModelApiHandler extends BaseApiHandler
   protected function getEmbeddedRelationshipNames(): array
   {
     return array_merge($this->embeddedFieldRelationshipsToSave, $this->embeddedReferencedRelationshipsToSave);
+  }
+
+  /**
+   * @param \Throwable $throwable
+   * @param Request $request
+   *
+   * @return Response
+   * @throws \Throwable
+   */
+  protected function handleError(\Throwable $throwable, Request $request): Response
+  {
+    $response = null;
+    $actualThrowable = $throwable->getPrevious();
+    while ($actualThrowable->getPrevious() !== null){
+      $actualThrowable = $actualThrowable->getPrevious();
+    }
+
+    if ($actualThrowable instanceof CascadeNoDeleteException) {
+      $jsonapi = new JsonApiErrorRootNode();
+      $error = new JsonApiErrorNode();
+      $error->setStatus('405');
+      $error->setDetail($throwable->getMessage());
+      $error->setPointer('/data');
+      $jsonapi->addError($error);
+      $response = new Response(json_encode($jsonapi->serialize()), 422, ['Content-Type' => JsonApiRootNode::HEADER_CONTENT_TYPE]);
+    } else {
+      $response = parent::handleError($throwable, $request);
+    }
+    return $response;
   }
 }
