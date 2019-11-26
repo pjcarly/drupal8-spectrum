@@ -176,6 +176,16 @@ class User extends Model
   }
 
   /**
+   * Returns true if the current user has the role Administrator
+   *
+   * @return boolean
+   */
+  public function isAdministrator(): bool
+  {
+    return $this->hasRole('administrator');
+  }
+
+  /**
    * Activate the user (in memory, model must be saved to persist)
    *
    * @return User

@@ -2049,16 +2049,17 @@ abstract class Model
    */
   public function setFileField(string $fieldName, string $filename, string $fileContent): File
   {
-    /** @var \Drupal\Core\Field\FieldDefinitionInterface $fieldSettings */
-    $fieldSettings = static::getFieldSettings($fieldName);
+    $fieldDefinition = static::getFieldDefinition($fieldName);
 
-    if (empty($fieldSettings)) {
+    if (empty($fieldDefinition)) {
       throw new RuntimeException('Field not found: ' . $fieldName);
     }
 
-    if ($fieldSettings->getType() !== 'file') {
+    if ($fieldDefinition->getType() !== 'file') {
       throw new RuntimeException('Field type is not a file');
     }
+
+    $fieldSettings = $fieldDefinition->getSettings();
 
     $file = File::createNewFile(
       $fieldSettings['uri_scheme'],
@@ -2081,16 +2082,17 @@ abstract class Model
    */
   public function setImageField(string $fieldName, string $filename, string $fileContent): Image
   {
-    /** @var \Drupal\Core\Field\FieldDefinitionInterface $fieldSettings */
-    $fieldSettings = static::getFieldSettings($fieldName);
+    $fieldDefinition = static::getFieldDefinition($fieldName);
 
-    if (empty($fieldSettings)) {
+    if (empty($fieldDefinition)) {
       throw new RuntimeException('Field not found: ' . $fieldName);
     }
 
-    if ($fieldSettings->getType() !== 'image') {
+    if ($fieldDefinition->getType() !== 'image') {
       throw new RuntimeException('Field type is not an image');
     }
+
+    $fieldSettings = $fieldDefinition->getSettings();
 
     $file = Image::createNewFile(
       $fieldSettings['uri_scheme'],
