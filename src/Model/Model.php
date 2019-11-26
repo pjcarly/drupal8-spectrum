@@ -12,6 +12,8 @@ use Drupal\spectrum\Exceptions\ModelNotFoundException;
 use Drupal\spectrum\Exceptions\NotImplementedException;
 use Drupal\spectrum\Exceptions\PolymorphicException;
 use Drupal\spectrum\Exceptions\RelationshipNotDefinedException;
+use Drupal\spectrum\Models\File;
+use Drupal\spectrum\Models\Image;
 use Drupal\spectrum\Models\User;
 use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
 use Drupal\spectrum\Permissions\PermissionServiceInterface;
@@ -22,6 +24,7 @@ use Drupal\spectrum\Query\ModelQuery;
 use Drupal\spectrum\Query\Query;
 use Drupal\spectrum\Services\ModelStoreInterface;
 use Drupal\spectrum\Utils\StringUtils;
+use RuntimeException;
 
 /**
  * A Model is a wrapper around a Drupal Entity, which provides extra functionality. and an easy way of fetching and saving it to the database.
@@ -2036,6 +2039,69 @@ abstract class Model
     return $this;
   }
 
+  /**
+   * Creates and sets a File on a field on a Model
+   *
+   * @param string $fieldName
+   * @param string $filename
+   * @param string $fileContent
+   * @return File
+   */
+  public function setFileField(string $fieldName, string $filename, string $fileContent): File
+  {
+    /** @var \Drupal\Core\Field\FieldDefinitionInterface $fieldSettings */
+    $fieldSettings = static::getFieldSettings($fieldName);
+
+    if (empty($fieldSettings)) {
+      throw new RuntimeException('Field not found: ' . $fieldName);
+    }
+
+    if ($fieldSettings->getType() !== 'file') {
+      throw new RuntimeException('Field type is not a file');
+    }
+
+    $file = File::createNewFile(
+      $fieldSettings['uri_scheme'],
+      $fieldSettings['file_directory'],
+      $filename,
+      $fileContent
+    );
+
+    $this->entity->$fieldName->target_id = $file->getId();
+    return $file;
+  }
+
+  /**
+   * Creates and sets an Image on a field on a Model
+   *
+   * @param string $fieldName
+   * @param string $filename
+   * @param string $fileContent
+   * @return Image
+   */
+  public function setImageField(string $fieldName, string $filename, string $fileContent): Image
+  {
+    /** @var \Drupal\Core\Field\FieldDefinitionInterface $fieldSettings */
+    $fieldSettings = static::getFieldSettings($fieldName);
+
+    if (empty($fieldSettings)) {
+      throw new RuntimeException('Field not found: ' . $fieldName);
+    }
+
+    if ($fieldSettings->getType() !== 'image') {
+      throw new RuntimeException('Field type is not an image');
+    }
+
+    $file = Image::createNewFile(
+      $fieldSettings['uri_scheme'],
+      $fieldSettings['file_directory'],
+      $filename,
+      $fileContent
+    );
+
+    $this->entity->$fieldName->target_id = $file->getId();
+    return $file;
+  }
 
   /**
    * Checks if there is a Model Class defined for the Entity / Bundle
