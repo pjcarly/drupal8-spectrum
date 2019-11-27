@@ -66,13 +66,16 @@ class SimpleModelWrapper
       // TODO: add support for field cardinality
       switch ($fieldType) {
         case 'autonumber':
-          $returnValue = (int) $model->entity->get($fieldName)->value;
+          $fieldValue = $model->entity->get($fieldName)->value;
+          $returnValue = isset($fieldValue) ? (int) $fieldValue : null;
+
           break;
         case 'boolean':
           $returnValue = ($model->entity->get($fieldName)->value === '1');
           break;
         case 'decimal':
-          $returnValue = (float) $model->entity->get($fieldName)->value;
+          $fieldValue = $model->entity->get($fieldName)->value;
+          $returnValue = isset($fieldValue) ? (float) $fieldValue : null;
           break;
         case 'geolocation':
           $lat = (float) $model->entity->get($fieldName)->lat;
