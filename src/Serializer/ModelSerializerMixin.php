@@ -94,7 +94,12 @@ trait ModelSerializerMixin
         $valueToSerialize = $attribute;
         break;
       case 'autonumber':
-        $valueToSerialize = (int) $this->entity->get($fieldName)->value;
+        $autonumberValue = $this->entity->{$fieldName}->value;
+        $valueToSerialize = null;
+
+        if (isset($autonumberValue)) {
+          $valueToSerialize = (int) $autonumberValue;
+        }
         break;
       case 'boolean':
         $valueToSerialize = ($this->entity->get($fieldName)->value == true); // must be none-stricly typed, as drupal sometimes uses true or false, and sometimes '1' and '0'
