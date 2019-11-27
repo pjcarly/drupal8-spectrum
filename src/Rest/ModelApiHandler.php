@@ -1529,9 +1529,13 @@ class ModelApiHandler extends BaseApiHandler
   protected function handleError(\Throwable $throwable, Request $request): Response
   {
     $response = null;
-    $actualThrowable = $throwable->getPrevious();
-    while ($actualThrowable->getPrevious() !== null){
-      $actualThrowable = $actualThrowable->getPrevious();
+    if($throwable->getPrevious() !== null){
+      $actualThrowable = $throwable->getPrevious();
+      while ($actualThrowable->getPrevious() !== null){
+        $actualThrowable = $actualThrowable->getPrevious();
+      }
+    } else {
+      $actualThrowable = $throwable;
     }
 
     if ($actualThrowable instanceof CascadeNoDeleteException) {
