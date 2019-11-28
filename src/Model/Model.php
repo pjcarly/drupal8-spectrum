@@ -1974,7 +1974,7 @@ abstract class Model
         }
       } else if($relationship->isCascadeNoDelete()){
         $fetchedRelationship = $this->fetch($relationship->getName());
-        if(!empty($fetchedRelationship)){
+        if(!empty($fetchedRelationship) && !getenv('IGNORE_CASCADE_NO_DELETE')){
           throw new CascadeNoDeleteException('Trying to delete '. $this::getBundleKey() . ' when there are ' . $relationship->getName() . ' present.');
         } else {
           if ($fetchedRelationship instanceof Collection) {
