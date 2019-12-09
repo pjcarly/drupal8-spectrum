@@ -818,6 +818,28 @@ class ModelApiHandler extends BaseApiHandler
   }
 
   /**
+   * This method is called before the model is deleted, giving you the opportunity to do override functionality per ApiHandler
+   *
+   * @param Model $model
+   * @return Model
+   */
+  protected function beforeDelete(Model $model): Model
+  {
+    return $model;
+  }
+
+  /**
+   * This method is called after the model is deleted, giving you the opportunity to do override functionality per ApiHandler
+   *
+   * @param Model $model
+   * @return Model
+   */
+  protected function afterDelete(Model $model): Model
+  {
+    return $model;
+  }
+
+  /**
    * This method executes a delete on the model, where the ID was provided in the slug. Ofcourse the permission will be checked whether the user is allowed to delete the model
    *
    * @param Request $request
@@ -848,7 +870,9 @@ class ModelApiHandler extends BaseApiHandler
 
     // Only if the model was found in the database can we continue
     if (!empty($model)) {
+      $this->beforeDelete($model);
       $model->delete();
+      $this->afterDelete($model);
       $response = new \stdClass();
       $responseCode = 204;
     } else {
@@ -1529,9 +1553,9 @@ class ModelApiHandler extends BaseApiHandler
   protected function handleError(\Throwable $throwable, Request $request): Response
   {
     $response = null;
-    if($throwable->getPrevious() !== null){
+    if ($throwable->getPrevious() !== null) {
       $actualThrowable = $throwable->getPrevious();
-      while ($actualThrowable->getPrevious() !== null){
+      while ($actualThrowable->getPrevious() !== null) {
         $actualThrowable = $actualThrowable->getPrevious();
       }
     } else {
