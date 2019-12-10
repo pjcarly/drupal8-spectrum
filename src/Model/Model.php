@@ -1643,7 +1643,7 @@ abstract class Model
   public static function getSerializationType(): string
   {
     $returnValue = '';
-    $key = static::getKeyForEntityAndBundle(static::entityType(), static::bundle());
+    $key = static::getModelClassKey();
     $alias = array_key_exists($key, static::$serializationTypeAliases) ? static::$serializationTypeAliases[$key] : null;
 
     if (empty($alias)) {
@@ -1667,7 +1667,7 @@ abstract class Model
    */
   public static function setSerializationTypeAlias(string $type): void
   {
-    $key = static::getKeyForEntityAndBundle(static::entityType(), static::bundle());
+    $key = static::getModelClassKey();
     static::$serializationTypeAliases[$key] = $type;
   }
 
@@ -1972,10 +1972,10 @@ abstract class Model
             $fetchedRelationship->delete();
           }
         }
-      } else if($relationship->isCascadeNoDelete()){
+      } else if ($relationship->isCascadeNoDelete()) {
         $fetchedRelationship = $this->fetch($relationship->getName());
-        if(!empty($fetchedRelationship) && !getenv('IGNORE_CASCADE_NO_DELETE')){
-          throw new CascadeNoDeleteException('Trying to delete '. $this::getBundleKey() . ' when there are ' . $relationship->getName() . ' present.');
+        if (!empty($fetchedRelationship) && !getenv('IGNORE_CASCADE_NO_DELETE')) {
+          throw new CascadeNoDeleteException('Trying to delete ' . $this::getBundleKey() . ' when there are ' . $relationship->getName() . ' present.');
         } else {
           if ($fetchedRelationship instanceof Collection) {
             foreach ($fetchedRelationship as $model) {
@@ -2135,7 +2135,6 @@ abstract class Model
     return array_key_exists($key, static::$modelClassMapping);
   }
 
-
   /**
    * Returns the fully qualified classname for the provided entity/bundle
    *
@@ -2291,13 +2290,23 @@ abstract class Model
   }
 
   /**
+   * Returns the unique model class key for this ModelClass
+   *
+   * @return string
+   */
+  public static function getModelClassKey(): string
+  {
+    return static::getKeyForEntityAndBundle(static::entityType(), static::bundle());
+  }
+
+  /**
    * Returns the base permission key in the form of "entity_bundle" (for example node_article) this is used for the permission checker
    *
    * @return string
    */
   public static function getBasePermissionKey(): string
   {
-    return str_replace('.', '_', static::getKeyForEntityAndBundle(static::entityType(), static::bundle()));
+    return str_replace('.', '_', static::getModelClassKey());
   }
 
   public static function getReadPermissionKey(): string

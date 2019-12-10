@@ -19,6 +19,8 @@ use Drupal\Core\Field\FieldDefinitionInterface;
  */
 trait ModelSerializerMixin
 {
+  protected static $prettyFieldsMappingIndex = [];
+  protected static $fieldsMappingIndex = [];
   /**
    * Returns an array of fields that will be ignored during serialization. These are mostly internal drupal fields that shouldnt be exposed, as we dont want to leak configuration
    *
@@ -455,20 +457,26 @@ trait ModelSerializerMixin
    */
   public static function getPrettyFieldsToFieldsMapping(): array
   {
-    $mapping = [];
-    $fieldList = static::getFieldDefinitions();
+    $modelClassKey = static::getModelClassKey();
 
-    foreach ($fieldList as $key => $value) {
-      if ($key !== 'title') {
-        $fieldnamepretty = trim(trim(StringUtils::dasherize(str_replace('field_', '', $key)), '-'));
-      } else {
-        $fieldnamepretty = 'name';
+    if (!array_key_exists($modelClassKey, static::$prettyFieldsMappingIndex)) {
+      $mapping = [];
+      $fieldList = static::getFieldDefinitions();
+
+      foreach ($fieldList as $key => $value) {
+        if ($key !== 'title') {
+          $fieldnamepretty = trim(trim(StringUtils::dasherize(str_replace('field_', '', $key)), '-'));
+        } else {
+          $fieldnamepretty = 'name';
+        }
+
+        $mapping[$fieldnamepretty] = $key;
       }
 
-      $mapping[$fieldnamepretty] = $key;
+      static::$prettyFieldsMappingIndex[$modelClassKey] = $mapping;
     }
 
-    return $mapping;
+    return static::$prettyFieldsMappingIndex[$modelClassKey];
   }
 
   /**
@@ -478,14 +486,21 @@ trait ModelSerializerMixin
    */
   public static function getFieldsToPrettyFieldsMapping(): array
   {
-    $prettyMapping = static::getPrettyFieldsToFieldsMapping();
+    $modelClassKey = static::getModelClassKey();
 
-    $mapping = [];
-    foreach ($prettyMapping as $pretty => $field) {
-      $mapping[$field] = $pretty;
+    if (!array_key_exists($modelClassKey, static::$fieldsMappingIndex)) {
+      $prettyMapping = static::getPrettyFieldsToFieldsMapping();
+
+      $mapping = [];
+      foreach ($prettyMapping as $pretty => $field) {
+        $mapping[$field] = $pretty;
+      }
+
+      static::$fieldsMappingIndex[$modelClassKey] = $mapping;
     }
 
-    return $mapping;
+
+    return static::$fieldsMappingIndex[$modelClassKey];
   }
 
   /**

@@ -3,6 +3,7 @@
 namespace Drupal\spectrum\Model;
 
 use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface;
+use Drupal\spectrum\Exceptions\InvalidFieldException;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Model\Collection;
 use Drupal\spectrum\Model\SimpleCollectionWrapper;
