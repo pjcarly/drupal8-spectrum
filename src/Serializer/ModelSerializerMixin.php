@@ -45,6 +45,7 @@ trait ModelSerializerMixin
       'content_translation_created',
       'content_translation_changed',
       'content_translation_uid',
+      'content_translation_status',
       'preferred_langcode',
       'preferred_admin_langcode',
       'langcode',
