@@ -1972,10 +1972,10 @@ abstract class Model
             $fetchedRelationship->delete();
           }
         }
-      } else if($relationship->isCascadeNoDelete()){
+      } else if ($relationship->isCascadeNoDelete()) {
         $fetchedRelationship = $this->fetch($relationship->getName());
-        if(!empty($fetchedRelationship) && !getenv('IGNORE_CASCADE_NO_DELETE')){
-          throw new CascadeNoDeleteException('Trying to delete '. $this::getBundleKey() . ' when there are ' . $relationship->getName() . ' present.');
+        if (!empty($fetchedRelationship) && !getenv('IGNORE_CASCADE_NO_DELETE')) {
+          throw new CascadeNoDeleteException('Trying to delete ' . $this::getBundleKey() . ' when there are ' . $relationship->getName() . ' present.');
         } else {
           if ($fetchedRelationship instanceof Collection) {
             foreach ($fetchedRelationship as $model) {
@@ -2208,7 +2208,7 @@ abstract class Model
   public static function findModelInStoreByFieldValue(string $fieldName, string $value = null): ?Model
   {
     $modelStore = static::getModelStore();
-    return $modelStore->getModelByFieldValue(get_called_class(), $fieldName, $value);
+    return $modelStore->peekRecordByFieldValue(get_called_class(), $fieldName, $value);
   }
 
   /**
@@ -2221,7 +2221,7 @@ abstract class Model
   public static function findCollectionInStoreByFieldValue(string $fieldName, string $value = null): Collection
   {
     $modelStore = static::getModelStore();
-    return $modelStore->getCollectionByFieldValue(get_called_class(), $fieldName, $value);
+    return $modelStore->peekRecordsByFieldValue(get_called_class(), $fieldName, $value);
   }
 
   /**
