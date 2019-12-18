@@ -3,6 +3,7 @@
 namespace Drupal\spectrum\Runnable;
 
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\spectrum\Model\Model;
 use Symfony\Component\Console\Helper\ProgressBar;
 
 abstract class BatchJob extends QueuedJob
@@ -15,7 +16,7 @@ abstract class BatchJob extends QueuedJob
     $registeredJob = RegisteredJob::getByKey($jobName);
 
     if (empty($registeredJob)) {
-      throw new \Exception('Regisered Job (' . $jobName . ') not found');
+      throw new \Exception('Registered Job (' . $jobName . ') not found');
     }
 
     if (empty($date)) {
@@ -51,10 +52,15 @@ abstract class BatchJob extends QueuedJob
     $progressBar = new ProgressBar($this->output, $totalRecords);
     $progressBar->setFormat('debug');
     $progressBar->start();
-
+    $counter = 0;
     foreach ($batchable->getBatchGenerator() as $entity) {
       $this->process($entity);
       $progressBar->advance();
+      $counter++;
+      if($counter % $batchSize === 0){
+        $this->clearCache();
+        $counter = 0;
+      }
     }
 
     $progressBar->finish();
@@ -90,4 +96,17 @@ abstract class BatchJob extends QueuedJob
 
   protected abstract function process(EntityInterface $entity): void;
   protected abstract function getBatchable(): BatchableInterface;
+
+  private function clearCache()
+  {
+    // This will clear all the entity caches, and free entities from memory
+    Model::clearAllDrupalStaticEntityCaches();
+
+    /** @var \Drupal\Core\Cache\MemoryCache\MemoryCacheInterface $cache */
+    $cache = \Drupal::service('entity.memory_cache');
+    $cache->deleteAll();
+
+    // And finally clear the model store of any data as well
+    Model::getModelStore()->clearAll();
+  }
 }
