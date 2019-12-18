@@ -3,6 +3,7 @@
 namespace Drupal\spectrum\Model;
 
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Field\EntityReferenceFieldItemList;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\Plugin\Field\FieldType\EntityReferenceItem;
 use Drupal\spectrum\Exceptions\CascadeNoDeleteException;
@@ -759,8 +760,26 @@ abstract class Model
 
             // and also append the entity field with the value (append because there can be multiple items)
             $objectToPutId = $objectToPut->getId();
+
             if (!empty($objectToPutId)) {
-              $this->entity->$relationshipField->appendItem($objectToPutId);
+              // We need to make sure the value isnt already added to the multi entity reference field, before appending the new item
+
+              /** @var EntityReferenceFieldItemList $fieldItemList */
+              $fieldItemList = $this->entity->{$relationshipField};
+              $valueExists = false;
+
+              /** @var EntityReferenceItem $fieldValue */
+              foreach ($fieldItemList as $fieldValue) {
+                if ($fieldValue->$relationshipColumn == $objectToPutId) {
+                  $valueExists = true;
+                  break;
+                }
+              }
+
+              if (!$valueExists) {
+                // The value does not yet exist on the entity, we can safely apply it
+                $this->entity->$relationshipField->appendItem($objectToPutId);
+              }
             }
 
             // and finally set a possible inverse as well
@@ -899,7 +918,8 @@ abstract class Model
    * @return void
    */
   public function constraints()
-  { }
+  {
+  }
 
   /**
    * Add a FieldConstraint to the Drupal Entity at Runtime
@@ -1577,7 +1597,8 @@ abstract class Model
    * @return \Drupal\spectrum\Model\Relationship[]
    */
   public static function relationships()
-  { }
+  {
+  }
 
   /**
    * This Method sets the relationship arrays (and takes care of the sharing of the scope of Model by multiple Models)
@@ -1899,7 +1920,8 @@ abstract class Model
    * @return void
    */
   public function beforeValidate()
-  { }
+  {
+  }
 
   /**
    * This trigger is executed by the Drupal platform before the insertion of the entity takes place.
@@ -1908,7 +1930,8 @@ abstract class Model
    * @return void
    */
   public function beforeInsert()
-  { }
+  {
+  }
 
   /**
    * This trigger is executed by the Drupal platform after the insertion of the entity to the database has been done
@@ -1916,7 +1939,8 @@ abstract class Model
    * @return void
    */
   public function afterInsert()
-  { }
+  {
+  }
 
   /**
    * This trigger is executed by the Drupal platform before the update of the entity takes place.
@@ -1925,7 +1949,8 @@ abstract class Model
    * @return void
    */
   public function beforeUpdate()
-  { }
+  {
+  }
 
   /**
    * This trigger is executed by the Drupal platform after the entity has been updated in the database
@@ -1933,7 +1958,8 @@ abstract class Model
    * @return void
    */
   public function afterUpdate()
-  { }
+  {
+  }
 
   /**
    * This trigger is executed by the Drupal platform before the entity will be deleted, giving you the opportunity to stop the deletion
@@ -1941,7 +1967,8 @@ abstract class Model
    * @return void
    */
   public function beforeDelete()
-  { }
+  {
+  }
 
   /**
    * This trigger is executed by the Drupal platform after the entity has been deleted, giving you the opportunity to clean up related records
@@ -1949,7 +1976,8 @@ abstract class Model
    * @return void
    */
   public function afterDelete()
-  { }
+  {
+  }
 
   /**
    * This method will automatically do cascading deletes for relationships (both Field and ReferencedRelationships) that have the cascading defined in the Relationship
