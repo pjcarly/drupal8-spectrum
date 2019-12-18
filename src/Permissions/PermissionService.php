@@ -7,8 +7,6 @@ use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
 use Drupal\spectrum\Models\User;
 use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyEntity;
 use Drupal\spectrum\Permissions\PermissionServiceInterface;
-use Drupal\spectrum\Query\Condition;
-use Drupal\spectrum\Query\ConditionGroup;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 
