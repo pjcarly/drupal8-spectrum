@@ -134,6 +134,20 @@ class Collection implements \IteratorAggregate, \Countable
   }
 
   /**
+   * Returns the first Element in the Collection or null when the collection is empty
+   *
+   * @return Model|null
+   */
+  public function first(): ?Model
+  {
+    if ($element = reset($this->models)) {
+      return $element;
+    } else {
+      return null;
+    }
+  }
+
+  /**
    * This function loads the translation on all the models in this collection, the first found translation will be used on the model. In case no translation is found, the default language will be loaded
    * If not all models have a translation, it is possible that you get models in different languages
    *
