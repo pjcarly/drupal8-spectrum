@@ -2033,7 +2033,7 @@ abstract class Model
         }
       } else if ($relationship->isCascadeNoDelete()) {
         $fetchedRelationship = $this->fetch($relationship->getName());
-        if (isset($fetchedRelationship)) {
+        if (isset($fetchedRelationship) && !getenv('IGNORE_DELETE_SAFETY')) {
           throw new CascadeNoDeleteException('Trying to delete ' . $this::getBundleKey() . ' when there are ' . $relationship->getName() . ' present.');
         }
       }

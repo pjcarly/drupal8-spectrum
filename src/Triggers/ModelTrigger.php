@@ -99,14 +99,7 @@ class ModelTrigger
               }
             }
 
-            try {
-              $model->doCascadingDeletes();
-            } catch (\Exception $ex) {
-              if (!getenv('IGNORE_DELETE_SAFETY')) {
-                throw $ex;
-              }
-            }
-
+            $model->doCascadingDeletes();
             break;
         }
       } catch (\Throwable $t) {
