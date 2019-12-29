@@ -133,6 +133,13 @@ abstract class Model
   private $__isNewlyInserted = false;
 
   /**
+   * This flag will be set by the trigger when the Model is created through the delete triggers
+   *
+   * @var boolean
+   */
+  private $__isBeingDeleted = false;
+
+  /**
    * An array containing all the FieldRelationships to this Entity, with as Key the relationship name
    * The value will most likely be a Model, but can also be a Collection in case of a entity reference field with multiple values (fieldCardinality > 0)
    *
@@ -1008,6 +1015,30 @@ abstract class Model
   protected function isNewlyInserted(): bool
   {
     return $this->__isNewlyInserted;
+  }
+
+
+  /**
+   * PRIVATE API. DO NOT USE!
+   * Sets the isBeingDeleted flag
+   *
+   * @param boolean $value
+   * @return Model
+   */
+  public function __setIsBeingDeleted(bool $value): Model
+  {
+    $this->__isBeingDeleted = $value;
+    return $this;
+  }
+
+  /**
+   * This flag will be set by the trigger when the Model is created through the delete triggers
+   *
+   * @return boolean
+   */
+  protected function isBeingDeleted(): bool
+  {
+    return $this->__isBeingDeleted;
   }
 
   /**
@@ -2002,16 +2033,8 @@ abstract class Model
         }
       } else if ($relationship->isCascadeNoDelete()) {
         $fetchedRelationship = $this->fetch($relationship->getName());
-        if (!empty($fetchedRelationship) && !getenv('IGNORE_CASCADE_NO_DELETE')) {
+        if (isset($fetchedRelationship)) {
           throw new CascadeNoDeleteException('Trying to delete ' . $this::getBundleKey() . ' when there are ' . $relationship->getName() . ' present.');
-        } else {
-          if ($fetchedRelationship instanceof Collection) {
-            foreach ($fetchedRelationship as $model) {
-              $model->delete();
-            }
-          } else if ($fetchedRelationship instanceof Model) {
-            $fetchedRelationship->delete();
-          }
         }
       }
     }
