@@ -323,7 +323,10 @@ class Collection implements \IteratorAggregate, \Countable
   }
 
   /**
-   * fetch a relationshipname from the database
+   * Fetch a relationshipname from the database, the data in the Collection will not be cleared
+   * Instead data that is being fetched will be appeneded to the Collection. If a newly fetched record
+   * already exists in the collection, it will be overwritten by the new Model
+   * If you want to clear data from the collection first, look at the ->clear() method.
    *
    * @param string $relationshipName
    * @param Query $queryToCopyFrom (optional) add a query to fetch, to limit the amount of results when fetching, all base conditions, conditions and conditiongroups will be add to the fetch query
