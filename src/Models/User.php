@@ -49,7 +49,8 @@ class User extends Model
    * @return void
    */
   public static function relationships()
-  { }
+  {
+  }
 
   /**
    * @inheritDoc
@@ -124,11 +125,13 @@ class User extends Model
   /**
    * Returns the roles of the user
    *
-   * @return array
+   * @return string[]
    */
   public function getRoles(): array
   {
-    return $this->entity->getRoles();
+    /** @var DrupalUser $entity */
+    $entity = $this->entity;
+    return $entity->getRoles();
   }
 
   /**
@@ -138,7 +141,9 @@ class User extends Model
    */
   public function isAnonymous(): bool
   {
-    return $this->entity->isAnonymous();
+    /** @var DrupalUser $entity */
+    $entity = $this->entity;
+    return $entity->isAnonymous();
   }
 
   /**
@@ -161,7 +166,9 @@ class User extends Model
    */
   public function addRole(Role $role): User
   {
-    $this->entity->addRole($role->id());
+    /** @var DrupalUser $entity */
+    $entity = $this->entity;
+    $entity->addRole($role->id());
     return $this;
   }
 
@@ -172,7 +179,9 @@ class User extends Model
    */
   public function isActive(): bool
   {
-    return $this->entity->isActive();
+    /** @var DrupalUser $entity */
+    $entity = $this->entity;
+    return $entity->isActive();
   }
 
   /**

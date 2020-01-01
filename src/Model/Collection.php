@@ -91,9 +91,9 @@ class Collection implements \IteratorAggregate, \Countable
    *
    * @param [type] $oldKey
    * @param [type] $newKey
-   * @return Collection
+   * @return self
    */
-  public function replaceOldModelKey($oldKey, $newKey): Collection
+  public function replaceOldModelKey($oldKey, $newKey): self
   {
     if (array_key_exists($oldKey, $this->models)) {
       $model = $this->models[$oldKey];
@@ -114,9 +114,9 @@ class Collection implements \IteratorAggregate, \Countable
    * This function saves either all the models in this collection, or if a relationshipName was passed get the relationship, and perform save on that relationship
    *
    * @param string $relationshipName
-   * @return Collection
+   * @return self
    */
-  public function save(string $relationshipName = NULL): Collection
+  public function save(string $relationshipName = NULL): self
   {
     if (empty($relationshipName)) {
       foreach ($this->models as $model) {
@@ -134,13 +134,27 @@ class Collection implements \IteratorAggregate, \Countable
   }
 
   /**
+   * Returns the first Element in the Collection or null when the collection is empty
+   *
+   * @return Model|null
+   */
+  public function first(): ?Model
+  {
+    if ($element = reset($this->models)) {
+      return $element;
+    } else {
+      return null;
+    }
+  }
+
+  /**
    * This function loads the translation on all the models in this collection, the first found translation will be used on the model. In case no translation is found, the default language will be loaded
    * If not all models have a translation, it is possible that you get models in different languages
    *
    * @param String[] $languageCodes an array containing the languagecodes you want to load on the entity
-   * @return Collection
+   * @return self
    */
-  public function loadTranslation(array $languageCodes): Collection
+  public function loadTranslation(array $languageCodes): self
   {
     foreach ($this->models as $model) {
       $model->loadTranslation($languageCodes);
@@ -153,9 +167,9 @@ class Collection implements \IteratorAggregate, \Countable
    * Sort the collection according to a sorting function on the implemented Models
    *
    * @param string $sortingFunction
-   * @return Collection
+   * @return self
    */
-  public function sort(string $sortingFunction): Collection
+  public function sort(string $sortingFunction): self
   {
     // Bug in PHP causes PHP warnings for uasort, we surpressed warnings with @, but be weary!
     @uasort($this->models, [$this->modelType, $sortingFunction]);
@@ -187,9 +201,9 @@ class Collection implements \IteratorAggregate, \Countable
    * Remove a model by key from the collection
    *
    * @param string $key
-   * @return Collection
+   * @return self
    */
-  public function remove($key): Collection
+  public function remove($key): self
   {
     if (array_key_exists($key, $this->models)) {
       unset($this->models[$key]);
@@ -202,9 +216,9 @@ class Collection implements \IteratorAggregate, \Countable
    * Remove the Model from the Collection
    *
    * @param Model $model
-   * @return Collection
+   * @return self
    */
-  public function removeModel(Model $model): Collection
+  public function removeModel(Model $model): self
   {
     return $this->remove($model->key);
   }
@@ -212,9 +226,9 @@ class Collection implements \IteratorAggregate, \Countable
   /**
    * Remove all the models from the collection
    *
-   * @return Collection
+   * @return self
    */
-  public function removeAll(): Collection
+  public function removeAll(): self
   {
     $this->models = [];
 
@@ -224,9 +238,9 @@ class Collection implements \IteratorAggregate, \Countable
   /**
    * Loops over all the Models in this collection, and if the "selected" flag on the model is false, the model is removed from the collection
    *
-   * @return Collection
+   * @return self
    */
-  public function removeNonSelectedModels(): Collection
+  public function removeNonSelectedModels(): self
   {
     /** @var Model $model */
     foreach ($this->models as $model) {
@@ -243,7 +257,7 @@ class Collection implements \IteratorAggregate, \Countable
    *
    * @return self
    */
-  public function selectAll(): Collection
+  public function selectAll(): self
   {
     foreach ($this->models as $model) {
       $model->selected = true;
@@ -257,7 +271,7 @@ class Collection implements \IteratorAggregate, \Countable
    *
    * @return self
    */
-  public function deselectAll(): Collection
+  public function deselectAll(): self
   {
     foreach ($this->models as $model) {
       $model->selected = false;
@@ -296,9 +310,9 @@ class Collection implements \IteratorAggregate, \Countable
    * Clear the provided relationship of every model in this Collection
    *
    * @param string $relationshipName
-   * @return Collection
+   * @return self
    */
-  public function clear(string $relationshipName): Collection
+  public function clear(string $relationshipName): self
   {
     foreach ($this->models as $model) {
       /** @var Model $model */
@@ -309,7 +323,10 @@ class Collection implements \IteratorAggregate, \Countable
   }
 
   /**
-   * fetch a relationshipname from the database
+   * Fetch a relationshipname from the database, the data in the Collection will not be cleared
+   * Instead data that is being fetched will be appeneded to the Collection. If a newly fetched record
+   * already exists in the collection, it will be overwritten by the new Model
+   * If you want to clear data from the collection first, look at the ->clear() method.
    *
    * @param string $relationshipName
    * @param Query $queryToCopyFrom (optional) add a query to fetch, to limit the amount of results when fetching, all base conditions, conditions and conditiongroups will be add to the fetch query
@@ -641,9 +658,9 @@ class Collection implements \IteratorAggregate, \Countable
    * Put all the provided models in the collection
    *
    * @param array $models
-   * @return Collection
+   * @return self
    */
-  private function putModels(array $models): Collection
+  private function putModels(array $models): self
   {
     foreach ($models as $model) {
       $this->put($model);
@@ -657,9 +674,9 @@ class Collection implements \IteratorAggregate, \Countable
    * Put a Model or Collection in this Collection
    *
    * @param Model|Collection $objectToPut
-   * @return Collection
+   * @return self
    */
-  public function put($objectToPut): Collection
+  public function put($objectToPut): self
   {
     if ($objectToPut instanceof Collection) {
       foreach ($objectToPut as $model) {
@@ -688,9 +705,9 @@ class Collection implements \IteratorAggregate, \Countable
    * Put a Model or Collection in this Collection's originalModels
    *
    * @param Model|Collection $objectToPut
-   * @return Collection
+   * @return self
    */
-  public function putOriginal($objectToPut): Collection
+  public function putOriginal($objectToPut): self
   {
     if ($objectToPut instanceof Collection) {
       foreach ($objectToPut as $model) {
@@ -729,9 +746,9 @@ class Collection implements \IteratorAggregate, \Countable
    * Add a Model to the model array
    *
    * @param Model $model
-   * @return Collection
+   * @return self
    */
-  protected function addModelToModels(Model $model): Collection
+  protected function addModelToModels(Model $model): self
   {
     if (!array_key_exists($model->key, $this->models)) {
       $this->models[$model->key] = $model;
@@ -744,9 +761,9 @@ class Collection implements \IteratorAggregate, \Countable
    * Add the provided model to the Original Models array
    *
    * @param Model $model
-   * @return Collection
+   * @return self
    */
-  protected function addModelToOriginalModels(Model $model): Collection
+  protected function addModelToOriginalModels(Model $model): self
   {
     if (!array_key_exists($model->key, $this->originalModels)) {
       $this->originalModels[$model->key] = $model;
@@ -982,6 +999,20 @@ class Collection implements \IteratorAggregate, \Countable
         $referencingModel->put($modelFieldRelationship, $referencedModel);
       }
     }
+  }
+
+  /**
+   * Refreshes every model in the collection
+   *
+   * @return self
+   */
+  public function refresh(): self
+  {
+    foreach ($this->models as $model) {
+      $model->refresh();
+    }
+
+    return $this;
   }
 
   /**

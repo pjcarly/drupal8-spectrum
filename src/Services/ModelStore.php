@@ -4,7 +4,8 @@ namespace Drupal\spectrum\Services;
 
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Model\Collection;
-
+use Drupal\spectrum\Query\Condition;
+use Drupal\spectrum\Query\ModelQuery;
 
 /**
  * The ModelStore is a datastore service which can be used to cache Models.
@@ -21,7 +22,99 @@ class ModelStore implements ModelStoreInterface
   /**
    * {@inheritdoc}
    */
-  public function getModelByFieldValue(string $modelClass, string $fieldName, string $value = null): ?Model
+  public function findRecordsByFieldValue(string $modelClass, string $fieldName, string $value): Collection
+  {
+    /** @var ModelQuery $query */
+    $query = $modelClass::getModelQuery();
+    $query->addCondition(new Condition($fieldName, '=', $value));
+    $collection = $query->fetchCollection();
+
+    if (isset($collection)) {
+      $this->pushCollection($collection);
+    }
+
+    return $collection;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function findRecordByFieldValue(string $modelClass, string $fieldName, string $value): ?Model
+  {
+    $model = $this->peekRecordByFieldValue($modelClass, $fieldName, $value);
+
+    if (!isset($model)) {
+      /** @var ModelQuery $query */
+      $query = $modelClass::getModelQuery();
+      $query->addCondition(new Condition($fieldName, '=', $value));
+      $model = $query->fetchSingleModel();
+
+      if (isset($model)) {
+        $this->pushModel($model);
+      }
+    }
+
+    return $model;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function findAll(string $modelClass): Collection
+  {
+    /** @var ModelQuery $query */
+    $query = $modelClass::getModelQuery();
+
+    $collection = $query->fetchCollection();
+    $this->pushCollection($collection);
+
+    return $collection;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function findRecord(string $modelClass, string $id): ?Model
+  {
+    $model = $this->peekRecord($modelClass, $id);
+
+    if (!isset($model)) {
+      $model = $modelClass::forgeById($id);
+
+      if (isset($model)) {
+        $this->pushModel($model);
+      }
+    }
+
+    return $model;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function peekAll(string $modelClass): Collection
+  {
+    $collection = Collection::forgeNew($modelClass);
+
+    foreach ($this->data[$modelClass] as $model) {
+      $collection->put($model);
+    }
+
+    return $collection;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function peekRecord(string $modelClass, string $id): ?Model
+  {
+    return $this->peekRecordByFieldValue($modelClass, $modelClass::getIdField(), $id);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function peekRecordByFieldValue(string $modelClass, string $fieldName, string $value = null): ?Model
   {
     $model = null;
 
@@ -40,7 +133,7 @@ class ModelStore implements ModelStoreInterface
   /**
    * {@inheritdoc}
    */
-  public function getCollectionByFieldValue(string $modelClass, string $fieldName, string $value): Collection
+  public function peekRecordsByFieldValue(string $modelClass, string $fieldName, string $value): Collection
   {
     $collection = Collection::forgeNew($modelClass);
 
@@ -58,7 +151,7 @@ class ModelStore implements ModelStoreInterface
   /**
    * {@inheritdoc}
    */
-  public function addModel(Model $model): ModelStoreInterface
+  public function pushModel(Model $model): ModelStoreInterface
   {
     $modelClass = $model->getModelName();
 
@@ -74,10 +167,10 @@ class ModelStore implements ModelStoreInterface
   /**
    * {@inheritdoc}
    */
-  public function addCollection(Collection $collection): ModelStoreInterface
+  public function pushCollection(Collection $collection): ModelStoreInterface
   {
     foreach ($collection as $model) {
-      $this->addModel($model);
+      $this->pushModel($model);
     }
 
     return $this;
@@ -86,9 +179,21 @@ class ModelStore implements ModelStoreInterface
   /**
    * {@inheritdoc}
    */
-  public function clearAll(): ModelStoreInterface
+  public function unloadAll(): ModelStoreInterface
   {
     $this->data = [];
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function unloadRecord(Model $model): ModelStoreInterface
+  {
+    $modelClassName = get_class($model);
+
+    unset($this->data[$modelClassName][$model->key]);
+
     return $this;
   }
 }

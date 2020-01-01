@@ -33,8 +33,10 @@ class ModelTrigger
     $bundle = $entity->bundle();
 
     if (Model::hasModelClassForEntityAndBundle($entityType, $bundle)) {
-      $modelClass = Model::getModelClassForEntityAndBundle($entityType,
-        $bundle);
+      $modelClass = Model::getModelClassForEntityAndBundle(
+        $entityType,
+        $bundle
+      );
 
       // We check the model reference on the entity itself, this way we can reuse the previous model state in the triggers
       $modelOnEntity = $entity->__spectrumModel;
@@ -50,31 +52,53 @@ class ModelTrigger
         switch ($trigger) {
           case 'presave':
             if ($model->entity->isNew()) {
-              $model->__setIsNewlyInserted(true);
+              $model->__setIsNewlyInserted(TRUE);
+              $model->__setIsBeingDeleted(FALSE);
               $model->beforeInsert();
             } else {
-              $model->__setIsNewlyInserted(false);
+              $model->__setIsNewlyInserted(FALSE);
+              $model->__setIsBeingDeleted(FALSE);
               $model->beforeUpdate();
             }
             break;
           case 'insert':
-            $model->__setIsNewlyInserted(true);
+            $model->__setIsNewlyInserted(TRUE);
+            $model->__setIsBeingDeleted(FALSE);
             $model->setAccessPolicy();
             $model->afterInsert();
             break;
           case 'update':
-            $model->__setIsNewlyInserted(false);
+            $model->__setIsNewlyInserted(FALSE);
+            $model->__setIsBeingDeleted(FALSE);
             $model->setAccessPolicy();
             $model->afterUpdate();
             break;
           case 'predelete':
-            $model->__setIsNewlyInserted(false);
-            $model->beforeDelete();
+            $model->__setIsNewlyInserted(FALSE);
+            $model->__setIsBeingDeleted(TRUE);
+
+            try {
+              $model->beforeDelete();
+            } catch (\Exception $ex) {
+              if (!getenv('IGNORE_DELETE_SAFETY')) {
+                throw $ex;
+              }
+            }
+
             $model->unsetAccessPolicy();
             break;
           case 'delete':
-            $model->__setIsNewlyInserted(false);
-            $model->afterDelete();
+            $model->__setIsNewlyInserted(FALSE);
+            $model->__setIsBeingDeleted(TRUE);
+
+            try {
+              $model->afterDelete();
+            } catch (\Exception $ex) {
+              if (!getenv('IGNORE_DELETE_SAFETY')) {
+                throw $ex;
+              }
+            }
+
             $model->doCascadingDeletes();
             break;
         }

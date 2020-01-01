@@ -84,7 +84,7 @@ class CronCommand extends ContainerAwareCommand
         $cache->deleteAll();
 
         // And finally clear the model store of any data as well
-        Model::getModelStore()->clearAll();
+        Model::getModelStore()->unloadAll();
       }
     });
 

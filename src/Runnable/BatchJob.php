@@ -57,7 +57,7 @@ abstract class BatchJob extends QueuedJob
       $this->process($entity);
       $progressBar->advance();
       $counter++;
-      if($counter % $batchSize === 0){
+      if ($counter % $batchSize === 0) {
         $this->clearCache();
         $counter = 0;
       }
@@ -107,6 +107,6 @@ abstract class BatchJob extends QueuedJob
     $cache->deleteAll();
 
     // And finally clear the model store of any data as well
-    Model::getModelStore()->clearAll();
+    Model::getModelStore()->unloadAll();
   }
 }
