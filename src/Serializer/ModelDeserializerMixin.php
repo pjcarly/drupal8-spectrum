@@ -6,7 +6,6 @@ use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Model\Collection;
 use Drupal\spectrum\Model\ReferencedRelationship;
 use Drupal\spectrum\Model\FieldRelationship;
-use Drupal\spectrum\Serializer\JsonApiRootNode;
 use Drupal\spectrum\Models\File;
 use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface;
 use Drupal\spectrum\Exceptions\RelationshipNotDefinedException;
