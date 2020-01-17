@@ -55,6 +55,7 @@ class BaseApiController implements ContainerAwareInterface
     $access = '';
     switch ($request->getMethod()) {
       case 'GET':
+      case 'HEAD':
         $access = 'R';
         break;
       case 'POST':
