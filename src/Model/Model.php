@@ -2080,7 +2080,7 @@ abstract class Model
    */
   public function setCreatedDate(\DateTime $value): Model
   {
-    $this->entity->{'created'}->value = $value->format('u');
+    $this->entity->{'created'}->value = $value->format('U');
     return $this;
   }
 
@@ -2101,7 +2101,7 @@ abstract class Model
    */
   public function setLastModifiedDate(\DateTime $value): Model
   {
-    $this->entity->{'created'}->value = $value->format('u');
+    $this->entity->{'created'}->value = $value->format('U');
     return $this;
   }
 

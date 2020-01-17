@@ -41,7 +41,8 @@ class TwigFilters extends \Twig_Extension
       new \Twig_SimpleFilter('pnr_safe_name', [$this, 'pnrSafeName']),
       new \Twig_SimpleFilter('target_id', [$this, 'targetId']),
       new \Twig_SimpleFilter('collection_sort', [$this, 'collectionSort']),
-      new \Twig_SimpleFilter('tt', [$this, 'translate'])
+      new \Twig_SimpleFilter('tt', [$this, 'translate']),
+      new \Twig_SimpleFilter('mask', [$this, 'mask'])
     ];
   }
 
@@ -112,8 +113,7 @@ class TwigFilters extends \Twig_Extension
   {
     if (!is_a($price, Money::class)) {
       return number_format((float) $price, 2, ',', ' ') . ' ' . $currency;
-    }
-    else {
+    } else {
       /** @var Money $price */
       return number_format((float) NumberUtils::getDecimal($price), 2, ',', ' ') . ' ' . $price->getCurrency();
     }
@@ -195,5 +195,33 @@ class TwigFilters extends \Twig_Extension
   public static function translate(string $value, array $variables = [])
   {
     return LanguageUtils::translate($value, $variables);
+  }
+
+  /**
+   * Generates a masked string for the provided value
+   *
+   * @param string $value The value you want to mask
+   * @param string $mask The mask to use, use {{1}} {{2}} ... To represent capturing groups from regex
+   * @param string $regex The regex (with capturing groups) to use for the mask
+   * @return string
+   */
+  public static function mask(?string $value, string $mask, string $regex): string
+  {
+    if (empty($value)) {
+      return '';
+    }
+
+    //value: 190000010188
+    //regex: #^(d{3})(d{4})(d{5})$#
+    //regex: #^(\d{3})(\d{4})(\d{5})$#
+    preg_match($regex, $value, $values);
+    preg_match_all('#\{\{(\d+)\}\}#', $mask, $replaces);
+
+    $returnValue = $mask;
+    foreach ($replaces[0] as $index => $replaceValue) {
+      $returnValue = str_replace($replaceValue, $values[$replaces[1][$index]], $returnValue);
+    }
+
+    return $returnValue;
   }
 }
