@@ -109,7 +109,9 @@ abstract class BaseApiHandler
   private final function setDefaultHeaders(Response $response): BaseApiHandler
   {
     foreach (array_keys($this->defaultHeaders) as $key) {
-      $response->headers->set($key, $this->defaultHeaders[$key]);
+      if (!$response->headers->has($key)) {
+        $response->headers->set($key, $this->defaultHeaders[$key]);
+      }
     }
 
     return $this;
