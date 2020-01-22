@@ -9,7 +9,10 @@ use Drupal\spectrum\Models\File;
 use Drupal\spectrum\Query\Condition;
 
 /**
- * This batch job will unpublish all files which arent in use by other models or drupal
+ * @Job(
+ *   id = "FileUnpublishUnreferencedFilesBatch",
+ *   description = "This batch job will unpublish all files which arent in use by other models or drupal",
+ * )
  */
 class FileUnpublishUnreferencedFilesBatch extends BatchJob
 {
@@ -28,6 +31,7 @@ class FileUnpublishUnreferencedFilesBatch extends BatchJob
    */
   protected function process(EntityInterface $entity): void
   {
+    /** @var File $file */
     $file = File::forgeByEntity($entity);
 
     if ($file->isInUse()) {

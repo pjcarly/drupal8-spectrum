@@ -10,7 +10,10 @@ use Drupal\spectrum\Runnable\BatchableInterface;
 use Drupal\spectrum\Runnable\BatchJob;
 
 /**
- * This job will remove all queuedjob records from the database which are older than maxAgeInDays (which should be added to the variable)
+ * @Job(
+ *   id = "QueuedJobJanitorJob",
+ *   description = "This job will remove all queuedjob records from the database which are older than maxAgeInDays (which should be added to the variable)",
+ * )
  */
 class QueuedJobJanitorJob extends BatchJob
 {
@@ -21,7 +24,6 @@ class QueuedJobJanitorJob extends BatchJob
     if (empty($variable) || !isset($variable->maxAgeInDays) || $variable->maxAgeInDays < 0) {
       $this->setFailed('Missing JSON object in variable, with the key "maxAgeInDays" and value the amount of days you want to save');
     }
-
 
     $now = new \DateTime('now', new \DateTimeZone('UTC'));
     $now->sub(new \DateInterval('P' . $variable->maxAgeInDays . 'D'));

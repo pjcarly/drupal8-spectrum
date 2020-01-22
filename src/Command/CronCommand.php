@@ -12,9 +12,10 @@ use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Query\Order;
 use Drupal\spectrum\Runnable\QueuedJob;
 use React\EventLoop\Factory;
+use React\EventLoop\LoopInterface;
 
 /**
- * Class ActivitiesDeleteCommand.
+ * Class CronCommand.
  *
  * @DrupalCommand (
  *     extension="spectrum",
@@ -23,6 +24,16 @@ use React\EventLoop\Factory;
  */
 class CronCommand extends ContainerAwareCommand
 {
+  /**
+   * @var LoopInterface $loop
+   */
+  protected $loop;
+
+  public function __construct(LoopInterface $loop)
+  {
+    parent::__construct();
+    $this->loop = $loop;
+  }
 
   /**
    * {@inheritdoc}
@@ -42,7 +53,7 @@ class CronCommand extends ContainerAwareCommand
   {
     $this->getIo()->info('Spectrum Cron Started');
 
-    $loop = Factory::create();
+    $loop = $this->loop;
 
     $loop->addPeriodicTimer(1 / 4, function () use (&$loop, &$output) {
       $currentTime = new \DateTime('now', new \DateTimeZone('UTC'));
@@ -61,19 +72,23 @@ class CronCommand extends ContainerAwareCommand
         /** @var RegisteredJob $job */
         $job = $earliestQueuedJob->fetch('job');
 
-        $class = $job->getJobClass();
-        if (empty($class)) {
-          $earliestQueuedJob->failedExecution(null, 'No class provided');
-        } else if (!class_exists($class)) {
-          $earliestQueuedJob->failedExecution(null, 'Class does not exist');
-        } else if (!$job->isActive()) {
-          $earliestQueuedJob->failedExecution(null, 'Registered job is inactive');
+        if (!isset($job)) {
+          $earliestQueuedJob->failedExecution(null, 'Registered Job no longer exists');
         } else {
-          /** @var QueuedJob $job */
-          $job = $class::forgeByEntity($earliestQueuedJob->entity);
-          $job->setOutput($output);
+          $class = $job->getJobClass();
+          if (empty($class)) {
+            $earliestQueuedJob->failedExecution(null, 'No class provided');
+          } else if (!class_exists($class)) {
+            $earliestQueuedJob->failedExecution(null, 'Class does not exist');
+          } else if (!$job->isActive()) {
+            $earliestQueuedJob->failedExecution(null, 'Registered job is inactive');
+          } else {
+            /** @var QueuedJob $job */
+            $job = $class::forgeByEntity($earliestQueuedJob->entity);
+            $job->setOutput($output);
 
-          $job->run();
+            $job->run();
+          }
         }
 
         // This will clear all the entity caches, and free entities from memory

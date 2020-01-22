@@ -1,6 +1,13 @@
 services:
   spectrum.cron:
     class: Drupal\spectrum\Command\CronCommand
-    arguments: []
+    arguments:
+      - "@react.loop"
+    tags:
+      - { name: drupal.command }
+  spectrum.registered_jobs_rebuild:
+    class: Drupal\spectrum\Command\RegisteredJobsRebuildCommand
+    arguments:
+      - "@spectrum.jobs"
     tags:
       - { name: drupal.command }

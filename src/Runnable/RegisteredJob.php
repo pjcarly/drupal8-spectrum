@@ -71,6 +71,26 @@ class RegisteredJob extends Model
   }
 
   /**
+   * @param string $value
+   * @return self
+   */
+  public function setJobClass(string $value): self
+  {
+    $this->entity->{'field_class'}->value = $value;
+    return $this;
+  }
+
+  /**
+   * @param bool $value
+   * @return self
+   */
+  public function setActive(bool $value): self
+  {
+    $this->entity->{'field_active'}->value = $value;
+    return $this;
+  }
+
+  /**
    * Create a new Instance of the a Job you want to schedule. This job must extend from RunnableModel
    *
    * @return RunnableModel
@@ -110,6 +130,25 @@ class RegisteredJob extends Model
   public function setCliContext(bool $cliContext): RegisteredJob
   {
     $this->cliContext = $cliContext;
+    return $this;
+  }
+
+  /**
+   * @return string
+   */
+  public function getTitle(): ?string
+  {
+    return $this->entity->{'title'}->value;
+  }
+
+  /**
+   * @param string $value
+   *
+   * @return self
+   */
+  public function setTitle(string $value): self
+  {
+    $this->entity->{'title'}->value = $value;
     return $this;
   }
 

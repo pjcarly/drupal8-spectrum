@@ -9,7 +9,10 @@ use Drupal\spectrum\Models\File;
 use Drupal\spectrum\Query\Condition;
 
 /**
- * This Batch job will remove unpublished files from the database and filesystem (through drupal triggers)
+ * @Job(
+ *   id = "FileRemoveUnpublishedFilesBatch",
+ *   description = "This Batch job will remove unpublished files from the database and filesystem (through drupal triggers)",
+ * )
  */
 class FileRemoveUnpublishedFilesBatch extends BatchJob
 {

@@ -253,6 +253,54 @@ class Collection implements \IteratorAggregate, \Countable
   }
 
   /**
+   * @return integer
+   */
+  public function getAmountOfSelectedModels(): int
+  {
+    $count = 0;
+    /** @var Model $model */
+    foreach ($this->models as $model) {
+      if ($model->selected) {
+        $count++;
+      }
+    }
+
+    return $count;
+  }
+
+  /**
+   * @return integer
+   */
+  public function getAmountOfNotSelectedModels(): int
+  {
+    $count = 0;
+    /** @var Model $model */
+    foreach ($this->models as $model) {
+      if (!$model->selected) {
+        $count++;
+      }
+    }
+
+    return $count;
+  }
+
+  /**
+   * @return integer
+   */
+  public function getAmountOfNewModels(): int
+  {
+    $count = 0;
+    /** @var Model $model */
+    foreach ($this->models as $model) {
+      if ($model->isNew()) {
+        $count++;
+      }
+    }
+
+    return $count;
+  }
+
+  /**
    * Sets the selected flag of every model in the collection to TRUE
    *
    * @return self

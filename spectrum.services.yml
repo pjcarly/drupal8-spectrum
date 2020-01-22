@@ -1,12 +1,20 @@
 services:
+  logger.channel.spectrum:
+    parent: logger.channel_base
+    arguments: ["spectrum"]
   spectrum.twig_extension:
-    arguments: ['@renderer']
+    arguments: ["@renderer"]
     class: Drupal\spectrum\Template\TwigFilters
     tags:
       - { name: twig.extension }
   spectrum.model_store:
     class: Drupal\spectrum\Services\ModelStore
     arguments: []
+  spectrum.jobs:
+    class: Drupal\spectrum\Services\JobService
+    parent: default_plugin_manager
+    arguments:
+      - "@logger.channel.spectrum"
   react.loop:
     class: React\EventLoop\LoopInterface
     factory: ["React\\EventLoop\\Factory", "create"]
