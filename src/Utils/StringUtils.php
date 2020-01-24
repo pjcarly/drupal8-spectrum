@@ -56,6 +56,28 @@ class StringUtils
   }
 
   /**
+   * Keep alpha numeric characters and spaces
+   *
+   * @param string $input
+   * @return string
+   */
+  public static function keepAlphaNumericCharactersAndSpaces(string $input): string
+  {
+    return preg_replace('/[^\w\d\s]/', '', $input);
+  }
+
+  /**
+   * Provides filename safe strings
+   *
+   * @param string $input
+   * @return string
+   */
+  public static function fileNameSafeString(string $input): string
+  {
+    return trim(static::keepAlphaNumericCharactersAndSpaces(static::transliterate($input)));
+  }
+
+  /**
    * Transliterates the input string, all special characters will be replaces with their alpha equivalent for example élève becomes eleve
    *
    * @param string $input

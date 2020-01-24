@@ -97,9 +97,9 @@ class TwigFilters extends \Twig_Extension
    * @param Address|null $address
    * @return string|null
    */
-  public static function addressFormat(?Address $address): ?string
+  public static function addressFormat(?Address $address, ?string $originCountry = null): ?string
   {
-    return AddressUtils::format($address);
+    return AddressUtils::format($address, $originCountry);
   }
 
   /**

@@ -50,9 +50,10 @@ class AddressUtils
    * Format an address object according to the country's address formatting
    *
    * @param Address|null $address
+   * @param string $address
    * @return string|null
    */
-  public static function format(?Address $address): ?string
+  public static function format(?Address $address, ?string $originCountry = null): ?string
   {
     if (empty($address)) {
       return '';
@@ -61,6 +62,6 @@ class AddressUtils
     $container = \Drupal::getContainer();
     $formatter = new PostalLabelFormatter($container->get('address.address_format_repository'), $container->get('address.country_repository'), $container->get('address.subdivision_repository'));
 
-    return $formatter->format($address, ['origin_country' => 'BE']);
+    return $formatter->format($address, ['origin_country' => $originCountry ?? 'BE']);
   }
 }
