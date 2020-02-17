@@ -2,6 +2,7 @@
 
 namespace Drupal\spectrum\Utils;
 
+use Money\Currency;
 use Money\Money;
 use Money\Currencies\ISOCurrencies;
 use Money\Parser\DecimalMoneyParser;
@@ -25,7 +26,7 @@ class NumberUtils
     $currencies = new ISOCurrencies();
     $moneyParser = new DecimalMoneyParser($currencies);
 
-    return $moneyParser->parse($value, $currency);
+    return $moneyParser->parse($value, new Currency($currency));
   }
 
   /**
