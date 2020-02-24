@@ -3,9 +3,8 @@
   "description": "Spectrum Dependencies",
   "type": "drupal-module",
   "require": {
-      "sendgrid/sendgrid": "^4.0",
-      "aws/aws-sdk-php": "^3.23",
-      "danielstjules/stringy": "^3.1",
-      "react/event-loop": "^0.4.3"
+    "aws/aws-sdk-php": "^3.23",
+    "danielstjules/stringy": "^3.1",
+    "react/event-loop": "^0.4.3"
   }
 }

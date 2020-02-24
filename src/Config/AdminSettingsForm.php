@@ -22,13 +22,6 @@ class AdminSettingsForm extends ConfigFormBase
   {
     $config = $this->config('spectrum.settings');
 
-    $form['wkhtmltopdf_executable'] = [
-      '#type' => 'textfield',
-      '#title' => t('wkhtmltopdf executable'),
-      '#default_value' => $config->get('wkhtmltopdf_executable'),
-      '#description' => t('The location of the wkhtmltopdf executable.')
-    ];
-
     $form['default_base_path'] = [
       '#type' => 'textfield',
       '#title' => t('Default Base Path'),
@@ -45,13 +38,6 @@ class AdminSettingsForm extends ConfigFormBase
         'aws-ses' => 'AWS SES',
       ],
       '#default_value' => $config->get('email_provider'),
-    ];
-
-    $form['sendgrid_api_key'] = [
-      '#type' => 'textfield',
-      '#title' => t('Sendgrid API Key'),
-      '#default_value' => $config->get('sendgrid_api_key'),
-      '#description' => t('The API key for your Sendgrid account.')
     ];
 
     $form['aws_ses_api_key'] = [
@@ -86,10 +72,8 @@ class AdminSettingsForm extends ConfigFormBase
   public function submitForm(array &$form, FormStateInterface $form_state)
   {
     $config = $this->config('spectrum.settings');
-    $config->set('wkhtmltopdf_executable', $form_state->getValue('wkhtmltopdf_executable'));
     $config->set('default_base_path', $form_state->getValue('default_base_path'));
     $config->set('email_provider', $form_state->getValue('email_provider'));
-    $config->set('sendgrid_api_key', $form_state->getValue('sendgrid_api_key'));
     $config->set('aws_ses_api_key', $form_state->getValue('aws_ses_api_key'));
     $config->set('aws_ses_api_secret', $form_state->getValue('aws_ses_api_secret'));
     $config->set('aws_ses_region', $form_state->getValue('aws_ses_region'));

@@ -4,6 +4,7 @@ namespace Drupal\spectrum\Email;
 
 use Drupal\Core\Site\Settings;
 use Drupal\spectrum\Exceptions\EmailException;
+use Drupal\spectrum\Exceptions\NotImplementedException;
 
 class Email
 {
@@ -135,29 +136,7 @@ class Email
     // Depending on the Email provider, we do something else
     try {
       if ($emailProvider === 'sendgrid') {
-        $sendGridKey = $config->get('sendgrid_api_key');
-
-        if (empty($sendGridKey)) {
-          throw new EmailException('SendGrid API Key blank.');
-        }
-
-        // we instantiate our client
-        $sendgridMessage = new \SendGrid\Email();
-
-        // And set the values
-        $sendgridMessage->addTo($this->toAddresses);
-        $sendgridMessage->setFrom($this->fromAddress);
-        $sendgridMessage->setFromName($this->fromName);
-        $sendgridMessage->setReplyTo($this->replyTo);
-
-        // twig already rendered our template, lets set the values
-        $sendgridMessage->setSubject($template->getSubject());
-        $sendgridMessage->setText($template->getText());
-        $sendgridMessage->setHtml($template->getHtml());
-
-        // And finally send the email
-        $client = new \SendGrid($sendGridKey);
-        $client->send($sendgridMessage);
+        throw new NotImplementedException('Sendgrid is no longer implemented');
       } else if ($emailProvider === 'aws-ses') {
         $awsKey = $config->get('aws_ses_api_key');
         $awsSecret = $config->get('aws_ses_api_secret');
