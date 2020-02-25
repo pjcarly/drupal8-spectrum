@@ -2,8 +2,13 @@
 
 namespace Drupal\spectrum\Runnable;
 
+use DateTime;
+use DateTimeZone;
+use Drupal;
+use Drupal\Core\Cache\MemoryCache\MemoryCacheInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\spectrum\Model\Model;
+use Exception;
 use Symfony\Component\Console\Helper\ProgressBar;
 
 abstract class BatchJob extends QueuedJob
@@ -11,16 +16,16 @@ abstract class BatchJob extends QueuedJob
   /**
    * {@inheritdoc}
    */
-  public static function scheduleBatch(string $jobName, string $variable = '', \DateTime $date = null, int $batchSize = null): BatchJob
+  public static function scheduleBatch(string $jobName, string $variable = '', DateTime $date = null, int $batchSize = null): BatchJob
   {
     $registeredJob = RegisteredJob::getByKey($jobName);
 
     if (empty($registeredJob)) {
-      throw new \Exception('Registered Job (' . $jobName . ') not found');
+      throw new Exception('Registered Job (' . $jobName . ') not found');
     }
 
     if (empty($date)) {
-      $date = new \DateTime('now', new \DateTimeZone('UTC'));
+      $date = new DateTime('now', new DateTimeZone('UTC'));
     }
 
     /** @var BatchJob $queuedJob */
@@ -65,6 +70,13 @@ abstract class BatchJob extends QueuedJob
 
     $progressBar->finish();
     $this->getOutput()->writeln('');
+
+    $this->afterExecute();
+  }
+
+  protected function afterExecute(): void
+  {
+
   }
 
   /**
@@ -102,8 +114,8 @@ abstract class BatchJob extends QueuedJob
     // This will clear all the entity caches, and free entities from memory
     Model::clearAllDrupalStaticEntityCaches();
 
-    /** @var \Drupal\Core\Cache\MemoryCache\MemoryCacheInterface $cache */
-    $cache = \Drupal::service('entity.memory_cache');
+    /** @var MemoryCacheInterface $cache */
+    $cache = Drupal::service('entity.memory_cache');
     $cache->deleteAll();
 
     // And finally clear the model store of any data as well
