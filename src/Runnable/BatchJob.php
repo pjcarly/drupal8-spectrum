@@ -74,9 +74,13 @@ abstract class BatchJob extends QueuedJob
     $this->afterExecute();
   }
 
+  /**
+   * Hook that is called after the batch job is fully executed
+   *
+   * @return void
+   */
   protected function afterExecute(): void
   {
-
   }
 
   /**
