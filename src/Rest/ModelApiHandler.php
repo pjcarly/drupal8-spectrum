@@ -515,6 +515,17 @@ class ModelApiHandler extends BaseApiHandler
   }
 
   /**
+   * This method is called after deserializing the json post request, before doing anything else. Giving any implementation to alter the document.
+   *
+   * @param \stdClass $jsonapidocument
+   * @return \stdClass
+   */
+  protected function alterPostJsonApiDocument(\stdClass $jsonapidocument): \stdClass
+  {
+    return $jsonapidocument;
+  }
+
+  /**
    * This method is called before the model will be validated in a post, giving you the opportunity to do override functionality per ApiHandler
    *
    * @param Model $model
@@ -575,6 +586,7 @@ class ModelApiHandler extends BaseApiHandler
       $model = $modelClassName::forgeNew();
 
       // here we fill in the attributes on the new model from the json api document
+      $jsonapidocument = $this->alterPostJsonApiDocument($jsonapidocument);
       $model->applyChangesFromJsonAPIDocument($jsonapidocument);
 
       // Next we check for embedded models
@@ -652,6 +664,17 @@ class ModelApiHandler extends BaseApiHandler
     }
 
     return new Response(isset($response) ? json_encode($response) : null, $responseCode, []);
+  }
+
+  /**
+   * This method is called after deserializing the json patch request, before doing anything else. Giving any implementation to alter the document.
+   *
+   * @param \stdClass $jsonapidocument
+   * @return \stdClass
+   */
+  protected function alterPatchJsonApiDocument(\stdClass $jsonapidocument): \stdClass
+  {
+    return $jsonapidocument;
   }
 
   /**
@@ -733,6 +756,7 @@ class ModelApiHandler extends BaseApiHandler
         // We make a copy before applying changes, because we might need the original values in the hooks later on
         $originalModel = $model->getClonedModel();
         // here we fill in the attributes on the new model from the json api document
+        $jsonapidocument = $this->alterPatchJsonApiDocument($jsonapidocument);
         $model->applyChangesFromJsonAPIDocument($jsonapidocument);
 
         // Next we check for embedded models
