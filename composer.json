@@ -1,10 +1,12 @@
 {
-  "name": "drupal/spectrum",
-  "description": "Spectrum Dependencies",
-  "type": "drupal-module",
-  "require": {
-    "aws/aws-sdk-php": "^3.23",
-    "danielstjules/stringy": "^3.1",
-    "react/event-loop": "^0.4.3"
-  }
+    "name": "getflights/spectrum",
+    "description": "Spectrum",
+    "type": "drupal-module-custom",
+    "authors": [
+        {
+            "name": "Bart Vanhoutte",
+            "email": "b.vanhoutte@groupflights.com"
+        }
+    ],
+    "require": {}
 }
