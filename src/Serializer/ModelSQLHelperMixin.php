@@ -189,7 +189,7 @@ trait ModelSQLHelperMixin
         $amountOfFields++;
 
         if ($amountOfFields > 60) {
-          trigger_error('Skipping field ' . $fieldName . ' for bundle ' . static::bundle(), E_USER_WARNING);
+          //trigger_error('Skipping field ' . $fieldName . ' for bundle ' . static::bundle(), E_USER_WARNING);
           continue;
         }
 
@@ -203,7 +203,7 @@ trait ModelSQLHelperMixin
 
     if ($amountOfFields > 60) {
       // Only 60 joins allowed due to MySQL constraints
-      trigger_error('Bundle ' . static::bundle() . ' has too many columns (' . $amountOfFields . '), stopped at 60', E_USER_WARNING);
+      // trigger_error('Bundle ' . static::bundle() . ' has too many columns (' . $amountOfFields . '), stopped at 60', E_USER_WARNING);
     }
 
     return $joins;

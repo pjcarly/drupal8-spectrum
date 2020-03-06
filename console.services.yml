@@ -11,3 +11,10 @@ services:
       - "@spectrum.jobs"
     tags:
       - { name: drupal.command }
+  spectrum.generate-entity-sql-view:
+    class: Drupal\spectrum\Command\GenerateEntitySQLViewCommand
+    arguments:
+      - "@spectrum.model"
+      - "@database"
+    tags:
+      - { name: drupal.command }
