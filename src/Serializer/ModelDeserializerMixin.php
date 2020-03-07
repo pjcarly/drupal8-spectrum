@@ -179,6 +179,7 @@ trait ModelDeserializerMixin
 
                       // We must be sure that the hash provided in the deserialization, matches the file entity in the database
                       // That way no unauthorized file linking can occur
+                      /** @var File $fileModel */
                       if ($fileModel->getId() === $singleAttributeValue->id && $fileModel->getHash() === $singleAttributeValue->hash) {
                         $valueToSet[] = ['target_id' => $singleAttributeValue->id];
                       }

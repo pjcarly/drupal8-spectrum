@@ -736,9 +736,9 @@ class MultiModelApiHandler extends BaseApiHandler
    *
    * @param string $entityType
    * @param array $filter
-   * @return ListView|null
+   * @return ListViewInterface|null
    */
-  public static function getListViewForFilterArray(string $entityType, array $filter): ?ListView
+  public static function getListViewForFilterArray(string $entityType, array $filter): ?ListViewInterface
   {
     if (array_key_exists('_listview', $filter)) {
       $listViewParameterValue = $filter['_listview'];

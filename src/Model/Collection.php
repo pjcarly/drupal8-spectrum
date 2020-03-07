@@ -645,10 +645,9 @@ class Collection implements \IteratorAggregate, \Countable
    * @param array|null $models
    * @param array|null $entities
    * @param array|null $ids
-   * @param ModelQuery $modelQuery
    * @return Collection
    */
-  private static function forge(string $modelType = null, ?array $models = [], ?array $entities = [], ?array $ids = [], ModelQuery $modelQuery = null): Collection
+  private static function forge(string $modelType = null, ?array $models = [], ?array $entities = [], ?array $ids = []): Collection
   {
     $collection = new static();
     $collection->modelType = $modelType;

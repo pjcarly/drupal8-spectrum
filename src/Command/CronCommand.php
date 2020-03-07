@@ -11,7 +11,6 @@ use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Query\Order;
 use Drupal\spectrum\Runnable\QueuedJob;
-use React\EventLoop\Factory;
 use React\EventLoop\LoopInterface;
 
 /**
