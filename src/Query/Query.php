@@ -270,7 +270,7 @@ abstract class Query implements BatchableInterface
    */
   public function addSortOrder(Order $order): Query
   {
-    $this->sortOrders[$order->fieldName] = $order;
+    $this->sortOrders[$order->getFieldName()] = $order;
     return $this;
   }
 

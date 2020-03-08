@@ -454,8 +454,9 @@ abstract class Model
 
           if (is_array($fieldId)) // multiple values
           {
-            $relationshipCondition->value = $fieldId;
-            $relationshipCondition->operator = 'IN';
+            $relationshipCondition
+              ->setValue($fieldId)
+              ->setOperator('IN');
 
             $relationshipQuery->addCondition($relationshipCondition);
             $referencedEntities = $relationshipQuery->fetch();
@@ -479,8 +480,9 @@ abstract class Model
             }
           } else // single value
           {
-            $relationshipCondition->value = $fieldId;
-            $relationshipCondition->operator = '=';
+            $relationshipCondition
+              ->setValue($fieldId)
+              ->setOperator('=');
 
             $relationshipQuery->addCondition($relationshipCondition);
             $referencedEntity = $relationshipQuery->fetchSingle();
@@ -501,7 +503,7 @@ abstract class Model
         $id = $this->getId();
         if (!empty($id)) // fetching referenced relationships for new records is not possible
         {
-          $relationshipCondition->value = [$id];
+          $relationshipCondition->setValue([$id]);
           $relationshipQuery->addCondition($relationshipCondition);
           $referencingEntities = $relationshipQuery->fetch();
 

@@ -51,6 +51,16 @@ class Order
   }
 
   /**
+   * @param string $fieldName
+   * @return self
+   */
+  public function setFieldName(string $fieldName): self
+  {
+    $this->fieldName = $fieldName;
+    return $this;
+  }
+
+  /**
    * Get the sorting direction
    *
    * @return  string
@@ -61,6 +71,16 @@ class Order
   }
 
   /**
+   * @param string $direction
+   * @return self
+   */
+  public function setDirection(string $direction): self
+  {
+    $this->direction = $direction;
+    return $this;
+  }
+
+  /**
    * Get the language code
    *
    * @return  string
@@ -68,5 +88,15 @@ class Order
   public function getLangcode(): ?string
   {
     return $this->langcode;
+  }
+
+  /**
+   * @param string|null $langcode
+   * @return void
+   */
+  public function setLangCode(?string $langcode)
+  {
+    $this->langcode = $langcode;
+    return $this;
   }
 }
