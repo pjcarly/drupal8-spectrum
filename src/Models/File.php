@@ -183,7 +183,7 @@ class File extends Model
    */
   public function getBase64SRC(): string
   {
-    $mime = $this->entity->get('filemime')->value;
+    $mime = $this->entity->{'filemime'}->value;
     $base64 = base64_encode(file_get_contents($this->getRealSrc()));
 
     return 'data:' . $mime . ';base64,' . $base64;
@@ -197,7 +197,7 @@ class File extends Model
    */
   public function getSRC(): string
   {
-    $url = UrlUtils::getBaseURL() . $this->getBaseApiPath() . '/' . $this->entity->get('filename')->value . '?fid=' . $this->getId() . '&dg=' . $this->getHash();
+    $url = UrlUtils::getBaseURL() . $this->getBaseApiPath() . '/' . $this->entity->{'filename'}->value . '?fid=' . $this->getId() . '&dg=' . $this->getHash();
 
     return $url;
   }

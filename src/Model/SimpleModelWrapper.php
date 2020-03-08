@@ -67,39 +67,39 @@ class SimpleModelWrapper
       // TODO: add support for field cardinality
       switch ($fieldType) {
         case 'autonumber':
-          $fieldValue = $model->entity->get($fieldName)->value;
+          $fieldValue = $model->entity->{$fieldName}->value;
           $returnValue = isset($fieldValue) ? (int) $fieldValue : null;
 
           break;
         case 'boolean':
-          $returnValue = ($model->entity->get($fieldName)->value === '1');
+          $returnValue = ($model->entity->{$fieldName}->value === '1');
           break;
         case 'decimal':
-          $fieldValue = $model->entity->get($fieldName)->value;
+          $fieldValue = $model->entity->{$fieldName}->value;
           $returnValue = isset($fieldValue) ? (float) $fieldValue : null;
           break;
         case 'geolocation':
-          $lat = (float) $model->entity->get($fieldName)->lat;
-          $lng = (float) $model->entity->get($fieldName)->lng;
+          $lat = (float) $model->entity->{$fieldName}->lat;
+          $lng = (float) $model->entity->{$fieldName}->lng;
 
           $returnValue = $lat . ',' . $lng;
           break;
         case 'entity_reference':
           $fieldObjectSettings = $fieldDefinition->getSettings();
           if (!empty($fieldObjectSettings) && array_key_exists('target_type', $fieldObjectSettings) && $fieldObjectSettings['target_type'] === 'currency') {
-            $returnValue = $model->entity->get($fieldName)->target_id;
+            $returnValue = $model->entity->{$fieldName}->target_id;
           }
 
           break;
         case 'image':
-          $fileId = $model->entity->get($fieldName)->target_id;
+          $fileId = $model->entity->{$fieldName}->target_id;
 
           if (!empty($fileId)) {
             $returnValue = Image::forgeById($fileId);
           }
           break;
         case 'file':
-          $fileId = $model->entity->get($fieldName)->target_id;
+          $fileId = $model->entity->{$fieldName}->target_id;
 
           if (!empty($fileId)) {
             $returnValue = File::forgeById($fileId);
@@ -108,13 +108,13 @@ class SimpleModelWrapper
           }
           break;
         case 'uri':
-          $returnValue = $model->entity->get($fieldName)->value;
+          $returnValue = $model->entity->{$fieldName}->value;
           break;
         case 'link':
-          $returnValue = $model->entity->get($fieldName)->uri;
+          $returnValue = $model->entity->{$fieldName}->uri;
           break;
         case 'address':
-          $value = $model->entity->get($fieldName);
+          $value = $model->entity->{$fieldName};
 
           $returnValue = AddressUtils::getAddress($value);
           break;
@@ -123,12 +123,12 @@ class SimpleModelWrapper
         case 'timestamp':
           // For some reason, created and changed aren't regular datetimes, they
           // are unix timestamps in the database.
-          $timestamp = $model->entity->get($fieldName)->value;
+          $timestamp = $model->entity->{$fieldName}->value;
           $returnValue = \DateTime::createFromFormat('U', $timestamp);
           break;
         case 'datetime':
           $dateValue = null;
-          $attributeValue = $model->entity->get($fieldName)->value;
+          $attributeValue = $model->entity->{$fieldName}->value;
 
           if (!empty($attributeValue)) {
             // We must figure out if this is a Date field or a datetime field
@@ -149,7 +149,7 @@ class SimpleModelWrapper
           $returnValue = $dateValue;
           break;
         default:
-          $returnValue = $model->entity->get($fieldName)->value;
+          $returnValue = $model->entity->{$fieldName}->value;
           break;
       }
 
