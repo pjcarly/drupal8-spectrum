@@ -34,6 +34,12 @@ class ParentAccessPolicy extends AccessPolicyBase
 
     $values = [];
 
+    $this->database
+      ->delete(self::TABLE_ENTITY_ROOT)
+      ->condition('entity_type', $model::entityType())
+      ->condition('entity_id', (int) $model->getId())
+      ->execute();
+
     foreach ($roots as $root) {
       if ($root::entityType() !== $model::entityType() || $root->getId() !== $model->getId()) {
         $values[] = strtr('(\'@entity_type\', @entity_id, \'@root_entity_type\', @root_entity_id)', [
@@ -305,13 +311,23 @@ class ParentAccessPolicy extends AccessPolicyBase
       // Now we need to check whether our provided class is defined as a ParentAccessFieldRelationship on this Model Class
       foreach ($modelClassToCheck::getRelationships() as $relationship) {
         if ($relationship instanceof ParentAccessFieldRelationship) {
-          /** @var ParentAccessFieldRelationship $relationship */
-          $relationshipClass = $relationship->getModelType();
+          if($relationship->isPolymorphic){
+            foreach ($relationship->polymorphicModelTypes as $polymorphicModelType){
+              /** @var string $modelClassToCheck */
+              if (is_a($modelClass, $polymorphicModelType, TRUE)) {
+                $children[$modelClass][$modelClassToCheck] = $relationship;
+                $children = $this->getChildModelClassesForModelClass($modelClassToCheck, $children);
+              }
+            }
+          } else {
+            /** @var ParentAccessFieldRelationship $relationship */
+            $relationshipClass = $relationship->getModelType();
 
-          /** @var string $modelClassToCheck */
-          if (is_a($modelClass, $relationshipClass, TRUE)) {
-            $children[$modelClass][$modelClassToCheck] = $relationship;
-            $children = $this->getChildModelClassesForModelClass($modelClassToCheck, $children);
+            /** @var string $modelClassToCheck */
+            if (is_a($modelClass, $relationshipClass, TRUE)) {
+              $children[$modelClass][$modelClassToCheck] = $relationship;
+              $children = $this->getChildModelClassesForModelClass($modelClassToCheck, $children);
+            }
           }
         }
       }
