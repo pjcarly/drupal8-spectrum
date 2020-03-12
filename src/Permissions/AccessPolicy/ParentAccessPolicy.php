@@ -3,9 +3,9 @@
 namespace Drupal\spectrum\Permissions\AccessPolicy;
 
 use Drupal\Core\Database\Query\Select;
-use Drupal\spectrum\Model\ParentAccessFieldRelationship;
 use Drupal\spectrum\Model\FieldRelationship;
 use Drupal\spectrum\Model\Model;
+use Drupal\spectrum\Model\ParentAccessFieldRelationship;
 use Drupal\spectrum\Model\Relationship;
 use Drupal\spectrum\Query\Condition;
 
@@ -72,8 +72,8 @@ class ParentAccessPolicy extends AccessPolicyBase
   {
     $this->database
       ->delete(self::TABLE_ENTITY_ROOT)
-      ->condition('root_entity_type', $model::entityType())
-      ->condition('root_entity_id', (int) $model->getId())
+      ->condition('entity_type', $model::entityType())
+      ->condition('entity_id', (int) $model->getId())
       ->execute();
 
     return $this;
@@ -311,20 +311,10 @@ class ParentAccessPolicy extends AccessPolicyBase
       // Now we need to check whether our provided class is defined as a ParentAccessFieldRelationship on this Model Class
       foreach ($modelClassToCheck::getRelationships() as $relationship) {
         if ($relationship instanceof ParentAccessFieldRelationship) {
-          if($relationship->isPolymorphic){
-            foreach ($relationship->polymorphicModelTypes as $polymorphicModelType){
-              /** @var string $modelClassToCheck */
-              if (is_a($modelClass, $polymorphicModelType, TRUE)) {
-                $children[$modelClass][$modelClassToCheck] = $relationship;
-                $children = $this->getChildModelClassesForModelClass($modelClassToCheck, $children);
-              }
-            }
-          } else {
-            /** @var ParentAccessFieldRelationship $relationship */
-            $relationshipClass = $relationship->getModelType();
-
+          $models = $relationship->isPolymorphic ? $relationship->getPolymorphicModelTypes() : [$relationship->getModelType()];
+          foreach ($models as $relationshipClass) {
             /** @var string $modelClassToCheck */
-            if (is_a($modelClass, $relationshipClass, TRUE)) {
+            if (is_a($modelClass, $relationshipClass, true)) {
               $children[$modelClass][$modelClassToCheck] = $relationship;
               $children = $this->getChildModelClassesForModelClass($modelClassToCheck, $children);
             }
