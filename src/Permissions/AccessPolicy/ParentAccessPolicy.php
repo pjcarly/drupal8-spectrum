@@ -333,7 +333,7 @@ class ParentAccessPolicy extends AccessPolicyBase
    *
    * @return bool
    */
-  protected function modelIsRoot(Model $model): bool
+  public function modelIsRoot(Model $model): bool
   {
     return false;
   }
