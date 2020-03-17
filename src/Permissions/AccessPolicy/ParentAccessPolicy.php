@@ -363,6 +363,10 @@ class ParentAccessPolicy extends AccessPolicyBase
     $query->addExpression('(CASE WHEN sea.uid is not null THEN sea.uid ELSE sea2.uid END)', 'uid');
     $query->condition('bt.id', $entityId);
 
-    return $query->execute()->fetchCol();
+    $uids = $query->execute()->fetchCol();
+    $uids = array_filter($uids);
+    $uids = array_unique($uids);
+
+    return $uids;
   }
 }
