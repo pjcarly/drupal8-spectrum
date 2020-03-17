@@ -10,6 +10,9 @@ use Drupal\spectrum\Permissions\AccessPolicy\PublicAccessPolicy;
 use Drupal\spectrum\Serializer\JsonApiNode;
 use Drupal\spectrum\Utils\UrlUtils;
 use Drupal\Component\Render\PlainTextOutput;
+use Drupal\Core\File\FileSystem;
+use Drupal\Core\File\FileSystemInterface;
+use Drupal\Core\StreamWrapper\StreamWrapperManagerInterface;
 use Drupal\spectrum\Exceptions\NotImplementedException;
 
 /**
@@ -43,7 +46,8 @@ class File extends Model
    * @return void
    */
   public static function relationships()
-  { }
+  {
+  }
 
   /**
    * @inheritDoc
@@ -179,7 +183,7 @@ class File extends Model
    */
   public function getBase64SRC(): string
   {
-    $mime = $this->entity->get('filemime')->value;
+    $mime = $this->entity->{'filemime'}->value;
     $base64 = base64_encode(file_get_contents($this->getRealSrc()));
 
     return 'data:' . $mime . ';base64,' . $base64;
@@ -193,7 +197,7 @@ class File extends Model
    */
   public function getSRC(): string
   {
-    $url = UrlUtils::getBaseURL() . $this->getBaseApiPath() . '/' . $this->entity->get('filename')->value . '?fid=' . $this->getId() . '&dg=' . $this->getHash();
+    $url = UrlUtils::getBaseURL() . $this->getBaseApiPath() . '/' . $this->entity->{'filename'}->value . '?fid=' . $this->getId() . '&dg=' . $this->getHash();
 
     return $url;
   }
@@ -218,15 +222,19 @@ class File extends Model
     $target = $uriScheme . '://' . $directory;
 
     // Prepare the destination directory.
-    if (file_prepare_directory($target, FILE_CREATE_DIRECTORY)) {
+    /** @var FileSystemInterface $filesystem */
+    $filesystem = \Drupal::service('file_system');
+    if ($filesystem->prepareDirectory($target, FileSystemInterface::CREATE_DIRECTORY)) {
       // The destination is already a directory, so append the source basename.
-      $target = file_stream_wrapper_uri_normalize($target . '/' . drupal_basename($filename));
+      /** @var StreamWrapperManagerInterface $streamWrapperManager */
+      $streamWrapperManager = \Drupal::service('stream_wrapper_manager');
+      $target = $streamWrapperManager->normalizeUri($target . '/' . FileSystem::basename($filename));
 
       // Create or rename the destination
-      file_destination($target, FILE_EXISTS_RENAME);
+      $filesystem->getDestinationFilename($target, FileSystemInterface::EXISTS_RENAME);
 
       // Save the blob in a File Entity
-      $fileEntity = file_save_data($data, $target, FILE_EXISTS_RENAME);
+      $fileEntity = file_save_data($data, $target, FileSystemInterface::EXISTS_RENAME);
       $file = new File($fileEntity); // TODO File/Image model fix
       // we want the file to dissapear when it is not attached to a record
       // we put the status on 0, if it is attached somewhere, Drupal will make sure it is not deleted
@@ -238,8 +246,8 @@ class File extends Model
       return $file;
     } else {
       // Perhaps $destination is a dir/file?
-      $dirname = drupal_dirname($target);
-      if (!file_prepare_directory($dirname, FILE_CREATE_DIRECTORY)) {
+      $dirname = $filesystem->dirname($target);
+      if (!$filesystem->prepareDirectory($dirname, FileSystemInterface::CREATE_DIRECTORY)) {
         throw new \Exception('File could not be moved/copied because the destination directory ' . $target . ' is not configured correctly.');
       } else {
         throw new NotImplementedException('Functionality not implemented');

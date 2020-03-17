@@ -4,7 +4,6 @@ namespace Drupal\spectrum\Model;
 
 use Drupal\spectrum\Query\EntityQuery;
 use Drupal\spectrum\Query\Condition;
-use Drupal\spectrum\Exceptions\InvalidEntityException;
 
 /**
  * All relationships should extend this abstract class
@@ -124,7 +123,8 @@ abstract class Relationship
    * @return void
    */
   protected function setRelationshipMetaData(): void
-  { }
+  {
+  }
 
   /**
    * Returns a EntityQuery that can be used to query entities of this relationship

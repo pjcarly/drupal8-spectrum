@@ -2,11 +2,13 @@
 
 namespace Drupal\spectrum\Model;
 
+use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Field\EntityReferenceFieldItemList;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\Plugin\Field\FieldType\EntityReferenceItem;
 use Drupal\spectrum\Exceptions\CascadeNoDeleteException;
+use Drupal\spectrum\Exceptions\InvalidEntityException;
 use Drupal\spectrum\Exceptions\InvalidFieldException;
 use Drupal\spectrum\Exceptions\InvalidTypeException;
 use Drupal\spectrum\Exceptions\ModelClassNotDefinedException;
@@ -78,7 +80,7 @@ abstract class Model
    * qualified classname of the model, and as value the different defined
    * relationships.
    *
-   * @var Relationship[]
+   * @var Relationship[]|array
    */
   public static $relationships = [];
 
@@ -452,8 +454,9 @@ abstract class Model
 
           if (is_array($fieldId)) // multiple values
           {
-            $relationshipCondition->value = $fieldId;
-            $relationshipCondition->operator = 'IN';
+            $relationshipCondition
+              ->setValue($fieldId)
+              ->setOperator('IN');
 
             $relationshipQuery->addCondition($relationshipCondition);
             $referencedEntities = $relationshipQuery->fetch();
@@ -477,8 +480,9 @@ abstract class Model
             }
           } else // single value
           {
-            $relationshipCondition->value = $fieldId;
-            $relationshipCondition->operator = '=';
+            $relationshipCondition
+              ->setValue($fieldId)
+              ->setOperator('=');
 
             $relationshipQuery->addCondition($relationshipCondition);
             $referencedEntity = $relationshipQuery->fetchSingle();
@@ -499,7 +503,7 @@ abstract class Model
         $id = $this->getId();
         if (!empty($id)) // fetching referenced relationships for new records is not possible
         {
-          $relationshipCondition->value = [$id];
+          $relationshipCondition->setValue([$id]);
           $relationshipQuery->addCondition($relationshipCondition);
           $referencingEntities = $relationshipQuery->fetch();
 
@@ -1413,10 +1417,12 @@ abstract class Model
    */
   public static function forgeNew(): Model
   {
+    $store = \Drupal::entityManager()->getStorage(static::entityType());
+
     if (!empty(static::bundle())) {
-      $entity = entity_create(static::entityType(), ['type' => static::bundle()]);
+      $entity = $store->create(['type' => static::bundle()]);
     } else {
-      $entity = entity_create(static::entityType());
+      $entity = $store->create();
     }
 
     return static::forgeByEntity($entity);
@@ -1482,12 +1488,7 @@ abstract class Model
     }
 
     if (empty($entity) && empty($id)) {
-      $values = [];
-      if (!empty(static::bundle())) {
-        $values['type'] = static::bundle();
-      }
-
-      $entity = entity_create(static::entityType(), $values);
+      return static::forgeNew();
     }
 
     if (!empty($entity)) {
@@ -2048,16 +2049,22 @@ abstract class Model
    */
   public function loadTranslation(array $languageCodes): Model
   {
-    if (empty($languageCodes) || !$this->entity->isTranslatable()) {
-      return $this;
-    }
+    $entity = $this->entity;
 
-    foreach ($languageCodes as $languageCode) {
-      if ($this->entity->hasTranslation($languageCode)) {
-        $translatedEntity = $this->entity->getTranslation($languageCode);
-        $this->setEntity($translatedEntity);
-        break;
+    if ($entity instanceof ContentEntityInterface) {
+      if (empty($languageCodes) || !$entity->isTranslatable()) {
+        return $this;
       }
+
+      foreach ($languageCodes as $languageCode) {
+        if ($entity->hasTranslation($languageCode)) {
+          $translatedEntity = $entity->getTranslation($languageCode);
+          $this->setEntity($translatedEntity);
+          break;
+        }
+      }
+    } else {
+      throw new InvalidEntityException('Translations only available on Entities that implement ContentEntityInterface');
     }
 
     return $this;

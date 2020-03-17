@@ -215,7 +215,7 @@ class ParentAccessPolicy extends AccessPolicyBase
     $accessPolicy = $model::getAccessPolicy();
     if (!is_a($accessPolicy, ParentAccessPolicy::class)) {
       return [$model];
-    } else if($accessPolicy->modelIsRoot($model)){
+    } else if ($accessPolicy->modelIsRoot($model)) {
       return [$model];
     }
 

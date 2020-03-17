@@ -388,6 +388,7 @@ class Collection implements \IteratorAggregate, \Countable
     if (empty($lastRelationshipNameIndex)) // relationship name without extra relationships
     {
       $modelType = $this->getModelType();
+      /** @var Relationship $relationship */
       $relationship = $modelType::getRelationship($relationshipName);
       $relationshipQuery = $relationship->getRelationshipQuery();
 
@@ -402,7 +403,7 @@ class Collection implements \IteratorAggregate, \Countable
         $fieldIds = $this->getFieldIds($relationship);
         if (!empty($fieldIds)) {
           // we set the field ids in the condition, and fetch a collection of models with that id in a field
-          $relationshipCondition->value = $fieldIds;
+          $relationshipCondition->setValue($fieldIds);
           $relationshipQuery->addCondition($relationshipCondition);
           $referencedEntities = $relationshipQuery->fetch();
 
@@ -456,7 +457,7 @@ class Collection implements \IteratorAggregate, \Countable
         $modelIds = $this->getIds();
 
         if (!empty($modelIds)) {
-          $relationshipCondition->value = $modelIds;
+          $relationshipCondition->setValue($modelIds);
           $relationshipQuery->addCondition($relationshipCondition);
 
           $referencingEntities = $relationshipQuery->fetch();
@@ -645,10 +646,9 @@ class Collection implements \IteratorAggregate, \Countable
    * @param array|null $models
    * @param array|null $entities
    * @param array|null $ids
-   * @param ModelQuery $modelQuery
    * @return Collection
    */
-  private static function forge(string $modelType = null, ?array $models = [], ?array $entities = [], ?array $ids = [], ModelQuery $modelQuery = null): Collection
+  private static function forge(string $modelType = null, ?array $models = [], ?array $entities = [], ?array $ids = []): Collection
   {
     $collection = new static();
     $collection->modelType = $modelType;

@@ -12,10 +12,6 @@ use Drupal\spectrum\Utils\StringUtils;
 use Drupal\spectrum\Utils\LanguageUtils;
 use Drupal\spectrum\Utils\AddressUtils;
 use CommerceGuys\Addressing\Address;
-use Money\Currencies\CurrencyList;
-use Money\Currencies\ISOCurrencies;
-use Money\Formatter\DecimalMoneyFormatter;
-use Money\Formatter\IntlMoneyFormatter;
 use Money\Money;
 
 /**

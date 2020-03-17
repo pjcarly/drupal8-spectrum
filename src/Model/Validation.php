@@ -5,7 +5,7 @@ namespace Drupal\spectrum\Model;
 use Drupal\Component\Utility\Html;
 use Drupal\Core\Entity\Plugin\Validation\Constraint\ValidReferenceConstraint;
 use Drupal\Core\Entity\EntityConstraintViolationListInterface;
-use Symfony\Component\Validator\ConstraintViolationInterface;
+use Symfony\Component\Validator\ConstraintViolation;
 
 /**
  * This class is a wrapper around the Drupal validation API, it extends the functionality by making it jsonapi.org compliant and serializable
@@ -72,10 +72,10 @@ class Validation
   /**
    * Add a ConstraintViolation to the violations
    *
-   * @param ConstraintViolationInterface $violation
+   * @param ConstraintViolation $violation
    * @return Validation
    */
-  public function addViolation(ConstraintViolationInterface $violation): Validation
+  public function addViolation(ConstraintViolation $violation): Validation
   {
     $this->violations->add($violation);
     return $this;
@@ -133,10 +133,10 @@ class Validation
   /**
    * Check if there is an ignore that exists for the provided violation
    *
-   * @param ConstraintViolationInterface $violation
+   * @param ConstraintViolation $violation
    * @return boolean
    */
-  private function hasIgnoreForViolation(ConstraintViolationInterface $violation): bool
+  private function hasIgnoreForViolation(ConstraintViolation $violation): bool
   {
     $ignoreFound = false;
     if ($path = $violation->getPropertyPath()) {

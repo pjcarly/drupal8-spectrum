@@ -1,12 +1,20 @@
 {
-    "name": "getflights/spectrum",
-    "description": "Spectrum",
-    "type": "drupal-module-custom",
-    "authors": [
-        {
-            "name": "Bart Vanhoutte",
-            "email": "b.vanhoutte@groupflights.com"
-        }
-    ],
-    "require": {}
+  "name": "getflights/spectrum",
+  "description": "Spectrum",
+  "type": "drupal-module-custom",
+  "authors": [
+    {
+      "name": "Pieterjan Carly",
+      "email": "p.carly@groupflights.com"
+    },
+    {
+      "name": "Bart Vanhoutte",
+      "email": "b.vanhoutte@groupflights.com"
+    },
+    {
+      "name": "Tim Taelman",
+      "email": "t.taelman@groupflights.com"
+    }
+  ],
+  "require": {}
 }

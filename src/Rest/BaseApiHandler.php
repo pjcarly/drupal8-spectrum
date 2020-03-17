@@ -127,7 +127,7 @@ abstract class BaseApiHandler
   protected function handleError(\Throwable $throwable, Request $request): Response
   {
     throw $throwable;
-    return new Response(nul, 500);
+    return new Response(null, 500);
   }
 
   /**

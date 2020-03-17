@@ -15,7 +15,8 @@ class Image extends File
    * @return void
    */
   public static function relationships()
-  { }
+  {
+  }
 
   /**
    * This function can be used in dynamic api handlers
@@ -35,7 +36,7 @@ class Image extends File
    */
   public function getBase64SRC(string $style = NULL): string
   {
-    $mime = $this->entity->get('filemime')->value;
+    $mime = $this->entity->{'filemime'}->value;
     $base64Image = base64_encode(file_get_contents($this->getSRC($style)));
 
     return 'data:' . $mime . ';base64,' . $base64Image;
@@ -52,7 +53,7 @@ class Image extends File
     if (!empty($style)) {
       $imageStyle = ImageStyle::load($style);
       if (!empty($imageStyle)) {
-        $url = $imageStyle->buildUrl($this->entity->get('uri')->value);
+        $url = $imageStyle->buildUrl($this->entity->{'uri'}->value);
         return $url;
       }
     }

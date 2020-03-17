@@ -138,6 +138,16 @@ class Condition
   }
 
   /**
+   * @param string $fieldName
+   * @return self
+   */
+  public function setFieldName(string $fieldName): self
+  {
+    $this->fieldName = $fieldName;
+    return $this;
+  }
+
+  /**
    * Returns the operator of the Condition
    *
    * @return string
@@ -148,6 +158,16 @@ class Condition
   }
 
   /**
+   * @param string $operator
+   * @return self
+   */
+  public function setOperator(string $operator): self
+  {
+    $this->operator = $operator;
+    return $this;
+  }
+
+  /**
    * Returns the Value of the condition
    *
    * @return string|int|float|bool|array
@@ -155,5 +175,15 @@ class Condition
   public function getValue()
   {
     return $this->value;
+  }
+
+  /**
+   * @param string|int|float|bool|array $value
+   * @return self
+   */
+  public function setValue($value): self
+  {
+    $this->value = $value;
+    return $this;
   }
 }
