@@ -70,4 +70,11 @@ class NoAccessPolicy implements AccessPolicyInterface
   {
     return $this;
   }
+
+  /**
+   * @inheritDoc
+   */
+  public function getUserIdsWithAccess(string $entityTypeId, string $entityId): array {
+    return [];
+  }
 }

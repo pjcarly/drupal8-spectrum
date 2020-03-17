@@ -2,6 +2,7 @@
 
 namespace Drupal\spectrum\Permissions\AccessPolicy;
 
+use Drupal;
 use Drupal\Core\Database\Query\Select;
 use Drupal\spectrum\Model\ParentAccessFieldRelationship;
 use Drupal\spectrum\Model\FieldRelationship;
@@ -306,12 +307,13 @@ class ParentAccessPolicy extends AccessPolicyBase
       foreach ($modelClassToCheck::getRelationships() as $relationship) {
         if ($relationship instanceof ParentAccessFieldRelationship) {
           /** @var ParentAccessFieldRelationship $relationship */
-          $relationshipClass = $relationship->getModelType();
-
-          /** @var string $modelClassToCheck */
-          if (is_a($modelClass, $relationshipClass, TRUE)) {
-            $children[$modelClass][$modelClassToCheck] = $relationship;
-            $children = $this->getChildModelClassesForModelClass($modelClassToCheck, $children);
+          $relationshipClasses = $relationship->isPolymorphic ? $relationship->getPolymorphicModelTypes() : [$relationship->getModelType()];
+          foreach ($relationshipClasses as $relationshipClass) {
+            /** @var string $modelClassToCheck */
+            if (is_a($modelClass, $relationshipClass, TRUE)) {
+              $children[$modelClass][$modelClassToCheck] = $relationship;
+              $children = $this->getChildModelClassesForModelClass($modelClassToCheck, $children);
+            }
           }
         }
       }
@@ -330,5 +332,37 @@ class ParentAccessPolicy extends AccessPolicyBase
   protected function modelIsRoot(Model $model): bool
   {
     return false;
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public function getUserIdsWithAccess(string $entityTypeId, string $entityId): array {
+    $query = Drupal::database()->select($entityTypeId, 'bt');
+
+    $query->leftJoin(
+      self::TABLE_ENTITY_ROOT,
+      'ser',
+      'bt.id = ser.entity_id and ser.entity_type = :type',
+      [':type' => $entityTypeId]
+    );
+
+    $query->leftJoin(
+      self::TABLE_ENTITY_ACCESS,
+      'sea',
+      'sea.entity_type = ser.root_entity_type AND sea.entity_id = ser.root_entity_id'
+    );
+
+    $query->leftJoin(
+      self::TABLE_ENTITY_ACCESS,
+      'sea2',
+      'sea2.entity_id = bt.id and sea2.entity_type = :type',
+      [':type' => $entityTypeId]
+    );
+
+    $query->addExpression('(CASE WHEN sea.uid is not null THEN sea.uid ELSE sea2.uid END)', 'uid');
+    $query->condition('bt.id', $entityId);
+
+    return $query->execute()->fetchCol();
   }
 }

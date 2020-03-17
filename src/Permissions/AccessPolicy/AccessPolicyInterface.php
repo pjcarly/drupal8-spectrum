@@ -23,11 +23,15 @@ interface AccessPolicyInterface
    * Called when a model is saved.
    *
    * @param Model $model
+   *
+   * @return AccessPolicyInterface
    */
   public function onSave(Model $model): AccessPolicyInterface;
 
   /**
    * @param Model $model
+   *
+   * @return AccessPolicyInterface
    */
   public function onDelete(Model $model): AccessPolicyInterface;
 
@@ -71,4 +75,12 @@ interface AccessPolicyInterface
    * @return AccessPolicyEntity[]
    */
   public function getUserAccessForModelClass(User $user, string $modelClass): array;
+
+  /**
+   * @param string $entityTypeId
+   * @param string $entityId
+   *
+   * @return array
+   */
+  public function getUserIdsWithAccess(string $entityTypeId, string $entityId): array;
 }
