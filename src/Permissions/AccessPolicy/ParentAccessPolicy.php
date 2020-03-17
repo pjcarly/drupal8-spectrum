@@ -2,6 +2,7 @@
 
 namespace Drupal\spectrum\Permissions\AccessPolicy;
 
+use Drupal;
 use Drupal\Core\Database\Query\Select;
 use Drupal\spectrum\Model\FieldRelationship;
 use Drupal\spectrum\Model\Model;
@@ -72,8 +73,8 @@ class ParentAccessPolicy extends AccessPolicyBase
   {
     $this->database
       ->delete(self::TABLE_ENTITY_ROOT)
-      ->condition('entity_type', $model::entityType())
-      ->condition('entity_id', (int) $model->getId())
+      ->condition('root_entity_type', $model::entityType())
+      ->condition('root_entity_id', (int) $model->getId())
       ->execute();
 
     return $this;
@@ -311,10 +312,11 @@ class ParentAccessPolicy extends AccessPolicyBase
       // Now we need to check whether our provided class is defined as a ParentAccessFieldRelationship on this Model Class
       foreach ($modelClassToCheck::getRelationships() as $relationship) {
         if ($relationship instanceof ParentAccessFieldRelationship) {
-          $models = $relationship->isPolymorphic ? $relationship->getPolymorphicModelTypes() : [$relationship->getModelType()];
-          foreach ($models as $relationshipClass) {
+          /** @var ParentAccessFieldRelationship $relationship */
+          $relationshipClasses = $relationship->isPolymorphic ? $relationship->getPolymorphicModelTypes() : [$relationship->getModelType()];
+          foreach ($relationshipClasses as $relationshipClass) {
             /** @var string $modelClassToCheck */
-            if (is_a($modelClass, $relationshipClass, true)) {
+            if (is_a($modelClass, $relationshipClass, TRUE)) {
               $children[$modelClass][$modelClassToCheck] = $relationship;
               $children = $this->getChildModelClassesForModelClass($modelClassToCheck, $children);
             }
@@ -336,5 +338,41 @@ class ParentAccessPolicy extends AccessPolicyBase
   public function modelIsRoot(Model $model): bool
   {
     return false;
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public function getUserIdsWithAccess(string $entityTypeId, string $entityId): array {
+    $query = Drupal::database()->select($entityTypeId, 'bt');
+
+    $query->leftJoin(
+      self::TABLE_ENTITY_ROOT,
+      'ser',
+      'bt.id = ser.entity_id and ser.entity_type = :type',
+      [':type' => $entityTypeId]
+    );
+
+    $query->leftJoin(
+      self::TABLE_ENTITY_ACCESS,
+      'sea',
+      'sea.entity_type = ser.root_entity_type AND sea.entity_id = ser.root_entity_id'
+    );
+
+    $query->leftJoin(
+      self::TABLE_ENTITY_ACCESS,
+      'sea2',
+      'sea2.entity_id = bt.id and sea2.entity_type = :type',
+      [':type' => $entityTypeId]
+    );
+
+    $query->addExpression('(CASE WHEN sea.uid is not null THEN sea.uid ELSE sea2.uid END)', 'uid');
+    $query->condition('bt.id', $entityId);
+
+    $uids = $query->execute()->fetchCol();
+    $uids = array_filter($uids);
+    $uids = array_unique($uids);
+
+    return $uids;
   }
 }

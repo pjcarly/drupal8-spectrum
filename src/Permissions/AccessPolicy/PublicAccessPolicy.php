@@ -2,6 +2,7 @@
 
 namespace Drupal\spectrum\Permissions\AccessPolicy;
 
+use Drupal;
 use Drupal\Core\Database\Query\Select;
 use Drupal\spectrum\Model\Model;
 
@@ -12,6 +13,9 @@ use Drupal\spectrum\Model\Model;
  */
 class PublicAccessPolicy extends AccessPolicyBase
 {
+
+  static $uids = null;
+
   /**
    * @inheritDoc
    */
@@ -75,5 +79,21 @@ class PublicAccessPolicy extends AccessPolicyBase
   public function shouldSetAccessPolicy(Model $model): bool
   {
     return !isset($model->entity->original);
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public function getUserIdsWithAccess(string $entityTypeId, string $entityId): array {
+    if (self::$uids === null) {
+      self::$uids = Drupal::entityTypeManager()
+        ->getStorage('user')
+        ->getQuery()
+        ->execute();
+
+      self::$uids = array_values(self::$uids);
+    }
+
+    return self::$uids;
   }
 }
