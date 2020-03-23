@@ -3,6 +3,9 @@ services:
     class: Drupal\spectrum\Command\CronCommand
     arguments:
       - "@react.loop"
+      - "@entity.memory_cache"
+      - "@state"
+      - "@spectrum.model_store"
     tags:
       - { name: drupal.command }
   spectrum.registered_jobs_rebuild:

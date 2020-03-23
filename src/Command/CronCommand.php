@@ -6,11 +6,14 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Drupal\Console\Core\Command\ContainerAwareCommand;
 use Drupal\Console\Annotations\DrupalCommand;
+use Drupal\Core\Cache\MemoryCache\MemoryCacheInterface;
+use Drupal\Core\State\StateInterface;
 use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Query\Order;
 use Drupal\spectrum\Runnable\QueuedJob;
+use Drupal\spectrum\Services\ModelStoreInterface;
 use React\EventLoop\LoopInterface;
 
 /**
@@ -28,10 +31,28 @@ class CronCommand extends ContainerAwareCommand
    */
   protected $loop;
 
-  public function __construct(LoopInterface $loop)
+  /**
+   * @var MemoryCacheInterface $memoryCache
+   */
+  protected $memoryCache;
+
+  /**
+   * @var StateInterface $stateCache
+   */
+  protected $stateCache;
+
+  /**
+   * @var ModelStoreInterface $modelStore
+   */
+  protected $modelStore;
+
+  public function __construct(LoopInterface $loop, MemoryCacheInterface $memoryCache, StateInterface $stateCache, ModelStoreInterface $modelStore)
   {
     parent::__construct();
     $this->loop = $loop;
+    $this->memoryCache = $memoryCache;
+    $this->stateCache = $stateCache;
+    $this->modelStore = $modelStore;
   }
 
   /**
@@ -67,6 +88,7 @@ class CronCommand extends ContainerAwareCommand
       $earliestQueuedJob = $query->fetchSingleModel();
 
       if (!empty($earliestQueuedJob)) {
+        $this->clearAllCaches();
         $earliestQueuedJob->setOutput($output);
         /** @var RegisteredJob $job */
         $job = $earliestQueuedJob->fetch('job');
@@ -90,18 +112,29 @@ class CronCommand extends ContainerAwareCommand
           }
         }
 
-        // This will clear all the entity caches, and free entities from memory
-        Model::clearAllDrupalStaticEntityCaches();
-
-        /** @var \Drupal\Core\Cache\MemoryCache\MemoryCacheInterface $cache */
-        $cache = \Drupal::service('entity.memory_cache');
-        $cache->deleteAll();
-
-        // And finally clear the model store of any data as well
-        Model::getModelStore()->unloadAll();
+        $this->clearAllCaches();
       }
     });
 
     $loop->run();
+  }
+
+  /**
+   * Clears all the caches
+   *
+   * @return self
+   */
+  protected function clearAllCaches(): self
+  {
+    // This will clear all the entity caches, and free entities from memory
+    Model::clearAllDrupalStaticEntityCaches();
+
+    // Reset some extra Drupal Caches
+    $this->memoryCache->deleteAll();
+    $this->stateCache->resetCache();
+
+    // And finally clear the model store of any data as well
+    $this->modelStore->unloadAll();
+    return $this;
   }
 }
