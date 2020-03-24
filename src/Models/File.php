@@ -228,7 +228,7 @@ class File extends Model
       // The destination is already a directory, so append the source basename.
       /** @var StreamWrapperManagerInterface $streamWrapperManager */
       $streamWrapperManager = \Drupal::service('stream_wrapper_manager');
-      $target = $streamWrapperManager->normalizeUri($target . '/' . FileSystem::basename($filename));
+      $target = $streamWrapperManager->normalizeUri($target . '/' . $filesystem->basename($filename));
 
       // Create or rename the destination
       $filesystem->getDestinationFilename($target, FileSystemInterface::EXISTS_RENAME);
