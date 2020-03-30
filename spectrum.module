@@ -49,15 +49,3 @@ function spectrum_query_spectrum_query_use_access_policy_alter(AlterableInterfac
   $query = $drupalQuery->getMetaData('spectrum_query');
   $query->executeAccessPolicy($drupalQuery);
 }
-
-/**
- * Implements hook_rebuild()
- *
- * @return void
- */
-function spectrum_rebuild()
-{
-  /** @var JobService $jobService */
-  $jobService = \Drupal::service('spectrum.jobs');
-  $jobService->rebuildRegisteredJobs();
-}

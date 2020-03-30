@@ -70,5 +70,6 @@ class RegisteredJobsRebuildCommand extends ContainerAwareCommand
     }
 
     $table->render();
+    $this->jobService->rebuildRegisteredJobs();
   }
 }
