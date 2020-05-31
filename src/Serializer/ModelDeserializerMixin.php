@@ -73,6 +73,7 @@ trait ModelDeserializerMixin
       if (!empty($relationship)) {
         // now the relationship exists, we'll do something different depending on the type of relationship
         if ($relationship instanceof FieldRelationship) {
+          // This can only work with FieldRelationships, referenced relationships exist on the related model
           $relationshipField = $relationship->getField();
           $relationshipColumn = $relationship->getColumn();
 
@@ -93,8 +94,6 @@ trait ModelDeserializerMixin
               $this->entity->$relationshipField->$relationshipColumn = $relationshipValue->data->id;
             }
           }
-        } else if ($relationship instanceof ReferencedRelationship) {
-          // TODO: make this work with entity reference multi-field
         }
       }
     }
