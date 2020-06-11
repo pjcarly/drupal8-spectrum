@@ -38,7 +38,8 @@ class TwigFilters extends \Twig_Extension
       new \Twig_SimpleFilter('target_id', [$this, 'targetId']),
       new \Twig_SimpleFilter('collection_sort', [$this, 'collectionSort']),
       new \Twig_SimpleFilter('tt', [$this, 'translate']),
-      new \Twig_SimpleFilter('mask', [$this, 'mask'])
+      new \Twig_SimpleFilter('mask', [$this, 'mask']),
+      new \Twig_SimpleFilter('index_number', [$this, 'indexNumber'])
     ];
   }
 
@@ -219,5 +220,20 @@ class TwigFilters extends \Twig_Extension
     }
 
     return $returnValue;
+  }
+
+  /**
+   * Format indexnumber for giftcard
+   * @param string $value
+   * @return string
+   * @throws \Exception
+   */
+  public static function indexNumber(string $value)
+  {
+    $strlength = strlen($value);
+    $date = new \DateTime('now', new \DateTimeZone('UTC'));
+    $formatted = $date->format('y');
+
+    return str_pad($formatted,6  - $strlength,'0') . $value;
   }
 }
