@@ -203,6 +203,8 @@ class SimpleModelWrapper
       return $returnValue;
     } else if (Model::getterExists($model, $property)) {
       return $model->callGetter($property);
+    } else if ($property === 'typeKey') {
+      return $model::getBundleKey();
     }
   }
 
@@ -215,7 +217,12 @@ class SimpleModelWrapper
   public function __isset($property)
   {
     $model = $this->model;
-    $isSet = array_key_exists($property, $model->relatedViaFieldOnEntity) || array_key_exists($property, $model->relatedViaFieldOnExternalEntity) || $model::underScoredFieldExists($property) || property_exists($model, $property) || Model::getterExists($model, $property);
+    $isSet = array_key_exists($property, $model->relatedViaFieldOnEntity)
+      || array_key_exists($property, $model->relatedViaFieldOnExternalEntity)
+      || $model::underScoredFieldExists($property)
+      || property_exists($model, $property)
+      || Model::getterExists($model, $property)
+      || $property === 'typeKey';
     return $isSet;
   }
 }
