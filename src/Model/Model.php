@@ -2151,9 +2151,9 @@ abstract class Model
    * @param string $fieldName
    * @param string $filename
    * @param string $fileContent
-   * @return Image
+   * @return File
    */
-  public function setImageField(string $fieldName, string $filename, string $fileContent): Image
+  public function setImageField(string $fieldName, string $filename, string $fileContent): File
   {
     $fieldDefinition = static::getFieldDefinition($fieldName);
 
