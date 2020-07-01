@@ -179,8 +179,11 @@ class PermissionService implements PermissionServiceInterface, LoggerAwareInterf
         ->insert(AccessPolicyInterface::TABLE_ENTITY_ACCESS)
         ->fields(['entity_type', 'entity_id', 'uid']);
 
-      foreach ($values as $value) {
-        $insertQuery = $insertQuery->values($value->getInsertValue());
+      $chunks = array_chunk($values, 10000);
+      foreach($chunks as $chunk){
+        foreach ($chunk as $value) {
+          $insertQuery = $insertQuery->values($value->getInsertValue());
+        }
       }
 
       $insertQuery->execute();
