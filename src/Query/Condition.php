@@ -3,6 +3,7 @@
 namespace Drupal\spectrum\Query;
 
 use Drupal\Core\Entity\Query\ConditionInterface;
+use Drupal\Core\Entity\Query\QueryAggregateInterface;
 use Drupal\Core\Entity\Query\QueryInterface;
 use Drupal\spectrum\Exceptions\InvalidOperatorException;
 
@@ -78,11 +79,11 @@ class Condition
   /**
    * Apply this condition to a DrupalEntityQuery. This can both be a drupal query or a condition (in order to create nested groups)
    *
-   * @param QueryInterface|ConditionInterface $base where you want to put the condition on (can either be the base query, or another condition)
-   * @param QueryInterface $query The base query (needed to create conditionGroups)
+   * @param QueryInterface|ConditionInterface|QueryAggregateInterface $base where you want to put the condition on (can either be the base query, or another condition)
+   * @param QueryInterface|QueryAggregateInterface $query The base query (needed to create conditionGroups)
    * @return Condition
    */
-  public function addQueryCondition($base, QueryInterface $query): Condition
+  public function addQueryCondition($base, $query): Condition
   {
     if ($this->value === 'null') {
       if ($this->operator === '<>') {
