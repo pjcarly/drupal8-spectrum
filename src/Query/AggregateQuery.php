@@ -407,7 +407,7 @@ class AggregateQuery
    */
   public function getGroupings(): array
   {
-    return $this->groupings;
+    return $this->groupings ?? [];
   }
 
   /**
