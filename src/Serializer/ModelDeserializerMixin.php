@@ -167,21 +167,27 @@ trait ModelDeserializerMixin
                   $fileIds[] = $singleAttributeValue->id;
                 }
               }
+            } else {
+              if (isset($attributeValue->id) && isset($attributeValue->hash)) {
+                $fileIds[] = $attributeValue->id;
+              }
+              $temp = $attributeValue;
+              $attributeValue = [];
+              $attributeValue[] = $temp;
+            }
+            if (!empty($fileIds)) {
+              $filesCollection = Collection::forgeByIds(File::class, $fileIds);
 
-              if (!empty($fileIds)) {
-                $filesCollection = Collection::forgeByIds(File::class, $fileIds);
+              if (!$filesCollection->isEmpty) {
+                foreach ($attributeValue as $singleAttributeValue) {
+                  if (isset($singleAttributeValue->id) && $filesCollection->containsKey($singleAttributeValue->id)) {
+                    $fileModel = $filesCollection->getModel($singleAttributeValue->id);
 
-                if (!$filesCollection->isEmpty) {
-                  foreach ($attributeValue as $singleAttributeValue) {
-                    if (isset($singleAttributeValue->id) && $filesCollection->containsKey($singleAttributeValue->id)) {
-                      $fileModel = $filesCollection->getModel($singleAttributeValue->id);
-
-                      // We must be sure that the hash provided in the deserialization, matches the file entity in the database
-                      // That way no unauthorized file linking can occur
-                      /** @var File $fileModel */
-                      if ($fileModel->getId() === $singleAttributeValue->id && $fileModel->getHash() === $singleAttributeValue->hash) {
-                        $valueToSet[] = ['target_id' => $singleAttributeValue->id];
-                      }
+                    // We must be sure that the hash provided in the deserialization, matches the file entity in the database
+                    // That way no unauthorized file linking can occur
+                    /** @var File $fileModel */
+                    if ($fileModel->getId() === $singleAttributeValue->id && $fileModel->getHash() === $singleAttributeValue->hash) {
+                      $valueToSet[] = ['target_id' => $singleAttributeValue->id];
                     }
                   }
                 }
