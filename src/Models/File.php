@@ -197,7 +197,7 @@ class File extends Model
    */
   public function getSRC(): string
   {
-    $url = UrlUtils::getBaseURL() . $this->getBaseApiPath() . '/' . $this->entity->{'filename'}->value . '?fid=' . $this->getId() . '&dg=' . $this->getHash();
+    $url = UrlUtils::getBaseURL() . $this->getBaseApiPath() . '/' . urlencode($this->entity->{'filename'}->value) . '?fid=' . $this->getId() . '&dg=' . $this->getHash();
 
     return $url;
   }
