@@ -7,9 +7,11 @@ use DateTimeZone;
 use Drupal;
 use Drupal\Core\Cache\MemoryCache\MemoryCacheInterface;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\groupflights\Event\BatchJobStatusUpdateEvent;
 use Drupal\spectrum\Model\Model;
 use Exception;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 
 abstract class BatchJob extends QueuedJob
 {
@@ -54,14 +56,23 @@ abstract class BatchJob extends QueuedJob
     $batchable->setBatchSize($batchSize);
     $totalRecords = $batchable->getTotalBatchedRecords();
 
+//    /** @var EventDispatcher $eventDispatcher */
+//    $eventDispatcher = Drupal::service('event_dispatcher');
+
     $progressBar = new ProgressBar($this->output, $totalRecords);
     $progressBar->setFormat('debug');
     $progressBar->start();
     $counter = 0;
+    $this->updateSocket($counter);
+//    $startEvent = new BatchJobStatusUpdateEvent($this, $counter);
+//    $eventDispatcher->dispatch(BatchJobStatusUpdateEvent::class, $startEvent);
     foreach ($batchable->getBatchGenerator() as $entity) {
       $this->process($entity);
       $progressBar->advance();
       $counter++;
+      $this->updateSocket($counter);
+//      $updateEvent = new BatchJobStatusUpdateEvent($this, $counter);
+//      $eventDispatcher->dispatch(BatchJobStatusUpdateEvent::class, $updateEvent);
       if ($counter % $batchSize === 0) {
         $this->clearCache();
         $counter = 0;
@@ -72,6 +83,21 @@ abstract class BatchJob extends QueuedJob
     $this->getOutput()->writeln('');
 
     $this->afterExecute();
+  }
+
+  private function updateSocket($counter)
+  {
+    $connection = Drupal::getContainer()->get('groupflights.websocket.connection');
+    $body = new \stdClass();
+    $body->id = $this->getId();
+    $body->current = $counter;
+    $body->action = 'POST';
+    $body->max = $this->getBatchSize();
+    $meta = new \stdClass();
+    $meta->type = 'batch_job_status';
+    $body->meta = $meta;
+    $message = "'" . json_encode($body) . "'";
+    $connection->send($message);
   }
 
   /**
