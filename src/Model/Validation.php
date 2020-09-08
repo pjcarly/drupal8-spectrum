@@ -2,9 +2,10 @@
 
 namespace Drupal\spectrum\Model;
 
-use Drupal\Component\Utility\Html;
 use Drupal\Core\Entity\Plugin\Validation\Constraint\ValidReferenceConstraint;
 use Drupal\Core\Entity\EntityConstraintViolationListInterface;
+use Drupal\spectrum\Serializer\JsonApiErrorNode;
+use Drupal\spectrum\Serializer\JsonApiErrorRootNode;
 use Symfony\Component\Validator\ConstraintViolation;
 
 /**
@@ -199,7 +200,7 @@ class Validation
         if ($path = $violation->getPropertyPath()) {
           $fieldName = $this->getFieldNameForPropertyPath($path);
           $this->model->entity->$fieldName->target_id = null;
-          $this->addIgnore($fieldName, 'Drupal\Core\Entity\Plugin\Validation\Constraint\ValidReferenceConstraint');
+          $this->addIgnore($fieldName, ValidReferenceConstraint::class);
         }
       }
     }
@@ -265,12 +266,11 @@ class Validation
   /**
    * Returns a PHP stdClass which can be JSON serialized to a jsonapi.org compliant errors hash
    *
-   * @return \stdClass
+   * @return JsonApiErrorRootNode
    */
-  public function toJsonApi(): \stdClass
+  public function getJsonApiNode(): JsonApiErrorRootNode
   {
-    $errors = new \stdClass();
-    $errors->errors = [];
+    $root = new JsonApiErrorRootNode();
 
     $modelName = $this->modelName;
     $fieldToPrettyMapping = $modelName::getFieldsToPrettyFieldsMapping();
@@ -282,41 +282,38 @@ class Validation
 
           if (array_key_exists($fieldName, $fieldToPrettyMapping)) {
             $prettyField = $fieldToPrettyMapping[$fieldName];
-            $error = new \stdClass();
-            $error->detail = strip_tags('(' . $prettyField . ') ' . $violation->getMessage()->render());
-            $error->source = new \stdClass();
-            $error->source->pointer = '/data/attributes/' . $prettyField;
-            $errors->errors[] = $error;
+
+            $error = new JsonApiErrorNode();
+            $error->setDetail(strip_tags('(' . $prettyField . ') ' . $violation->getMessage()->render()));
+            $error->setPointer('/data/attributes/' . $prettyField);
+            $root->addError($error);
           } else {
-            $error = new \stdClass();
-            $error->detail = strip_tags($violation->getMessage()->render());
-            $error->source = new \stdClass();
-            $error->source->pointer = '/data';
-            $errors->errors[] = $error;
+            $error = new JsonApiErrorNode();
+            $error->setDetail(strip_tags($violation->getMessage()->render()));
+            $error->setPointer('/data');
+            $root->addError($error);
           }
         } else {
-          $error = new \stdClass();
-          $error->detail = strip_tags($violation->getMessage()->render());
-          $error->source = new \stdClass();
-          $error->source->pointer = '/data';
-          $errors->errors[] = $error;
+          $error = new JsonApiErrorNode();
+          $error->setDetail(strip_tags($violation->getMessage()->render()));
+          $error->setPointer('/data');
+          $root->addError($error);
         }
       }
     }
 
     // we must also include the inline validations
+    /** @var Validation $inlineValidation */
     foreach ($this->inlineValidations as $path => $inlineValidation) {
-      $inlineRecordsErrors = $inlineValidation->toJsonApi();
-      foreach ($inlineRecordsErrors as $inlineRecordErrors) {
-        foreach ($inlineRecordErrors as $inlineRecordError) {
-          // we must include the path in the error pointer
-          $inlineRecordError->source->pointer = '/data' . $path . $inlineRecordError->source->pointer;
-          $errors->errors[] = $inlineRecordError;
-        }
+      $inlineRecordsJsonApiErrorRootNode = $inlineValidation->getJsonApiNode();
+      foreach ($inlineRecordsJsonApiErrorRootNode->getErrors() as $jsonApiErrorNode) {
+        // we must include the path in the error pointer
+        $jsonApiErrorNode->setPointer('/data' . $path . $jsonApiErrorNode->getPointer());
+        $root->addError($jsonApiErrorNode);
       }
     }
 
-    return $errors;
+    return $root;
   }
 
   /**
@@ -326,6 +323,6 @@ class Validation
    */
   public function serialize(): \stdClass
   {
-    return $this->toJsonApi();
+    return $this->getJsonApiNode()->serialize();
   }
 }
