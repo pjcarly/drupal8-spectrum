@@ -29,6 +29,7 @@ use Drupal\Core\Validation\Plugin\Validation\Constraint\NotNullConstraint;
 use Drupal\spectrum\Analytics\AnalyticsServiceInterface;
 use Drupal\spectrum\Analytics\ListViewInterface;
 use Drupal\spectrum\Model\Validation;
+use Drupal\spectrum\Serializer\JsonApiErrorParsableInterface;
 
 /**
  * This class provides an implementation of an BaseApiHandler for a Model in a jsonapi.org compliant way
@@ -1592,6 +1593,15 @@ class ModelApiHandler extends BaseApiHandler
       $error->setStatus('405');
       $error->setDetail($throwable->getMessage());
       $error->setPointer('/data');
+      $jsonapi->addError($error);
+      $response = new Response(json_encode($jsonapi->serialize()), 422, ['Content-Type' => JsonApiRootNode::HEADER_CONTENT_TYPE]);
+    } else if ($actualThrowable instanceof JsonApiErrorParsableInterface) {
+      /** @var JsonApiErrorParsableInterface $actualThrowable */
+      $jsonapi = new JsonApiErrorRootNode();
+      $error = new JsonApiErrorNode();
+      $error->setStatus($actualThrowable->getStatus());
+      $error->setDetail($actualThrowable->getDetail());
+      $error->setPointer($actualThrowable->getPointer());
       $jsonapi->addError($error);
       $response = new Response(json_encode($jsonapi->serialize()), 422, ['Content-Type' => JsonApiRootNode::HEADER_CONTENT_TYPE]);
     } else {
