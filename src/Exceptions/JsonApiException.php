@@ -19,21 +19,33 @@ class JsonApiException extends \Exception implements JsonApiErrorParsableInterfa
     $this->status = $status;
   }
 
-  public function setDetail(string $value): self
+  public function setDetail(?string $value): self
   {
     $this->detail = $value;
     return $this;
   }
 
-  public function setStatus(string $value): self
+  public function setStatus(?string $value): self
   {
     $this->status = $value;
     return $this;
   }
 
-  public function setPointer(string $value): self
+  public function setPointer(?string $value): self
   {
     $this->pointer = $value;
+    return $this;
+  }
+
+  public function setErrorCode(?string $value): self
+  {
+    $this->errorCode = $value;
+    return $this;
+  }
+
+  public function setTitle(?string $value): self
+  {
+    $this->title = $value;
     return $this;
   }
 
@@ -50,5 +62,15 @@ class JsonApiException extends \Exception implements JsonApiErrorParsableInterfa
   public function getPointer(): ?string
   {
     return $this->pointer;
+  }
+
+  public function getErrorCode(): ?string
+  {
+    return $this->errorCode;
+  }
+
+  public function getTitle(): ?string
+  {
+    return $this->title;
   }
 }

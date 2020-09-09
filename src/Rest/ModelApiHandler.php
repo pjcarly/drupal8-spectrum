@@ -1599,6 +1599,8 @@ class ModelApiHandler extends BaseApiHandler
       /** @var JsonApiErrorParsableInterface $actualThrowable */
       $jsonapi = new JsonApiErrorRootNode();
       $error = new JsonApiErrorNode();
+      $error->setTitle($actualThrowable->getTitle());
+      $error->setCode($actualThrowable->getErrorCode());
       $error->setStatus($actualThrowable->getStatus());
       $error->setDetail($actualThrowable->getDetail());
       $error->setPointer($actualThrowable->getPointer());

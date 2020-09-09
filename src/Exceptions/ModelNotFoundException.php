@@ -20,4 +20,14 @@ class ModelNotFoundException extends \Exception implements JsonApiErrorParsableI
   {
     return '/data';
   }
+
+  public function getTitle(): ?string
+  {
+    return $this->getDetail();
+  }
+
+  public function getErrorCode(): ?string
+  {
+    return 'model_not_found';
+  }
 }
