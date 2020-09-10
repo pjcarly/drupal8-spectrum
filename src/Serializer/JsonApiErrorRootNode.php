@@ -38,6 +38,14 @@ class JsonApiErrorRootNode
   }
 
   /**
+   * @return JsonApiErrorNode[]
+   */
+  public function getErrors(): array
+  {
+    return $this->errors;
+  }
+
+  /**
    * Returns a serialized version of this error root node
    *
    * @return \stdClass
