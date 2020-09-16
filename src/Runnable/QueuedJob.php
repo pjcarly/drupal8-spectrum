@@ -292,6 +292,24 @@ class QueuedJob extends RunnableModel
   /**
    * @return int
    */
+  public function shouldDeleteAfterCompletion(): bool
+  {
+    return $this->entity->{'field_delete_after_completion'}->value;
+  }
+
+  /**
+   * @param int $value
+   * @return self
+   */
+  public function setDeleteAfterCompletion(bool $value): QueuedJob
+  {
+    $this->entity->{'field_delete_after_completion'}->value = $value ? '1' : '0';
+    return $this;
+  }
+
+  /**
+   * @return int
+   */
   public function getRescheduleIn(): ?int
   {
     return $this->entity->{'field_reschedule_in'}->value;
@@ -331,7 +349,8 @@ class QueuedJob extends RunnableModel
    * @return void
    */
   public function execute(): void
-  { }
+  {
+  }
 
   /**
    * Schedule a job on a given datetime, with a possible variable.
@@ -409,10 +428,25 @@ class QueuedJob extends RunnableModel
 
     // And check if we need to reschedule this job
     $this->checkForReschedule();
+    $this->checkForDeletion();
   }
 
   /**
-   * T
+   * Checks if the current Queued Job needs to be deleted after completion
+   *
+   * @return QueuedJob
+   */
+  private final function checkForDeletion(): QueuedJob
+  {
+    if ($this->shouldDeleteAfterCompletion() && ($this->getStatus() === self::STATUS_COMPLETED || $this->getStatus() === self::STATUS_FAILED)) {
+      $this->delete();
+    }
+
+    return $this;
+  }
+
+  /**
+   * Checks if the current Queued Job needs to be Rescheduled
    *
    * @return QueuedJob
    */
