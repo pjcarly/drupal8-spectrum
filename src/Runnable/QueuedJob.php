@@ -294,7 +294,7 @@ class QueuedJob extends RunnableModel
    */
   public function shouldDeleteAfterCompletion(): bool
   {
-    return $this->entity->{'field_delete_after_completion'}->value;
+    return $this->entity->{'field_delete_after_completion'}->value ?? false;
   }
 
   /**
