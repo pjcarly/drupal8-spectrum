@@ -7,11 +7,17 @@ use DateTimeZone;
 use Drupal;
 use Drupal\Core\Cache\MemoryCache\MemoryCacheInterface;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\groupflights\Event\BatchJobStatusUpdateEvent;
 use Drupal\spectrum\Model\Model;
 use Exception;
+use Ratchet\Client\Connector;
+use Ratchet\Client\WebSocket;
+use React\EventLoop\Factory;
+use React\EventLoop\LoopInterface;
+use React\Promise\PromiseInterface;
+use React\Socket\ConnectorInterface;
 use Symfony\Component\Console\Helper\ProgressBar;
-use Symfony\Component\EventDispatcher\EventDispatcher;
+use function AdiMihaila\Promise\wait;
+use function Clue\React\Block\await;
 
 abstract class BatchJob extends QueuedJob
 {
@@ -56,49 +62,52 @@ abstract class BatchJob extends QueuedJob
     $batchable->setBatchSize($batchSize);
     $totalRecords = $batchable->getTotalBatchedRecords();
 
-//    /** @var EventDispatcher $eventDispatcher */
-//    $eventDispatcher = Drupal::service('event_dispatcher');
-
     $progressBar = new ProgressBar($this->output, $totalRecords);
     $progressBar->setFormat('debug');
     $progressBar->start();
     $counter = 0;
-    $this->updateSocket($counter);
-//    $startEvent = new BatchJobStatusUpdateEvent($this, $counter);
-//    $eventDispatcher->dispatch(BatchJobStatusUpdateEvent::class, $startEvent);
+    $totalCounter = 0;
+//    $this->sendStatus($totalCounter,$totalRecords);
+
     foreach ($batchable->getBatchGenerator() as $entity) {
       $this->process($entity);
       $progressBar->advance();
       $counter++;
-      $this->updateSocket($counter);
-//      $updateEvent = new BatchJobStatusUpdateEvent($this, $counter);
-//      $eventDispatcher->dispatch(BatchJobStatusUpdateEvent::class, $updateEvent);
+      $totalCounter++;
       if ($counter % $batchSize === 0) {
         $this->clearCache();
+//        $this->sendStatus($totalCounter,$totalRecords);
         $counter = 0;
       }
     }
 
+//    $this->sendStatus($totalCounter,$totalCounter);
     $progressBar->finish();
     $this->getOutput()->writeln('');
 
     $this->afterExecute();
   }
-
-  private function updateSocket($counter)
-  {
-    $connection = Drupal::getContainer()->get('groupflights.websocket.connection');
-    $body = new \stdClass();
-    $body->id = $this->getId();
-    $body->current = $counter;
-    $body->action = 'POST';
-    $body->max = $this->getBatchSize();
-    $meta = new \stdClass();
-    $meta->type = 'batch_job_status';
-    $body->meta = $meta;
-    $message = "'" . json_encode($body) . "'";
-    $connection->send($message);
-  }
+  /*
+    private function sendStatus(int $counter,int $total)
+    {
+      $loop = Factory::create();
+      $connector = new Connector($loop);
+      $socket = null;
+      $connector('ws://websocket:8080',[],['Host' => 'localhost'])->then(function (WebSocket $conn) use (&$socket, $counter, $total){
+        $object = new \stdClass();
+        $object->data = new \stdClass();
+        $object->data->id = $this->getId();
+        $object->data->attributes = new \stdClass();
+        $object->data->attributes->max = $total;
+        $object->data->attributes->current = $counter;
+        $object->meta = new \stdClass();
+        $object->meta->type = 'update_batchjob_status';
+        $conn->send(json_encode($object));
+        $conn->close();
+      });
+      $loop->run();
+    }
+  */
 
   /**
    * Hook that is called after the batch job is fully executed
