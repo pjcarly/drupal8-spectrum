@@ -253,6 +253,23 @@ class Collection implements \IteratorAggregate, \Countable
   }
 
   /**
+   * Loops over all the Models in this collection, and if the "selected" flag on the model is true, the model is removed from the collection
+   *
+   * @return self
+   */
+  public function removeSelectedModels(): self
+  {
+    /** @var Model $model */
+    foreach ($this->models as $model) {
+      if ($model->selected) {
+        $this->removeModel($model);
+      }
+    }
+
+    return $this;
+  }
+
+  /**
    * @return integer
    */
   public function getAmountOfSelectedModels(): int
