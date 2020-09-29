@@ -67,7 +67,7 @@ final class MailSystem implements MailInterface, ContainerFactoryPluginInterface
     $payload['Destination'] = [
       'BccAddresses' => [],
       'CcAddresses' => [],
-      'ToAddresses' => $message['to'] ?? Settings::get('spectrum_email_to'),
+      'ToAddresses' => [$message['to'] ?? Settings::get('spectrum_email_to')],
     ];
 
     $payload['Message'] = [
