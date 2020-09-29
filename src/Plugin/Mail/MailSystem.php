@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\groupflights_email\Plugin\Mail;
+namespace Drupal\spectrum\Plugin\Mail;
 
 use Aws\Ses\Exception\SesException;
 use Aws\Ses\SesClient;
