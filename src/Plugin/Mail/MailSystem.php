@@ -93,7 +93,10 @@ final class MailSystem implements MailInterface, ContainerFactoryPluginInterface
       $this->client->sendEmail($payload);
     } catch (SesException $e) {
       $this->logger->error($e);
+      return false;
     }
+
+    return true;
   }
 
 }
