@@ -7,17 +7,11 @@ use DateTimeZone;
 use Drupal;
 use Drupal\Core\Cache\MemoryCache\MemoryCacheInterface;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\spectrum\Event\CronStatusUpdatedEvent;
 use Drupal\spectrum\Model\Model;
 use Exception;
-use Ratchet\Client\Connector;
-use Ratchet\Client\WebSocket;
-use React\EventLoop\Factory;
-use React\EventLoop\LoopInterface;
-use React\Promise\PromiseInterface;
-use React\Socket\ConnectorInterface;
 use Symfony\Component\Console\Helper\ProgressBar;
-use function AdiMihaila\Promise\wait;
-use function Clue\React\Block\await;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 
 abstract class BatchJob extends QueuedJob
 {
@@ -61,13 +55,16 @@ abstract class BatchJob extends QueuedJob
     $batchSize = $this->getBatchSize();
     $batchable->setBatchSize($batchSize);
     $totalRecords = $batchable->getTotalBatchedRecords();
+    /** @var EventDispatcher $eventDispatcher */
+    $eventDispatcher = Drupal::service('event_dispatcher');
 
     $progressBar = new ProgressBar($this->output, $totalRecords);
     $progressBar->setFormat('debug');
     $progressBar->start();
     $counter = 0;
     $totalCounter = 0;
-//    $this->sendStatus($totalCounter,$totalRecords);
+    $event = new CronStatusUpdatedEvent($this, $totalCounter, $totalRecords);
+    $eventDispatcher->dispatch(CronStatusUpdatedEvent::class,$event);
 
     foreach ($batchable->getBatchGenerator() as $entity) {
       $this->process($entity);
@@ -76,38 +73,19 @@ abstract class BatchJob extends QueuedJob
       $totalCounter++;
       if ($counter % $batchSize === 0) {
         $this->clearCache();
-//        $this->sendStatus($totalCounter,$totalRecords);
+        $event = new CronStatusUpdatedEvent($this,$totalCounter, $totalRecords);
+        $eventDispatcher->dispatch(CronStatusUpdatedEvent::class,$event);
         $counter = 0;
       }
     }
 
-//    $this->sendStatus($totalCounter,$totalCounter);
+    $event = new CronStatusUpdatedEvent($this,$totalCounter, $totalRecords);
+    $eventDispatcher->dispatch(CronStatusUpdatedEvent::class,$event);
     $progressBar->finish();
     $this->getOutput()->writeln('');
 
     $this->afterExecute();
   }
-  /*
-    private function sendStatus(int $counter,int $total)
-    {
-      $loop = Factory::create();
-      $connector = new Connector($loop);
-      $socket = null;
-      $connector('ws://websocket:8080',[],['Host' => 'localhost'])->then(function (WebSocket $conn) use (&$socket, $counter, $total){
-        $object = new \stdClass();
-        $object->data = new \stdClass();
-        $object->data->id = $this->getId();
-        $object->data->attributes = new \stdClass();
-        $object->data->attributes->max = $total;
-        $object->data->attributes->current = $counter;
-        $object->meta = new \stdClass();
-        $object->meta->type = 'update_batchjob_status';
-        $conn->send(json_encode($object));
-        $conn->close();
-      });
-      $loop->run();
-    }
-  */
 
   /**
    * Hook that is called after the batch job is fully executed

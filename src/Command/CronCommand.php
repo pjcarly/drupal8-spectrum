@@ -3,8 +3,6 @@
 namespace Drupal\spectrum\Command;
 
 use Drupal\spectrum\Runnable\RegisteredJob;
-use Ratchet\Client\WebSocket;
-use React\EventLoop\Timer\Timer;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Drupal\Console\Core\Command\ContainerAwareCommand;
@@ -77,12 +75,6 @@ class CronCommand extends ContainerAwareCommand
     $this->getIo()->info('Spectrum Cron Started');
 
     $loop = $this->loop;
-
-    $loop->addTimer(Timer::MIN_INTERVAL, function(){
-      \Ratchet\Client\connect('ws://api.groupflights.local:8080')->then(function(WebSocket $connection){
-        \Drupal::getContainer()->set('groupflights.websocket.connection', $connection);
-      });
-    });
 
     $loop->addPeriodicTimer(1 / 4, function () use (&$loop, &$output) {
       $currentTime = new \DateTime('now', new \DateTimeZone('UTC'));

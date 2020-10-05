@@ -559,4 +559,58 @@ class QueuedJob extends RunnableModel
     $this->save();
     $this->checkForReschedule();
   }
+
+  /**
+   * @return string|null
+   */
+  public function getRelatedBundle(): ?string
+  {
+    return $this->entity->{'field_related_bundle'}->value;
+  }
+
+  /**
+   * @param string $value
+   * @return $this
+   */
+  public function setRelatedBundle(string $value): self
+  {
+    $this->entity->{'field_related_bundle'}->value = $value;
+    return $this;
+  }
+
+  /**
+   * @return string|null
+   */
+  public function getRelatedEntity(): ?string
+  {
+    return $this->entity->{'field_related_entity'}->value;
+  }
+
+  /**
+   * @param string $value
+   * @return $this
+   */
+  public function setRelatedEntity(string $value): self
+  {
+    $this->entity->{'field_related_entity'}->value = $value;
+    return $this;
+  }
+
+  /**
+   * @return string|null
+   */
+  public function getRelatedModelId(): ?string
+  {
+    return $this->entity->{'field_related_model_id'}->value;
+  }
+
+  /**
+   * @param string $value
+   * @return $this
+   */
+  public function setRelatedModelId(string $value): self
+  {
+    $this->entity->{'field_related_model_id'}->value = $value;
+    return $this;
+  }
 }
