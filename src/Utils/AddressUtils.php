@@ -2,6 +2,7 @@
 
 namespace Drupal\spectrum\Utils;
 
+use CommerceGuys\Addressing\AddressInterface;
 use Drupal\Core\Field\FieldItemList;
 use CommerceGuys\Addressing\Address;
 use CommerceGuys\Addressing\Formatter\PostalLabelFormatter;
@@ -63,5 +64,16 @@ class AddressUtils
     $formatter = new PostalLabelFormatter($container->get('address.address_format_repository'), $container->get('address.country_repository'), $container->get('address.subdivision_repository'));
 
     return $formatter->format($address, ['origin_country' => $originCountry ?? 'BE']);
+  }
+
+  /**
+   * @param AddressInterface $address
+   * @return bool
+   */
+  public static function isInEU(AddressInterface $address): bool
+  {
+    return in_array($address->getCountryCode(), ['AT', 'BE', 'BG', 'CY', 'CZ', 'DE', 'DK', 'EE',
+      'ES', 'FI', 'FR', 'GB', 'GR', 'HR', 'HU', 'IE', 'IT', 'LT', 'LU',
+      'LV', 'MT', 'NL', 'PL', 'PT', 'RO', 'SE', 'SI', 'SK']);
   }
 }
