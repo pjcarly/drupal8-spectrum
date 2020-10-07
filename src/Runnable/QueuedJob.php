@@ -2,14 +2,17 @@
 
 namespace Drupal\spectrum\Runnable;
 
+use Drupal;
+use Drupal\Core\Session\AccountSwitcherInterface;
 use Drupal\Core\Session\AnonymousUserSession;
 use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface;
+use Drupal\spectrum\Event\CronStatusUpdatedEvent;
 use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
 use Drupal\spectrum\Permissions\AccessPolicy\PublicAccessPolicy;
-use Drupal\spectrum\Runnable\RegisteredJob;
 use Drupal\spectrum\Exceptions\JobTerminateException;
 use Drupal\spectrum\Model\FieldRelationship;
 use Drupal\spectrum\Models\User;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 
 /**
  * A queued job is an implementation of RunnableModel, it can be scheduled to be executed on a later time.
@@ -57,7 +60,7 @@ class QueuedJob extends RunnableModel
   /**
    * An instance of AccountSwitcher. This gives you the ability to execute the Job as another user, and switch back afterwards.
    *
-   * @var Drupal\Core\Session\AccountSwitcherInterface
+   * @var AccountSwitcherInterface
    */
   private $accountSwitcher;
 
@@ -92,6 +95,12 @@ class QueuedJob extends RunnableModel
       $this->accountSwitcher->switchTo(new AnonymousUserSession());
     } else {
       $this->accountSwitcher->switchTo($this->getRunAsUser()->entity);
+    }
+    if(!$this instanceof BatchJob){
+      /** @var EventDispatcher $eventDispatcher */
+      $eventDispatcher = Drupal::service('event_dispatcher');
+      $event = new CronStatusUpdatedEvent($this, 0, 1);
+      $eventDispatcher->dispatch(CronStatusUpdatedEvent::class,$event);
     }
   }
 
@@ -425,6 +434,13 @@ class QueuedJob extends RunnableModel
 
     $this->setEndTime($currentTime);
     $this->save();
+
+    if(!$this instanceof BatchJob){
+      /** @var EventDispatcher $eventDispatcher */
+      $eventDispatcher = Drupal::service('event_dispatcher');
+      $event = new CronStatusUpdatedEvent($this, 1, 1);
+      $eventDispatcher->dispatch(CronStatusUpdatedEvent::class, $event);
+    }
 
     // And check if we need to reschedule this job
     $this->checkForReschedule();
