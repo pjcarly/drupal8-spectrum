@@ -18,7 +18,7 @@ abstract class BatchJob extends QueuedJob
   /**
    * {@inheritdoc}
    */
-  public static function scheduleBatch(string $jobName, string $variable = '', DateTime $date = null, int $batchSize = null): BatchJob
+  public static function scheduleBatch(string $jobName, string $variable = '', DateTime $date = null, int $batchSize = null, string $relatedEntity = '', string $relatedBundle = '', string $relatedModelId = ''): BatchJob
   {
     $registeredJob = RegisteredJob::getByKey($jobName);
 
@@ -41,6 +41,9 @@ abstract class BatchJob extends QueuedJob
     $queuedJob->setBatchSize($batchSize);
     $queuedJob->setMinutesToFailure(10);
     $queuedJob->setScheduledTime($date);
+    $queuedJob->setRelatedEntity($relatedEntity);
+    $queuedJob->setRelatedBundle($relatedBundle);
+    $queuedJob->setRelatedModelId($relatedModelId);
 
 
     $queuedJob->put('job', $registeredJob);
