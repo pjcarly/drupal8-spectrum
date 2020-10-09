@@ -7,11 +7,13 @@ use Drupal\Core\Session\AccountSwitcherInterface;
 use Drupal\Core\Session\AnonymousUserSession;
 use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface;
 use Drupal\spectrum\Event\CronStatusUpdatedEvent;
+use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
 use Drupal\spectrum\Permissions\AccessPolicy\PublicAccessPolicy;
 use Drupal\spectrum\Exceptions\JobTerminateException;
 use Drupal\spectrum\Model\FieldRelationship;
 use Drupal\spectrum\Models\User;
+use Drupal\spectrum\Query\Condition;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
 /**
@@ -628,5 +630,20 @@ class QueuedJob extends RunnableModel
   {
     $this->entity->{'field_related_model_id'}->value = $value;
     return $this;
+  }
+
+  /**
+   * @param array $status
+   * @param Model $model
+   * @return QueuedJob|null
+   */
+  public static function findExistingJobForStatusAndModel(array $status, Model $model): ?QueuedJob
+  {
+    $query = QueuedJob::getModelQuery();
+    $query->addCondition(new Condition('field_related_entity', '=', $model::entityType()));
+    $query->addCondition(new Condition('field_related_bundle', '=', $model::bundle()));
+    $query->addCondition(new Condition('field_related_model_id', '=', $model->getId()));
+    $query->addCondition(new Condition('field_job_status', 'IN', $status));
+    return $query->fetchSingleModel();
   }
 }
