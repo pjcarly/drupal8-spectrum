@@ -26,4 +26,10 @@ interface ModelInterface {
    */
   public function fetch(string $relationshipName, ?Query $queryToCopyFrom = null);
 
+  /**
+   * @param string $relationshipName
+   * @return Collection|Model|null
+   */
+  public function get(string $relationshipName);
+
 }
