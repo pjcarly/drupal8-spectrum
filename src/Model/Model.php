@@ -1417,7 +1417,7 @@ abstract class Model
    */
   public static function forgeNew(): Model
   {
-    $store = \Drupal::entityManager()->getStorage(static::entityType());
+    $store = \Drupal::entityTypeManager()->getStorage(static::entityType());
 
     if (!empty(static::bundle())) {
       $entity = $store->create(['type' => static::bundle()]);
