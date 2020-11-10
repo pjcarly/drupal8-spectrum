@@ -1104,11 +1104,11 @@ class ModelApiHandler extends BaseApiHandler
           }
 
           // Now that we filtered everything out the filter arrays, we can build our actual Condition
-          if (!empty($operator) && !empty($field) && (!empty($value) || !empty($id))) {
+          if (!empty($operator) && !empty($field) && (!empty($value) || !empty($id) || $value === '0' || $id === '0')) {
             // Since either the value, or the ID can be passed, we first check what we found in the filter
             // This is only needed for Entity_reference fields, where you can filter on the title of the related object through "value"
             // Or on the ID of the object through the "ID"
-            if (!empty($id)) {
+            if (!empty($id) || $id === '0') {
               // ID is more important than value, so we check it first
               // An ID cant have a seperate column, so no need to check for that, we can just return the condition
               $condition = new Condition($field, $operator, $id);
@@ -1577,7 +1577,6 @@ class ModelApiHandler extends BaseApiHandler
    */
   protected function handleError(\Throwable $throwable, Request $request): Response
   {
-    $response = null;
     if ($throwable->getPrevious() !== null) {
       $actualThrowable = $throwable->getPrevious();
       while ($actualThrowable->getPrevious() !== null) {
@@ -1588,7 +1587,6 @@ class ModelApiHandler extends BaseApiHandler
     }
 
     $jsonapi = new JsonApiErrorRootNode();
-    $responseCode = 422;
 
     if ($actualThrowable instanceof CascadeNoDeleteException) {
       $error = new JsonApiErrorNode();
@@ -1596,7 +1594,6 @@ class ModelApiHandler extends BaseApiHandler
       $error->setDetail($throwable->getMessage());
       $error->setPointer('/data');
       $jsonapi->addError($error);
-      $response = new Response(json_encode($jsonapi->serialize()), 422, ['Content-Type' => JsonApiRootNode::HEADER_CONTENT_TYPE]);
     } else if ($actualThrowable instanceof JsonApiErrorParsableInterface) {
       /** @var JsonApiErrorParsableInterface $actualThrowable */
       $error = new JsonApiErrorNode();
@@ -1606,13 +1603,11 @@ class ModelApiHandler extends BaseApiHandler
       $error->setDetail($actualThrowable->getDetail());
       $error->setPointer($actualThrowable->getPointer());
       $jsonapi->addError($error);
-      $response = new Response(json_encode($jsonapi->serialize()), 422, ['Content-Type' => JsonApiRootNode::HEADER_CONTENT_TYPE]);
     } else {
       $error = new JsonApiErrorNode();
       $error->setCode('internal_error');
       $error->setStatus('500');
       $jsonapi->addError($error);
-      $response = $jsonapi->serialize();
 
       \Drupal::logger('spectrum')
         ->error($actualThrowable->getMessage() . ' ' . $actualThrowable->getTraceAsString());

@@ -8,7 +8,7 @@
 namespace Drupal\spectrum;
 
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
-use Drupal\Core\Entity\EntityManagerInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -25,17 +25,17 @@ class UserPermissions implements ContainerInjectionInterface
   /**
    * The entity manager.
    *
-   * @var \Drupal\Core\Entity\EntityManagerInterface
+   * @var EntityTypeManagerInterface
    */
   protected $entityManager;
 
   /**
    * Constructs a TaxonomyViewsIntegratorPermissions instance.
    *
-   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
+   * @param EntityTypeManagerInterface $entity_manager
    *   The entity manager.
    */
-  public function __construct(EntityManagerInterface $entity_manager)
+  public function __construct(EntityTypeManagerInterface $entity_manager)
   {
     $this->entityManager = $entity_manager;
   }
@@ -48,7 +48,7 @@ class UserPermissions implements ContainerInjectionInterface
    */
   public static function create(ContainerInterface $container): UserPermissions
   {
-    return new static($container->get('entity.manager'));
+    return new static($container->get('entity_type.manager'));
   }
 
   /**
