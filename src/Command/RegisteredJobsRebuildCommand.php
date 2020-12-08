@@ -12,7 +12,7 @@ use Symfony\Component\Console\Helper\Table;
 /**
  * Class RegisteredJobsRebuildCommand.
  *
- * @DrupalCommand (
+ * Drupal\Console\Annotations\DrupalCommand (
  *     extension="spectrum",
  *     extensionType="module"
  * )

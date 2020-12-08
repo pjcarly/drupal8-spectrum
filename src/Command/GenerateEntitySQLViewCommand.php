@@ -13,7 +13,7 @@ use Drupal\Core\Database\Connection;
 /**
  * Class GenerateEntitySQLViewCommand.
  *
- * @DrupalCommand (
+ * Drupal\Console\Annotations\DrupalCommand (
  *     extension="spectrum",
  *     extensionType="module"
  * )

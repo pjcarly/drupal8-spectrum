@@ -2,6 +2,9 @@
 
 namespace Drupal\spectrum\Template;
 
+use Drupal;
+use Drupal\Core\Template\TwigEnvironment;
+
 /**
  * This class exposes a render function to render Twig Templates with.
  */
@@ -19,14 +22,14 @@ class TwigRenderer
    *
    * @return object
    */
-  private function getTwigRenderer()
+  private function getTwigRenderer(): TwigEnvironment
   {
     if (empty($this->twig)) {
       // We need to get the twig environment from Drupal as we will use it to render the email template
       // Important to CLONE the twig environment, as any change we make here, shouldn't affect drupal rendering
       $this->twig = clone \Drupal::service('twig');
-      $this->twig->setLoader(new \Twig_Loader_String());
     }
+
     return $this->twig;
   }
 
@@ -41,8 +44,8 @@ class TwigRenderer
   {
     if (!empty($template)) {
       $twig = $this->getTwigRenderer();
-      $renderedContent = $twig->loadTemplate($template)->render($scope);
-      return $renderedContent;
+      $template = $twig->createTemplate($template);
+      return $template->render($scope);
     }
 
     return '';
