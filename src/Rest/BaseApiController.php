@@ -13,6 +13,8 @@ use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
 use Drupal\cors\EventSubscriber\CorsResponseEventSubscriber;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Models\User;
+use Symfony\Component\HttpKernel\Event\ResponseEvent;
+use Symfony\Component\HttpKernel\HttpKernelInterface;
 
 /**
  * The base API Controller to create custom webservice functionality. This class exposes a static handle() method which can be used in the Symfony routing files
@@ -34,11 +36,11 @@ class BaseApiController implements ContainerAwareInterface
   {
     // We let the request pass through Drupal's internals, so other modules can apply correct headers
     $config = \Drupal::service('config.factory');
-    $alias_manager = \Drupal::service('path.alias_manager');
+    $alias_manager = \Drupal::service('path_alias.manager');
     $path_matcher = new PathMatcher($config, $routeMatch);
 
     $kernel = \Drupal::service('http_kernel.basic');
-    $event = new FilterResponseEvent($kernel, $request, null, $response);
+    $event = new ResponseEvent($kernel, $request, HttpKernelInterface::MASTER_REQUEST, $response);
 
     $cors = new CorsResponseEventSubscriber($config, $alias_manager, $path_matcher);
     $cors->addCorsHeaders($event);

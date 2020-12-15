@@ -20,7 +20,7 @@ use React\EventLoop\LoopInterface;
 /**
  * Class CronCommand.
  *
- * @DrupalCommand (
+ * Drupal\Console\Annotations\DrupalCommand (
  *     extension="spectrum",
  *     extensionType="module"
  * )

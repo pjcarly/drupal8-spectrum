@@ -2,16 +2,11 @@
 
 namespace Drupal\spectrum\Template;
 
-use Drupal\spectrum\Model\Model;
-use Drupal\spectrum\Query\ModelQuery;
-use Drupal\spectrum\Query\Condition;
-
-use Drupal\spectrum\Model\SimpleModelWrapper;
-use Drupal\spectrum\Model\SimpleConfigWrapper;
-use Drupal\spectrum\Template\TwigRenderer;
-use Drupal\spectrum\Utils\UrlUtils;
-
 use Drupal\Core\Config\ImmutableConfig;
+use Drupal\spectrum\Model\Model;
+use Drupal\spectrum\Model\SimpleConfigWrapper;
+use Drupal\spectrum\Model\SimpleModelWrapper;
+use Drupal\spectrum\Utils\UrlUtils;
 
 /**
  * This class is used to render a twig file
