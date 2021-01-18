@@ -2,6 +2,7 @@
 
 namespace Drupal\spectrum\Command;
 
+use Drupal\spectrum\Runnable\RegisteredJob;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Drupal\Console\Core\Command\ContainerAwareCommand;

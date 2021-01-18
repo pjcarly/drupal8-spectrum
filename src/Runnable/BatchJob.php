@@ -7,16 +7,18 @@ use DateTimeZone;
 use Drupal;
 use Drupal\Core\Cache\MemoryCache\MemoryCacheInterface;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\spectrum\Event\CronStatusUpdatedEvent;
 use Drupal\spectrum\Model\Model;
 use Exception;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 
 abstract class BatchJob extends QueuedJob
 {
   /**
    * {@inheritdoc}
    */
-  public static function scheduleBatch(string $jobName, string $variable = '', DateTime $date = null, int $batchSize = null): BatchJob
+  public static function scheduleBatch(string $jobName, string $variable = '', DateTime $date = null, int $batchSize = null, string $relatedEntity = '', string $relatedBundle = '', string $relatedModelId = ''): BatchJob
   {
     $registeredJob = RegisteredJob::getByKey($jobName);
 
@@ -39,6 +41,9 @@ abstract class BatchJob extends QueuedJob
     $queuedJob->setBatchSize($batchSize);
     $queuedJob->setMinutesToFailure(10);
     $queuedJob->setScheduledTime($date);
+    $queuedJob->setRelatedEntity($relatedEntity);
+    $queuedJob->setRelatedBundle($relatedBundle);
+    $queuedJob->setRelatedModelId($relatedModelId);
 
 
     $queuedJob->put('job', $registeredJob);
@@ -53,21 +58,32 @@ abstract class BatchJob extends QueuedJob
     $batchSize = $this->getBatchSize();
     $batchable->setBatchSize($batchSize);
     $totalRecords = $batchable->getTotalBatchedRecords();
+    /** @var EventDispatcher $eventDispatcher */
+    $eventDispatcher = Drupal::service('event_dispatcher');
 
     $progressBar = new ProgressBar($this->output, $totalRecords);
     $progressBar->setFormat('debug');
     $progressBar->start();
     $counter = 0;
+    $totalCounter = 0;
+    $event = new CronStatusUpdatedEvent($this, $totalCounter, $totalRecords);
+    $eventDispatcher->dispatch(CronStatusUpdatedEvent::class,$event);
+
     foreach ($batchable->getBatchGenerator() as $entity) {
       $this->process($entity);
       $progressBar->advance();
       $counter++;
+      $totalCounter++;
       if ($counter % $batchSize === 0) {
         $this->clearCache();
+        $event = new CronStatusUpdatedEvent($this,$totalCounter, $totalRecords);
+        $eventDispatcher->dispatch(CronStatusUpdatedEvent::class,$event);
         $counter = 0;
       }
     }
 
+    $event = new CronStatusUpdatedEvent($this,$totalCounter, $totalRecords);
+    $eventDispatcher->dispatch(CronStatusUpdatedEvent::class,$event);
     $progressBar->finish();
     $this->getOutput()->writeln('');
 
