@@ -29,6 +29,36 @@ interface PermissionServiceInterface
   public function rebuildAccessPoliciesForUser(User $user): void;
 
   /**
+   * Rebuilds the access policy table.
+   */
+  public function rebuildAccessPolicy(): void;
+
+  /**
+   * Rebuilds the access policy for a specific entity
+   *
+   * @param string $entity
+   * @return void
+   */
+  public function rebuildAccessPolicyForEntity(string $entity): void;
+
+  /**
+   * Rebuilds the access policy for a specific entity and bundle
+   *
+   * @param string $entity
+   * @param string $bundle
+   * @return void
+   */
+  public function rebuildAccessPolicyForEntityAndBundle(string $entity, string $bundle): void;
+
+  /**
+   * Rebuilds the access policy for a specific model class
+   *
+   * @param string $class
+   * @return void
+   */
+  public function rebuildAccessPolicyForModelClass(string $class): void;
+
+  /**
    * This function checks whether the given role has a certain access to the provided entity
    *
    * @param string $role The Drupal role of the User (for example, administrator, authenticated, anonymous, or any custom role)

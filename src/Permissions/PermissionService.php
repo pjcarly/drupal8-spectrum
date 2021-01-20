@@ -132,13 +132,63 @@ class PermissionService implements PermissionServiceInterface, LoggerAwareInterf
   {
     $classes = Model::getModelService()->getRegisteredModelClasses();
 
+    foreach ($classes as $class) {
+      $this->rebuildAccessPolicyForModelClass($class);
+    }
+  }
+
+  /**
+   * Rebuilds the access policy for a specific entity
+   *
+   * @param string $entity
+   * @return void
+   */
+  public function rebuildAccessPolicyForEntity(string $entity): void
+  {
+    $classes = Model::getModelService()->getRegisteredModelClasses();
+
     /** @var \Drupal\spectrum\Model\Model $class */
     foreach ($classes as $class) {
-      $accessPolicy = $class::getAccessPolicy();
-
-      /** @var string $class */
-      $accessPolicy->rebuildForModelClass($class);
+      if ($class::entityType() === $entity) {
+        /** @var string $class */
+        $this->rebuildAccessPolicyForModelClass($class);
+      }
     }
+  }
+
+  /**
+   * Rebuilds the access policy for a specific entity and bundle
+   *
+   * @param string $entity
+   * @param string $bundle
+   * @return void
+   */
+  public function rebuildAccessPolicyForEntityAndBundle(string $entity, string $bundle): void
+  {
+    $classes = Model::getModelService()->getRegisteredModelClasses();
+
+    /** @var \Drupal\spectrum\Model\Model $class */
+    foreach ($classes as $class) {
+      if ($class::entityType() === $entity && $class::bundle() === $bundle) {
+        /** @var string $class */
+        $this->rebuildAccessPolicyForModelClass($class);
+      }
+    }
+  }
+
+  /**
+   * Rebuilds the access policy for a specific model class
+   *
+   * @param string|Model $class
+   * @return void
+   */
+  public function rebuildAccessPolicyForModelClass(string $class): void
+  {
+    /** @var \Drupal\spectrum\Model\Model $class */
+    $accessPolicy = $class::getAccessPolicy();
+
+    /** @var string $class */
+    $accessPolicy->rebuildForModelClass($class);
   }
 
   /**
@@ -180,7 +230,7 @@ class PermissionService implements PermissionServiceInterface, LoggerAwareInterf
         ->fields(['entity_type', 'entity_id', 'uid']);
 
       $chunks = array_chunk($values, 10000);
-      foreach($chunks as $chunk){
+      foreach ($chunks as $chunk) {
         foreach ($chunk as $value) {
           $insertQuery = $insertQuery->values($value->getInsertValue());
         }
