@@ -67,7 +67,7 @@ abstract class BatchJob extends QueuedJob
     $counter = 0;
     $totalCounter = 0;
     $event = new CronStatusUpdatedEvent($this, $totalCounter, $totalRecords);
-    $eventDispatcher->dispatch(CronStatusUpdatedEvent::class,$event);
+    $eventDispatcher->dispatch($event);
 
     foreach ($batchable->getBatchGenerator() as $entity) {
       $this->process($entity);
@@ -77,13 +77,13 @@ abstract class BatchJob extends QueuedJob
       if ($counter % $batchSize === 0) {
         $this->clearCache();
         $event = new CronStatusUpdatedEvent($this,$totalCounter, $totalRecords);
-        $eventDispatcher->dispatch(CronStatusUpdatedEvent::class,$event);
+        $eventDispatcher->dispatch($event);
         $counter = 0;
       }
     }
 
     $event = new CronStatusUpdatedEvent($this,$totalCounter, $totalRecords);
-    $eventDispatcher->dispatch(CronStatusUpdatedEvent::class,$event);
+    $eventDispatcher->dispatch($event);
     $progressBar->finish();
     $this->getOutput()->writeln('');
 

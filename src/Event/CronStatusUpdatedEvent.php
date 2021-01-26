@@ -3,7 +3,7 @@
 namespace Drupal\spectrum\Event;
 
 use Drupal\spectrum\Runnable\QueuedJob;
-use Symfony\Component\EventDispatcher\Event;
+use Symfony\Contracts\EventDispatcher\Event;
 
 class CronStatusUpdatedEvent extends Event
 {
