@@ -635,7 +635,7 @@ class MultiModelApiHandler extends BaseApiHandler
    *
    * @param string[] $modelClassNames
    * @param array $filter
-   * @return array
+   * @return Condition[]
    */
   public static function getConditionListForFilterArray(array $modelClassNames, array $filters): array
   {
@@ -667,16 +667,24 @@ class MultiModelApiHandler extends BaseApiHandler
           }
 
           $field = $prettyToFieldsMap[$prettyFieldParts[0]];
-          $operator = (array_key_exists('operator', $filter) && Condition::isValidSingleModelOperator($filter['operator'])) ? $filter['operator'] : '=';
+          $operator = array_key_exists('operator', $filter) ? $filter['operator'] : '=';
           $value = array_key_exists('value', $filter) ? $filter['value'] : null;
           $id = array_key_exists('id', $filter) ? $filter['id'] : null;
 
+          $isMultiValueOperator = Condition::isValidMultipleModelsOperator($operator);
+          $operator = (Condition::isValidSingleModelOperator($operator) || $isMultiValueOperator) ? $operator : '=';
+
+          if ($isMultiValueOperator) {
+            $value = isset($value) ? explode(',', $value) : [];
+            $id = isset($id) ? explode(',', $id) : [];
+          }
+
           // Now that we filtered everything out the filter arrays, we can build our actual Condition
-          if (!empty($operator) && !empty($field) && (!empty($value) || !empty($id))) {
+          if (!empty($operator) && !empty($field) && (!empty($value) || !empty($id) || $value === '0' || $id === '0')) {
             // Since either the value, or the ID can be passed, we first check what we found in the filter
             // This is only needed for Entity_reference fields, where you can filter on the title of the related object through "value"
             // Or on the ID of the object through the "ID"
-            if (!empty($id)) {
+            if (!empty($id) || $id === '0') {
               // ID is more important than value, so we check it first
               // An ID cant have a seperate column, so no need to check for that, we can just return the condition
               $condition = new Condition($field, $operator, $id);
