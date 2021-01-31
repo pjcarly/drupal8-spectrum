@@ -29,7 +29,9 @@ use Drupal\Core\Validation\Plugin\Validation\Constraint\NotNullConstraint;
 use Drupal\spectrum\Analytics\AnalyticsServiceInterface;
 use Drupal\spectrum\Analytics\ListViewInterface;
 use Drupal\spectrum\Model\Validation;
+use Drupal\spectrum\Serializer\JsonApiDataNode;
 use Drupal\spectrum\Serializer\JsonApiErrorParsableInterface;
+use Drupal\spectrum\Serializer\JsonApiNode;
 
 /**
  * This class provides an implementation of an BaseApiHandler for a Model in a jsonapi.org compliant way
@@ -325,14 +327,42 @@ class ModelApiHandler extends BaseApiHandler
         $jsonapi->asArray(false);
       }
 
-      $result = $query->fetchCollection();
+      $onlyIds = false;
+      $modelSerializationType = $modelClassName::getSerializationType();
+      // TODO: Add support fields, currently only supports Id field for the main class name
+      // This way only the Ids will be fetched
+      if ($request->query->has("fields")) {
+        $fieldLimits = $request->query->get("fields");
 
-      if (!$result->isEmpty) {
+        if (array_key_exists($modelSerializationType, $fieldLimits)) {
+          $limitFields = array_map('trim', explode(',', $fieldLimits[$modelSerializationType]));
+
+          if ($limitFields && sizeof($limitFields) === 1 && $limitFields[0] === 'id') {
+            $onlyIds = true;
+          }
+        }
+      }
+
+      $result = null;
+      if ($onlyIds) {
+        $result = $query->fetchIds();
+      } else {
+        $result = $query->fetchCollection();
+      }
+
+
+      /** @var string[]|Collection $result */
+      $hasResults = $onlyIds ? sizeof($result) > 0 : !$result->isEmpty();
+      if ($hasResults) {
+        $amountOfResults = $onlyIds ? sizeof($result) : $result->size;
         // We load the translations on the response
-        $this->loadLanguages($request, $result);
+
+        if (!$onlyIds) {
+          $this->loadLanguages($request, $result);
+        }
 
         // we must include pagination links when there are more than the maximum amount of results
-        if ($result->size === $this->maxLimit) {
+        if ($amountOfResults === $this->maxLimit) {
           $previousPage = empty($page) ? 0 : $page - 1;
 
           // the first link is easy, it is the first page
@@ -352,7 +382,7 @@ class ModelApiHandler extends BaseApiHandler
             $this->addSingleLink($jsonapi, 'last', $baseUrl, 0, $lastPage, $sort);
 
             // let's include some meta data
-            $jsonapi->addMeta('count', (int) $result->size);
+            $jsonapi->addMeta('count', (int) $amountOfResults);
             $jsonapi->addMeta('total-count', (int) $totalCount);
             $jsonapi->addMeta('page-count', (int) $lastPage);
             $jsonapi->addMeta('page-size', (int) $this->maxLimit);
@@ -369,7 +399,7 @@ class ModelApiHandler extends BaseApiHandler
             }
 
             $jsonapi->addMeta('result-row-first', (int) (($currentPage - 1) * $this->maxLimit) + 1);
-            $jsonapi->addMeta('result-row-last', (int) $result->size < $this->maxLimit ? ((($currentPage - 1) * $this->maxLimit) + $result->size) : ($currentPage * $this->maxLimit));
+            $jsonapi->addMeta('result-row-last', (int) $amountOfResults < $this->maxLimit ? ((($currentPage - 1) * $this->maxLimit) + $amountOfResults) : ($currentPage * $this->maxLimit));
           }
         } else if (!empty($limit)) {
           // we must also include pagination links when we have a limit defined
@@ -392,7 +422,7 @@ class ModelApiHandler extends BaseApiHandler
             $this->addSingleLink($jsonapi, 'last', $baseUrl, $limit, $lastPage, $sort);
 
             // let's include some meta data
-            $jsonapi->addMeta('count', (int) $result->size);
+            $jsonapi->addMeta('count', (int) $amountOfResults);
             $jsonapi->addMeta('total-count', (int) $totalCount);
             $jsonapi->addMeta('page-count', (int) $lastPage);
             $jsonapi->addMeta('page-size', (int) $limit);
@@ -409,40 +439,54 @@ class ModelApiHandler extends BaseApiHandler
             }
 
             $jsonapi->addMeta('result-row-first', (int) (($currentPage - 1) * $limit) + 1);
-            $jsonapi->addMeta('result-row-last', (int) $result->size < $limit ? ((($currentPage - 1) * $limit) + $result->size) : ($currentPage * $limit));
+            $jsonapi->addMeta('result-row-last', (int) $amountOfResults < $limit ? ((($currentPage - 1) * $limit) + $amountOfResults) : ($currentPage * $limit));
           }
         } else {
-          $jsonapi->addMeta('count', (int) $result->size);
-          $jsonapi->addMeta('total-count', (int) $result->size);
+          $jsonapi->addMeta('count', (int) $amountOfResults);
+          $jsonapi->addMeta('total-count', (int) $amountOfResults);
           $jsonapi->addMeta('page-count', (int) 1);
           $jsonapi->addMeta('page-size', (int) $this->maxLimit);
           $jsonapi->addMeta('page-current', (int) 1);
           $jsonapi->addMeta('result-row-first', (int) 1);
-          $jsonapi->addMeta('result-row-last', (int) $result->size);
+          $jsonapi->addMeta('result-row-last', (int) $amountOfResults);
         }
 
-        // Lets check for our includes
-        $includes = [];
-        // The url might define includes
-        if ($request->query->has('include')) {
-          // includes in the url are comma seperated
-          $includes = array_merge($includes, explode(',', $request->query->get('include')));
-        }
+        if (!$onlyIds) {
+          // Lets check for our includes
+          $includes = [];
+          // The url might define includes
+          if ($request->query->has('include')) {
+            // includes in the url are comma seperated
+            $includes = array_merge($includes, explode(',', $request->query->get('include')));
+          }
 
-        // But some api handlers provide default includes as well
-        if (property_exists($this, 'defaultGetIncludes')) {
-          $includes = array_merge($includes, $this->defaultGetIncludes);
-        }
+          // But some api handlers provide default includes as well
+          if (property_exists($this, 'defaultGetIncludes')) {
+            $includes = array_merge($includes, $this->defaultGetIncludes);
+          }
 
-        $includes = array_filter(array_unique($includes));
-        // And finally include them
-        if (!empty($includes)) {
-          $this->checkForIncludes($result, $jsonapi, $includes);
-        }
+          $includes = array_filter(array_unique($includes));
+          // And finally include them
+          if (!empty($includes)) {
+            $this->checkForIncludes($result, $jsonapi, $includes);
+          }
 
-        // Finally we can set the jsonapi with the data of our result
-        $node = $this->getJsonApiNodeForModelOrCollection($result);
-        $jsonapi->setData($node);
+          // Finally we can set the jsonapi with the data of our result
+          $node = $this->getJsonApiNodeForModelOrCollection($result);
+          $jsonapi->setData($node);
+        } else {
+          $dataNode = new JsonApiDataNode();
+          $dataNode->asArray(true);
+
+          foreach ($result as $id) {
+            $node = new JsonApiNode();
+            $node->setType($modelSerializationType);
+            $node->setId($id);
+            $dataNode->addNode($node);
+          }
+
+          $jsonapi->setData($dataNode);
+        }
       }
     } else {
       // We musn't forget to add all the conditions that were potentially added to this ApiHandler
