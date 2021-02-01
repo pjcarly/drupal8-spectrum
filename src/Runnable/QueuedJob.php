@@ -102,7 +102,7 @@ class QueuedJob extends RunnableModel
       /** @var EventDispatcher $eventDispatcher */
       $eventDispatcher = Drupal::service('event_dispatcher');
       $event = new CronStatusUpdatedEvent($this, 0, 1);
-      $eventDispatcher->dispatch(CronStatusUpdatedEvent::class,$event);
+      $eventDispatcher->dispatch($event);
     }
   }
 
@@ -441,7 +441,7 @@ class QueuedJob extends RunnableModel
       /** @var EventDispatcher $eventDispatcher */
       $eventDispatcher = Drupal::service('event_dispatcher');
       $event = new CronStatusUpdatedEvent($this, 1, 1);
-      $eventDispatcher->dispatch(CronStatusUpdatedEvent::class, $event);
+      $eventDispatcher->dispatch($event);
     }
 
     // And check if we need to reschedule this job
