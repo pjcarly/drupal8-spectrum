@@ -61,7 +61,8 @@ trait ModelSerializerMixin
       'reusable',
       'rh_action',
       'rh_redirect',
-      'rh_redirect_response'
+      'rh_redirect_response',
+      'behavior_settings'
     ];
   }
 
