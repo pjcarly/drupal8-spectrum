@@ -55,6 +55,7 @@ trait ModelSQLHelperMixin
 
         break;
       case 'entity_reference':
+      case 'entity_reference_revisions':
       case 'file':
       case 'image':
         $columns[] = $columnBase . 'target_id AS `' . $alias . '`';

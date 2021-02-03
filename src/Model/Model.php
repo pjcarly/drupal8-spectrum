@@ -1074,6 +1074,7 @@ abstract class Model
           throw new InvalidFieldException('Field type isnt supported for fieldChangedFrom functions, only single value fields supported');
           break;
         case 'entity_reference':
+        case 'entity_reference_revisions':
         case 'file':
         case 'image':
           $returnValue = ($oldAttribute->target_id == $oldValue);
@@ -1117,6 +1118,7 @@ abstract class Model
           throw new InvalidFieldException('Field type isnt supported for fieldChangedFrom functions, only single value fields supported');
           break;
         case 'entity_reference':
+        case 'entity_reference_revisions':
         case 'file':
         case 'image':
           $returnValue = (($isNew && $oldValue == null) || (!$isNew && $oldAttribute->target_id == $oldValue)) && ($newAttribute->target_id == $newValue);
@@ -1161,6 +1163,7 @@ abstract class Model
           throw new InvalidFieldException('Field type isnt supported for fieldChangedTo functions, only single value fields supported');
           break;
         case 'entity_reference':
+        case 'entity_reference_revisions':
         case 'file':
         case 'image':
           $returnValue = ($newAttribute->target_id == $newValue);
@@ -1245,6 +1248,7 @@ abstract class Model
           || ($newAttribute->address_line2 != $oldAttribute->address_line2);
         break;
       case 'entity_reference':
+      case 'entity_reference_revisions':
       case 'file':
       case 'image':
         $returnValue = ($newAttribute->target_id != $oldAttribute->target_id);

@@ -229,6 +229,7 @@ trait ModelDeserializerMixin
 
           break;
         case 'entity_reference':
+        case 'entity_reference_revisions':
           // Entity references are generally deserialized through the relationships hash,
           // Except for currency, a currency is passed as a value (the ISO currency code)
           // And since in our system the ID of the currency is the iso currency code, we use that instead

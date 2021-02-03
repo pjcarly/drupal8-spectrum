@@ -709,7 +709,7 @@ class MultiModelApiHandler extends BaseApiHandler
                 // just a field, no column (like name)
 
                 // Lets check for the type, because if the type is an entity reference, we will filter on the title of the referenced entity
-                if ($fieldType === 'entity_reference') {
+                if ($fieldType === 'entity_reference' || $fieldType === 'entity_reference_revisions') {
                   // Because the user entity works differently than any other, we must also check for the target_type, and use a different column
                   $settings = $fieldDefinition->getSettings();
                   if ($settings['target_type'] === 'user') {
@@ -810,7 +810,7 @@ class MultiModelApiHandler extends BaseApiHandler
               $sortOrder = new Order($field . '.' . $column, $direction);
             }
           } else {
-            if ($fieldType === 'entity_reference') {
+            if ($fieldType === 'entity_reference' || $fieldType === 'entity_reference_revisions') {
               // In case the field type is entity reference, we want to sort by the title, not the ID
               // Because the user entity works differently than any other, we must also check for the target_type
               $settings = $fieldDefinition->getSettings();

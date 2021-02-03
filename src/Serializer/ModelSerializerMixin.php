@@ -141,6 +141,7 @@ trait ModelSerializerMixin
         $valueToSerialize = $valueToSerialize === NULL ? NULL : (float) $valueToSerialize;
         break;
       case 'entity_reference':
+      case 'entity_reference_revisions':
         // TODO: this is really hacky, we must consider finding a more performant solution than the one with the target_ids now
         if (!empty($this->entity->{$fieldName}->entity)) {
           // Lets figure out what the target-type is, in some cases, we just serialize the target_id (currency for example)
@@ -341,7 +342,7 @@ trait ModelSerializerMixin
 
     $valueToSerialize = $this->getValueToSerialize($fieldName, $fieldDefinition);
 
-    if ($fieldType === 'entity_reference') {
+    if ($fieldType === 'entity_reference' || $fieldType === 'entity_reference_revisions') {
       if (!empty($fieldObjectSettings) && array_key_exists('target_type', $fieldObjectSettings) && $fieldObjectSettings['target_type'] === 'currency') {
         $node->addAttribute($fieldNamePretty, $valueToSerialize);
       } else {

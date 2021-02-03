@@ -587,6 +587,7 @@ class Collection implements \IteratorAggregate, \Countable
         throw new InvalidTypeException('You cant build an array by this field type');
         break;
       case 'entity_reference':
+      case 'entity_reference_revisions':
       case 'file':
       case 'image':
         $column = 'target_id';
