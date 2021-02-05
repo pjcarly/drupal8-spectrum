@@ -35,7 +35,7 @@ class NoAccessPolicy implements AccessPolicyInterface
    */
   public function onQuery(Select $query): Select
   {
-    $query->addExpression('1=0');
+    $query->condition('base_table.id','-1');
     return $query;
   }
 
