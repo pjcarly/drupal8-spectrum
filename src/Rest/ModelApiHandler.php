@@ -167,6 +167,16 @@ class ModelApiHandler extends BaseApiHandler
   }
 
   /**
+   * Indicate whether the GET response should only return a single result instead of a list
+   *
+   * @return boolean
+   */
+  protected function shouldReturnSingle(): bool
+  {
+    return FALSE;
+  }
+
+  /**
    * This function will add all the Conditions in this ApiHandler to the provided Query
    *
    * @param ModelQuery $query The query you want to add the conditions to
@@ -322,7 +332,8 @@ class ModelApiHandler extends BaseApiHandler
       // And finally fetch the model
 
       // When the _single queryParam is set, we force returning a single model
-      if ($request->query->has('_single')) {
+      $returnSingle = $request->query->has('_single') || $this->shouldReturnSingle();
+      if ($returnSingle) {
         $query->setLimit(1);
         $jsonapi->asArray(false);
       }
@@ -361,94 +372,96 @@ class ModelApiHandler extends BaseApiHandler
           $this->loadLanguages($request, $result);
         }
 
-        // we must include pagination links when there are more than the maximum amount of results
-        if ($amountOfResults === $this->maxLimit) {
-          $previousPage = empty($page) ? 0 : $page - 1;
+        if (!$returnSingle) { // no need to include pagination when only 1 result is returned
+          // we must include pagination links when there are more than the maximum amount of results
+          if ($amountOfResults === $this->maxLimit) {
+            $previousPage = empty($page) ? 0 : $page - 1;
 
-          // the first link is easy, it is the first page
-          $this->addSingleLink($jsonapi, 'first', $baseUrl, 0, 1, $sort);
+            // the first link is easy, it is the first page
+            $this->addSingleLink($jsonapi, 'first', $baseUrl, 0, 1, $sort);
 
-          // the previous link, checks if !empty, so pages with value 0 will not be displayed
-          if (!empty($previousPage)) {
-            $this->addSingleLink($jsonapi, 'previous', $baseUrl, 0, $previousPage, $sort);
-          }
+            // the previous link, checks if !empty, so pages with value 0 will not be displayed
+            if (!empty($previousPage)) {
+              $this->addSingleLink($jsonapi, 'previous', $baseUrl, 0, $previousPage, $sort);
+            }
 
-          // next we check the total count, to see if we can display the last & next link
-          $totalCount = $query->fetchTotalCount();
-          if (!empty($totalCount)) {
-            $lastPage = ceil($totalCount / $this->maxLimit);
-            $currentPage = empty($page) ? 1 : $page;
+            // next we check the total count, to see if we can display the last & next link
+            $totalCount = $query->fetchTotalCount();
+            if (!empty($totalCount)) {
+              $lastPage = ceil($totalCount / $this->maxLimit);
+              $currentPage = empty($page) ? 1 : $page;
 
-            $this->addSingleLink($jsonapi, 'last', $baseUrl, 0, $lastPage, $sort);
+              $this->addSingleLink($jsonapi, 'last', $baseUrl, 0, $lastPage, $sort);
 
-            // let's include some meta data
+              // let's include some meta data
+              $jsonapi->addMeta('count', (int) $amountOfResults);
+              $jsonapi->addMeta('total-count', (int) $totalCount);
+              $jsonapi->addMeta('page-count', (int) $lastPage);
+              $jsonapi->addMeta('page-size', (int) $this->maxLimit);
+              $jsonapi->addMeta('page-current', (int) $currentPage);
+              if (!empty($previousPage)) {
+                $jsonapi->addMeta('page-prev', (int) $previousPage);
+              }
+
+              // and finally, we also check if the next page isn't larger than the last page
+              $nextPage = empty($page) ? 2 : $page + 1;
+              if ($nextPage <= $lastPage) {
+                $this->addSingleLink($jsonapi, 'next', $baseUrl, 0, $nextPage, $sort);
+                $jsonapi->addMeta('page-next', (int) $nextPage);
+              }
+
+              $jsonapi->addMeta('result-row-first', (int) (($currentPage - 1) * $this->maxLimit) + 1);
+              $jsonapi->addMeta('result-row-last', (int) $amountOfResults < $this->maxLimit ? ((($currentPage - 1) * $this->maxLimit) + $amountOfResults) : ($currentPage * $this->maxLimit));
+            }
+          } else if (!empty($limit)) {
+            // we must also include pagination links when we have a limit defined
+            $previousPage = empty($page) ? 0 : $page - 1;
+
+            // the first link is easy, it is the first page
+            $this->addSingleLink($jsonapi, 'first', $baseUrl, $limit, 1, $sort);
+
+            // the previous link, checks if !empty, so pages with value 0 will not be displayed
+            if (!empty($previousPage)) {
+              $this->addSingleLink($jsonapi, 'prev', $baseUrl, $limit, $previousPage, $sort);
+            }
+
+            // next we check the total count, to see if we can display the last & next link
+            $totalCount = $query->fetchTotalCount();
+            if (!empty($totalCount)) {
+              $lastPage = ceil($totalCount / $limit);
+              $currentPage = empty($page) ? 1 : $page;
+
+              $this->addSingleLink($jsonapi, 'last', $baseUrl, $limit, $lastPage, $sort);
+
+              // let's include some meta data
+              $jsonapi->addMeta('count', (int) $amountOfResults);
+              $jsonapi->addMeta('total-count', (int) $totalCount);
+              $jsonapi->addMeta('page-count', (int) $lastPage);
+              $jsonapi->addMeta('page-size', (int) $limit);
+              $jsonapi->addMeta('page-current', (int) $currentPage);
+              if (!empty($previousPage)) {
+                $jsonapi->addMeta('page-prev', (int) $previousPage);
+              }
+
+              // and finally, we also check if the next page isn't larger than the last page
+              $nextPage = empty($page) ? 2 : $page + 1;
+              if ($nextPage <= $lastPage) {
+                $this->addSingleLink($jsonapi, 'next', $baseUrl, $limit, $nextPage, $sort);
+                $jsonapi->addMeta('page-next', (int) $nextPage);
+              }
+
+              $jsonapi->addMeta('result-row-first', (int) (($currentPage - 1) * $limit) + 1);
+              $jsonapi->addMeta('result-row-last', (int) $amountOfResults < $limit ? ((($currentPage - 1) * $limit) + $amountOfResults) : ($currentPage * $limit));
+            }
+          } else {
             $jsonapi->addMeta('count', (int) $amountOfResults);
-            $jsonapi->addMeta('total-count', (int) $totalCount);
-            $jsonapi->addMeta('page-count', (int) $lastPage);
+            $jsonapi->addMeta('total-count', (int) $amountOfResults);
+            $jsonapi->addMeta('page-count', (int) 1);
             $jsonapi->addMeta('page-size', (int) $this->maxLimit);
-            $jsonapi->addMeta('page-current', (int) $currentPage);
-            if (!empty($previousPage)) {
-              $jsonapi->addMeta('page-prev', (int) $previousPage);
-            }
-
-            // and finally, we also check if the next page isn't larger than the last page
-            $nextPage = empty($page) ? 2 : $page + 1;
-            if ($nextPage <= $lastPage) {
-              $this->addSingleLink($jsonapi, 'next', $baseUrl, 0, $nextPage, $sort);
-              $jsonapi->addMeta('page-next', (int) $nextPage);
-            }
-
-            $jsonapi->addMeta('result-row-first', (int) (($currentPage - 1) * $this->maxLimit) + 1);
-            $jsonapi->addMeta('result-row-last', (int) $amountOfResults < $this->maxLimit ? ((($currentPage - 1) * $this->maxLimit) + $amountOfResults) : ($currentPage * $this->maxLimit));
+            $jsonapi->addMeta('page-current', (int) 1);
+            $jsonapi->addMeta('result-row-first', (int) 1);
+            $jsonapi->addMeta('result-row-last', (int) $amountOfResults);
           }
-        } else if (!empty($limit)) {
-          // we must also include pagination links when we have a limit defined
-          $previousPage = empty($page) ? 0 : $page - 1;
-
-          // the first link is easy, it is the first page
-          $this->addSingleLink($jsonapi, 'first', $baseUrl, $limit, 1, $sort);
-
-          // the previous link, checks if !empty, so pages with value 0 will not be displayed
-          if (!empty($previousPage)) {
-            $this->addSingleLink($jsonapi, 'prev', $baseUrl, $limit, $previousPage, $sort);
-          }
-
-          // next we check the total count, to see if we can display the last & next link
-          $totalCount = $query->fetchTotalCount();
-          if (!empty($totalCount)) {
-            $lastPage = ceil($totalCount / $limit);
-            $currentPage = empty($page) ? 1 : $page;
-
-            $this->addSingleLink($jsonapi, 'last', $baseUrl, $limit, $lastPage, $sort);
-
-            // let's include some meta data
-            $jsonapi->addMeta('count', (int) $amountOfResults);
-            $jsonapi->addMeta('total-count', (int) $totalCount);
-            $jsonapi->addMeta('page-count', (int) $lastPage);
-            $jsonapi->addMeta('page-size', (int) $limit);
-            $jsonapi->addMeta('page-current', (int) $currentPage);
-            if (!empty($previousPage)) {
-              $jsonapi->addMeta('page-prev', (int) $previousPage);
-            }
-
-            // and finally, we also check if the next page isn't larger than the last page
-            $nextPage = empty($page) ? 2 : $page + 1;
-            if ($nextPage <= $lastPage) {
-              $this->addSingleLink($jsonapi, 'next', $baseUrl, $limit, $nextPage, $sort);
-              $jsonapi->addMeta('page-next', (int) $nextPage);
-            }
-
-            $jsonapi->addMeta('result-row-first', (int) (($currentPage - 1) * $limit) + 1);
-            $jsonapi->addMeta('result-row-last', (int) $amountOfResults < $limit ? ((($currentPage - 1) * $limit) + $amountOfResults) : ($currentPage * $limit));
-          }
-        } else {
-          $jsonapi->addMeta('count', (int) $amountOfResults);
-          $jsonapi->addMeta('total-count', (int) $amountOfResults);
-          $jsonapi->addMeta('page-count', (int) 1);
-          $jsonapi->addMeta('page-size', (int) $this->maxLimit);
-          $jsonapi->addMeta('page-current', (int) 1);
-          $jsonapi->addMeta('result-row-first', (int) 1);
-          $jsonapi->addMeta('result-row-last', (int) $amountOfResults);
         }
 
         if (!$onlyIds) {
@@ -473,7 +486,15 @@ class ModelApiHandler extends BaseApiHandler
 
           // Finally we can set the jsonapi with the data of our result
           $node = $this->getJsonApiNodeForModelOrCollection($result);
-          $jsonapi->setData($node);
+          $data = null;
+          if ($node instanceof JsonApiDataNode) {
+            $data = $node;
+          } else {
+            $data = new JsonApiDataNode();
+            $data->addNode($node);
+          }
+
+          $jsonapi->setData($data);
         } else {
           $dataNode = new JsonApiDataNode();
           $dataNode->asArray(true);

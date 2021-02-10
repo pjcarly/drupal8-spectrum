@@ -8,7 +8,7 @@ namespace Drupal\spectrum\Serializer;
 class JsonApiErrorNode
 {
   /**
-   * The status code fot htis error
+   * The status code fot this error
    *
    * @var string|null
    */
@@ -76,7 +76,7 @@ class JsonApiErrorNode
   }
 
   /**
-   * Get the status code fot htis error
+   * Get the status code fot this error
    *
    * @return  string|null
    */
@@ -86,9 +86,9 @@ class JsonApiErrorNode
   }
 
   /**
-   * Set the status code fot htis error
+   * Set the status code fot this error
    *
-   * @param  string|null  $status  The status code fot htis error
+   * @param  string|null  $status  The status code fot this error
    *
    * @return  self
    */
