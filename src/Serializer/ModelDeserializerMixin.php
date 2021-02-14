@@ -215,14 +215,14 @@ trait ModelDeserializerMixin
             $this->entity->$fieldName->address_line2 = null;
           } else {
             $value = [];
-            $value['country_code'] = $attributeValue->{'countryCode'};
-            $value['administrative_area'] = $attributeValue->{'administrativeArea'};
+            $value['country_code'] = $attributeValue->{'country-code'};
+            $value['administrative_area'] = $attributeValue->{'administrative-area'};
             $value['locality'] = $attributeValue->{'locality'};
-            $value['dependent_locality'] = $attributeValue->{'dependentLocality'};
-            $value['postal_code'] = $attributeValue->{'postalCode'};
-            $value['sorting_code'] = $attributeValue->{'sortingCode'};
-            $value['address_line1'] = $attributeValue->{'addressLine1'};
-            $value['address_line2'] = $attributeValue->{'addressLine2'};
+            $value['dependent_locality'] = $attributeValue->{'dependent-locality'};
+            $value['postal_code'] = $attributeValue->{'postal-code'};
+            $value['sorting_code'] = $attributeValue->{'sorting-code'};
+            $value['address_line1'] = $attributeValue->{'address-line1'};
+            $value['address_line2'] = $attributeValue->{'address-line2'};
 
             $this->entity->$fieldName = $value;
           }
