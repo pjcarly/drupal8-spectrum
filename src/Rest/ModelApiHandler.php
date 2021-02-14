@@ -1204,8 +1204,8 @@ class ModelApiHandler extends BaseApiHandler
                   if ($settings['target_type'] === 'user') {
                     $condition = new Condition($field . '.entity.name', $operator, $value);
                     $conditions[] = $condition;
-                  } else if ($settings['target_type'] === 'user_role') {
-                    // TODO fix this, currently getting exception "Getting the base fields is not supported for entity type user_role"
+                  } else if ($settings['target_type'] === 'user_role' || $settings['target_type'] === 'currency') {
+                    // TODO: fix this, currently getting exception "Getting the base fields is not supported for entity type user_role"
                     // works without entity.title appended
                     $condition = new Condition($field, $operator, $value);
                     $conditions[] = $condition;
