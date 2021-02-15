@@ -423,7 +423,7 @@ trait ModelSerializerMixin
     $mapping['address']['country-code'] = 'country_code';
     $mapping['address']['administrative-area'] = 'administrative_area';
     $mapping['address']['locality'] = 'locality';
-    $mapping['address']['dependent-locality'] = 'dependent-locality';
+    $mapping['address']['dependent-locality'] = 'dependent_locality';
     $mapping['address']['postal-code'] = 'postal_code';
     $mapping['address']['sorting-code'] = 'sorting_code';
     $mapping['address']['address-line1'] = 'address_line1';
