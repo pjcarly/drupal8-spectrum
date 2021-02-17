@@ -789,7 +789,7 @@ abstract class Model
 
               if (!$valueExists) {
                 // The value does not yet exist on the entity, we can safely apply it
-                $this->entity->$relationshipField->appendItem($objectToPutId);
+                $this->entity->$relationshipField->appendItem($objectToPut->entity);
               }
             }
 
