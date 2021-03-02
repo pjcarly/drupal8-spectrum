@@ -454,9 +454,11 @@ class ModelApiHandler extends BaseApiHandler
           }
 
           $includes = array_filter(array_unique($includes));
+
           // And finally include them
           if (!empty($includes)) {
-            $this->checkForIncludes($result, $jsonapi, $includes);
+            $includeLimits = $this->getIncludeLimits($request);
+            $this->checkForIncludes($result, $jsonapi, $includes, $includeLimits);
           }
 
           // Finally we can set the jsonapi with the data of our result
@@ -517,7 +519,8 @@ class ModelApiHandler extends BaseApiHandler
 
         // And finally include them
         if (!empty($includes)) {
-          $this->checkForIncludes($result, $jsonapi, $includes);
+          $includeLimits = $this->getIncludeLimits($request);
+          $this->checkForIncludes($result, $jsonapi, $includes, $includeLimits);
         }
 
         // Finally we add the result
@@ -529,6 +532,31 @@ class ModelApiHandler extends BaseApiHandler
     }
 
     return new Response(json_encode($this->serialize($jsonapi)), $responseCode, []);
+  }
+
+  /**
+   * Returns an array keyed by relationshipNames and values the limit that should be used when including relationships
+   *
+   * @param Request $request
+   * @return array
+   */
+  protected function getIncludeLimits(Request $request): array
+  {
+    // Next check if there are includeLimits defined (to limit the amount of includes possible per relationshipName)
+    $includeLimits = [];
+    if ($request->query->has('includeLimits')) {
+      $includeLimitsParam = $request->query->get("includeLimits");
+
+      if (is_array($includeLimitsParam)) {
+        foreach ($includeLimitsParam as $relationshipName => $limit) {
+          if (is_numeric($limit) && is_string($relationshipName)) {
+            $includeLimits[$relationshipName] = (int) $limit;
+          }
+        }
+      }
+    }
+
+    return $includeLimits;
   }
 
   /**
@@ -687,7 +715,8 @@ class ModelApiHandler extends BaseApiHandler
 
         // And finally include them
         if (!empty($includes)) {
-          $this->checkForIncludes($model, $jsonapi, $includes);
+          $includeLimits = $this->getIncludeLimits($request);
+          $this->checkForIncludes($model, $jsonapi, $includes, $includeLimits);
         }
 
         // and finally we can serialize and set the code
@@ -857,7 +886,8 @@ class ModelApiHandler extends BaseApiHandler
 
           // And finally include them
           if (!empty($includes)) {
-            $this->checkForIncludes($model, $jsonapi, $includes);
+            $includeLimits = $this->getIncludeLimits($request);
+            $this->checkForIncludes($model, $jsonapi, $includes, $includeLimits);
           }
 
           // and finally we can serialize and set the code
@@ -984,9 +1014,10 @@ class ModelApiHandler extends BaseApiHandler
    * @param Collection|Model $source
    * @param JsonApiRootNode $jsonApiRootNode
    * @param array $relationshipNamesToInclude
+   * @param array $includeLimits (optional) [key: string => value: number] The limits for the included query
    * @return ModelApiHandler
    */
-  protected function checkForIncludes($source, JsonApiRootNode $jsonApiRootNode, array $relationshipNamesToInclude): ModelApiHandler
+  protected function checkForIncludes($source, JsonApiRootNode $jsonApiRootNode, array $relationshipNamesToInclude, array $includeLimits = []): ModelApiHandler
   {
     if (!empty($source) && !$source->isEmpty) {
       $modelClassName = $this->modelClassName;
@@ -1040,6 +1071,12 @@ class ModelApiHandler extends BaseApiHandler
             }
           } else {
             continue;
+          }
+
+          if (array_key_exists($relationshipNameToInclude, $includeLimits)) {
+            if (!$entityQuery->hasLimit()) {
+              $entityQuery->setLimit($includeLimits[$relationshipNameToInclude]);
+            }
           }
 
           // first of all, we fetch the data
