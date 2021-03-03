@@ -56,12 +56,20 @@ class ModelApiHandler extends BaseApiHandler
   private $modelClassName;
 
   /**
-   * The default maxlimit for a result, to make sure we dont return everything in the database, but paginate results
+   * The maxlimit for a result, the amount of results are hard capped on this value
+   * If no limit is requested $this->defaultLimit is used, in case there is a limit in the query params provided
+   * We use that value, unless it is larger than $this->maxLimit, then we use maxLimit
    *
    * @var integer
    */
   protected $maxLimit = 200;
 
+  /**
+   * In case no limit is provided, we use the default limit of 10;
+   *
+   * @var integer
+   */
+  protected $defaultLimit = 10;
 
   /**
    * Base conditions that will be added to all queries done in the api handler
@@ -260,26 +268,34 @@ class ModelApiHandler extends BaseApiHandler
       // even when the result is a single object
       $jsonapi->asArray(true);
 
-      // when the slug is empty, we must check for extra variables
-      if ($request->query->has('limit') && is_numeric($request->query->get('limit'))) {
-        $limit = $request->query->get('limit');
-      }
+      // First we check for the limit, in the page query param
+      if ($request->query->has("page")) {
+        $pageParam = $request->query->get("page");
 
-      // Additional check for the page variable, we potentially need to adjust the query start
-      if ($request->query->has('page') && is_numeric($request->query->get('page'))) {
-        $page = $request->query->get('page');
+        if (is_array($pageParam)) {
+          if (array_key_exists('limit', $pageParam) && is_numeric($pageParam["limit"])) {
+            $limit = $pageParam["limit"];
+          }
 
-        if (!empty($limit)) {
-          $start = ($page - 1) * $limit;
-          $query->setRange($start, $limit);
-        } else {
-          $start = ($page - 1) * $this->maxLimit;
-          $query->setRange($start, $this->maxLimit);
+          if (array_key_exists('number', $pageParam) && is_numeric($pageParam["number"])) {
+            $page = $pageParam["number"];
+          }
         }
-      } else {
-        // no page, we can just set a limit
-        $query->setLimit(empty($limit) ? $this->maxLimit : $limit);
       }
+
+      // Next some safety checks for default and hard limits on the API
+      if (empty($limit)) {
+        $limit = $this->defaultLimit;
+      } else if ($limit > $this->maxLimit) {
+        $limit = $this->maxLimit;
+      }
+
+      if (empty($page)) {
+        $page = 1;
+      }
+
+      $start = ($page - 1) * $limit;
+      $query->setRange($start, $limit);
 
       // Lets also check for a sort order
       if ($request->query->has('sort')) {
@@ -374,64 +390,31 @@ class ModelApiHandler extends BaseApiHandler
 
         if (!$returnSingle) { // no need to include pagination when only 1 result is returned
           // we must include pagination links when there are more than the maximum amount of results
-          if ($amountOfResults === $this->maxLimit) {
-            $previousPage = empty($page) ? 0 : $page - 1;
 
+          if ($amountOfResults < $limit) {
+            $jsonapi->addMeta('count', (int) $amountOfResults);
+            $jsonapi->addMeta('total-count', (int) $amountOfResults);
+            $jsonapi->addMeta('page-count', (int) 1);
+            $jsonapi->addMeta('page-size', (int) $limit);
+            $jsonapi->addMeta('page-current', (int) 1);
+            $jsonapi->addMeta('result-row-first', (int) 1);
+            $jsonapi->addMeta('result-row-last', (int) $amountOfResults);
+          } else {
             // the first link is easy, it is the first page
             $this->addSingleLink($jsonapi, 'first', $baseUrl, 0, 1, $sort);
 
-            // the previous link, checks if !empty, so pages with value 0 will not be displayed
-            if (!empty($previousPage)) {
-              $this->addSingleLink($jsonapi, 'previous', $baseUrl, 0, $previousPage, $sort);
-            }
-
-            // next we check the total count, to see if we can display the last & next link
-            $totalCount = $query->fetchTotalCount();
-            if (!empty($totalCount)) {
-              $lastPage = ceil($totalCount / $this->maxLimit);
-              $currentPage = empty($page) ? 1 : $page;
-
-              $this->addSingleLink($jsonapi, 'last', $baseUrl, 0, $lastPage, $sort);
-
-              // let's include some meta data
-              $jsonapi->addMeta('count', (int) $amountOfResults);
-              $jsonapi->addMeta('total-count', (int) $totalCount);
-              $jsonapi->addMeta('page-count', (int) $lastPage);
-              $jsonapi->addMeta('page-size', (int) $this->maxLimit);
-              $jsonapi->addMeta('page-current', (int) $currentPage);
-              if (!empty($previousPage)) {
-                $jsonapi->addMeta('page-prev', (int) $previousPage);
-              }
-
-              // and finally, we also check if the next page isn't larger than the last page
-              $nextPage = empty($page) ? 2 : $page + 1;
-              if ($nextPage <= $lastPage) {
-                $this->addSingleLink($jsonapi, 'next', $baseUrl, 0, $nextPage, $sort);
-                $jsonapi->addMeta('page-next', (int) $nextPage);
-              }
-
-              $jsonapi->addMeta('result-row-first', (int) (($currentPage - 1) * $this->maxLimit) + 1);
-              $jsonapi->addMeta('result-row-last', (int) $amountOfResults < $this->maxLimit ? ((($currentPage - 1) * $this->maxLimit) + $amountOfResults) : ($currentPage * $this->maxLimit));
-            }
-          } else if (!empty($limit)) {
-            // we must also include pagination links when we have a limit defined
             $previousPage = empty($page) ? 0 : $page - 1;
-
-            // the first link is easy, it is the first page
-            $this->addSingleLink($jsonapi, 'first', $baseUrl, $limit, 1, $sort);
-
             // the previous link, checks if !empty, so pages with value 0 will not be displayed
             if (!empty($previousPage)) {
-              $this->addSingleLink($jsonapi, 'prev', $baseUrl, $limit, $previousPage, $sort);
+              $this->addSingleLink($jsonapi, 'prev', $baseUrl, 0, $previousPage, $sort);
             }
 
-            // next we check the total count, to see if we can display the last & next link
             $totalCount = $query->fetchTotalCount();
             if (!empty($totalCount)) {
               $lastPage = ceil($totalCount / $limit);
               $currentPage = empty($page) ? 1 : $page;
 
-              $this->addSingleLink($jsonapi, 'last', $baseUrl, $limit, $lastPage, $sort);
+              $this->addSingleLink($jsonapi, 'last', $baseUrl, 0, $lastPage, $sort);
 
               // let's include some meta data
               $jsonapi->addMeta('count', (int) $amountOfResults);
@@ -446,21 +429,13 @@ class ModelApiHandler extends BaseApiHandler
               // and finally, we also check if the next page isn't larger than the last page
               $nextPage = empty($page) ? 2 : $page + 1;
               if ($nextPage <= $lastPage) {
-                $this->addSingleLink($jsonapi, 'next', $baseUrl, $limit, $nextPage, $sort);
+                $this->addSingleLink($jsonapi, 'next', $baseUrl, 0, $nextPage, $sort);
                 $jsonapi->addMeta('page-next', (int) $nextPage);
               }
 
               $jsonapi->addMeta('result-row-first', (int) (($currentPage - 1) * $limit) + 1);
               $jsonapi->addMeta('result-row-last', (int) $amountOfResults < $limit ? ((($currentPage - 1) * $limit) + $amountOfResults) : ($currentPage * $limit));
             }
-          } else {
-            $jsonapi->addMeta('count', (int) $amountOfResults);
-            $jsonapi->addMeta('total-count', (int) $amountOfResults);
-            $jsonapi->addMeta('page-count', (int) 1);
-            $jsonapi->addMeta('page-size', (int) $this->maxLimit);
-            $jsonapi->addMeta('page-current', (int) 1);
-            $jsonapi->addMeta('result-row-first', (int) 1);
-            $jsonapi->addMeta('result-row-last', (int) $amountOfResults);
           }
         }
 
@@ -479,9 +454,11 @@ class ModelApiHandler extends BaseApiHandler
           }
 
           $includes = array_filter(array_unique($includes));
+
           // And finally include them
           if (!empty($includes)) {
-            $this->checkForIncludes($result, $jsonapi, $includes);
+            $includeLimits = $this->getIncludeLimits($request);
+            $this->checkForIncludes($result, $jsonapi, $includes, $includeLimits);
           }
 
           // Finally we can set the jsonapi with the data of our result
@@ -542,7 +519,8 @@ class ModelApiHandler extends BaseApiHandler
 
         // And finally include them
         if (!empty($includes)) {
-          $this->checkForIncludes($result, $jsonapi, $includes);
+          $includeLimits = $this->getIncludeLimits($request);
+          $this->checkForIncludes($result, $jsonapi, $includes, $includeLimits);
         }
 
         // Finally we add the result
@@ -554,6 +532,31 @@ class ModelApiHandler extends BaseApiHandler
     }
 
     return new Response(json_encode($this->serialize($jsonapi)), $responseCode, []);
+  }
+
+  /**
+   * Returns an array keyed by relationshipNames and values the limit that should be used when including relationships
+   *
+   * @param Request $request
+   * @return array
+   */
+  protected function getIncludeLimits(Request $request): array
+  {
+    // Next check if there are includeLimits defined (to limit the amount of includes possible per relationshipName)
+    $includeLimits = [];
+    if ($request->query->has('includeLimits')) {
+      $includeLimitsParam = $request->query->get("includeLimits");
+
+      if (is_array($includeLimitsParam)) {
+        foreach ($includeLimitsParam as $relationshipName => $limit) {
+          if (is_numeric($limit) && is_string($relationshipName)) {
+            $includeLimits[$relationshipName] = (int) $limit;
+          }
+        }
+      }
+    }
+
+    return $includeLimits;
   }
 
   /**
@@ -712,7 +715,8 @@ class ModelApiHandler extends BaseApiHandler
 
         // And finally include them
         if (!empty($includes)) {
-          $this->checkForIncludes($model, $jsonapi, $includes);
+          $includeLimits = $this->getIncludeLimits($request);
+          $this->checkForIncludes($model, $jsonapi, $includes, $includeLimits);
         }
 
         // and finally we can serialize and set the code
@@ -882,7 +886,8 @@ class ModelApiHandler extends BaseApiHandler
 
           // And finally include them
           if (!empty($includes)) {
-            $this->checkForIncludes($model, $jsonapi, $includes);
+            $includeLimits = $this->getIncludeLimits($request);
+            $this->checkForIncludes($model, $jsonapi, $includes, $includeLimits);
           }
 
           // and finally we can serialize and set the code
@@ -1009,9 +1014,10 @@ class ModelApiHandler extends BaseApiHandler
    * @param Collection|Model $source
    * @param JsonApiRootNode $jsonApiRootNode
    * @param array $relationshipNamesToInclude
+   * @param array $includeLimits (optional) [key: string => value: number] The limits for the included query
    * @return ModelApiHandler
    */
-  protected function checkForIncludes($source, JsonApiRootNode $jsonApiRootNode, array $relationshipNamesToInclude): ModelApiHandler
+  protected function checkForIncludes($source, JsonApiRootNode $jsonApiRootNode, array $relationshipNamesToInclude, array $includeLimits = []): ModelApiHandler
   {
     if (!empty($source) && !$source->isEmpty) {
       $modelClassName = $this->modelClassName;
@@ -1065,6 +1071,12 @@ class ModelApiHandler extends BaseApiHandler
             }
           } else {
             continue;
+          }
+
+          if (array_key_exists($relationshipNameToInclude, $includeLimits)) {
+            if (!$entityQuery->hasLimit()) {
+              $entityQuery->setLimit($includeLimits[$relationshipNameToInclude]);
+            }
           }
 
           // first of all, we fetch the data

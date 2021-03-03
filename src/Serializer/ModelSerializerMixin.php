@@ -88,14 +88,14 @@ trait ModelSerializerMixin
         $attribute = null;
         if (!empty($address->country_code)) {
           $attribute = new \stdClass();
-          $attribute->{'countryCode'} = $address->country_code;
-          $attribute->{'administrativeArea'} = $address->administrative_area;
+          $attribute->{'country-code'} = $address->country_code;
+          $attribute->{'administrative-area'} = $address->administrative_area;
           $attribute->{'locality'} = $address->locality;
-          $attribute->{'dependentLocality'} = $address->dependent_locality;
-          $attribute->{'postalCode'} = $address->postal_code;
-          $attribute->{'sortingCode'} = $address->sorting_code;
-          $attribute->{'addressLine1'} = $address->address_line1;
-          $attribute->{'addressLine2'} = $address->address_line2;
+          $attribute->{'dependent-locality'} = $address->dependent_locality;
+          $attribute->{'postal-code'} = $address->postal_code;
+          $attribute->{'sorting-code'} = $address->sorting_code;
+          $attribute->{'address-line1'} = $address->address_line1;
+          $attribute->{'address-line2'} = $address->address_line2;
         }
         $valueToSerialize = $attribute;
         break;
@@ -423,7 +423,7 @@ trait ModelSerializerMixin
     $mapping['address']['country-code'] = 'country_code';
     $mapping['address']['administrative-area'] = 'administrative_area';
     $mapping['address']['locality'] = 'locality';
-    $mapping['address']['dependent-locality'] = 'dependent-locality';
+    $mapping['address']['dependent-locality'] = 'dependent_locality';
     $mapping['address']['postal-code'] = 'postal_code';
     $mapping['address']['sorting-code'] = 'sorting_code';
     $mapping['address']['address-line1'] = 'address_line1';

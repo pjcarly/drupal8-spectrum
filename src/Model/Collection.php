@@ -412,6 +412,10 @@ class Collection implements \IteratorAggregate, \Countable
       // Lets see if we need to copy in some default conditions
       if (!empty($queryToCopyFrom)) {
         $relationshipQuery->copyConditionsFrom($queryToCopyFrom);
+
+        if ($queryToCopyFrom->hasLimit()) {
+          $relationshipQuery->setRange($queryToCopyFrom->getRangeStart(), $queryToCopyFrom->getRangeLength());
+        }
       }
 
       $relationshipCondition = $relationship->getCondition();
