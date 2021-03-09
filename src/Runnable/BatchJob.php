@@ -18,7 +18,7 @@ abstract class BatchJob extends QueuedJob
   /**
    * {@inheritdoc}
    */
-  public static function scheduleBatch(string $jobName, string $variable = '', DateTime $date = null, int $batchSize = null, string $relatedEntity = '', string $relatedBundle = '', string $relatedModelId = ''): BatchJob
+  public static function scheduleBatch(string $jobName, string $variable = null, DateTime $date = null, int $batchSize = null, string $relatedEntity = null, string $relatedBundle = null, string $relatedModelId = null): BatchJob
   {
     $registeredJob = RegisteredJob::getByKey($jobName);
 
@@ -44,7 +44,6 @@ abstract class BatchJob extends QueuedJob
     $queuedJob->setRelatedEntity($relatedEntity);
     $queuedJob->setRelatedBundle($relatedBundle);
     $queuedJob->setRelatedModelId($relatedModelId);
-
 
     $queuedJob->put('job', $registeredJob);
     $queuedJob->save();
@@ -76,13 +75,13 @@ abstract class BatchJob extends QueuedJob
       $totalCounter++;
       if ($counter % $batchSize === 0) {
         $this->clearCache();
-        $event = new CronStatusUpdatedEvent($this,$totalCounter, $totalRecords);
+        $event = new CronStatusUpdatedEvent($this, $totalCounter, $totalRecords);
         $eventDispatcher->dispatch($event);
         $counter = 0;
       }
     }
 
-    $event = new CronStatusUpdatedEvent($this,$totalCounter, $totalRecords);
+    $event = new CronStatusUpdatedEvent($this, $totalCounter, $totalRecords);
     $eventDispatcher->dispatch($event);
     $progressBar->finish();
     $this->getOutput()->writeln('');

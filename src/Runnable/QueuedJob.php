@@ -98,7 +98,7 @@ class QueuedJob extends RunnableModel
     } else {
       $this->accountSwitcher->switchTo($this->getRunAsUser()->entity);
     }
-    if(!$this instanceof BatchJob){
+    if (!$this instanceof BatchJob) {
       /** @var EventDispatcher $eventDispatcher */
       $eventDispatcher = Drupal::service('event_dispatcher');
       $event = new CronStatusUpdatedEvent($this, 0, 1);
@@ -437,7 +437,7 @@ class QueuedJob extends RunnableModel
     $this->setEndTime($currentTime);
     $this->save();
 
-    if(!$this instanceof BatchJob){
+    if (!$this instanceof BatchJob) {
       /** @var EventDispatcher $eventDispatcher */
       $eventDispatcher = Drupal::service('event_dispatcher');
       $event = new CronStatusUpdatedEvent($this, 1, 1);
@@ -590,7 +590,7 @@ class QueuedJob extends RunnableModel
    * @param string $value
    * @return $this
    */
-  public function setRelatedBundle(string $value): self
+  public function setRelatedBundle(?string $value): self
   {
     $this->entity->{'field_related_bundle'}->value = $value;
     return $this;
@@ -608,7 +608,7 @@ class QueuedJob extends RunnableModel
    * @param string $value
    * @return $this
    */
-  public function setRelatedEntity(string $value): self
+  public function setRelatedEntity(?string $value): self
   {
     $this->entity->{'field_related_entity'}->value = $value;
     return $this;
@@ -626,7 +626,7 @@ class QueuedJob extends RunnableModel
    * @param string $value
    * @return $this
    */
-  public function setRelatedModelId(string $value): self
+  public function setRelatedModelId(?string $value): self
   {
     $this->entity->{'field_related_model_id'}->value = $value;
     return $this;
