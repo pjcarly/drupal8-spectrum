@@ -325,7 +325,7 @@ class MultiModelApiHandler extends BaseApiHandler
         $this->loadLanguages($request, $result);
 
         $amountOfResults = $result->size;
-        if ($amountOfResults < $limit) {
+        if ($amountOfResults < $limit && $page === 1) {
           $jsonapi->addMeta('count', (int) $amountOfResults);
           $jsonapi->addMeta('total-count', (int) $amountOfResults);
           $jsonapi->addMeta('page-count', (int) 1);

@@ -391,7 +391,7 @@ class ModelApiHandler extends BaseApiHandler
         if (!$returnSingle) { // no need to include pagination when only 1 result is returned
           // we must include pagination links when there are more than the maximum amount of results
 
-          if ($amountOfResults < $limit) {
+          if ($amountOfResults < $limit && $page === 1) {
             $jsonapi->addMeta('count', (int) $amountOfResults);
             $jsonapi->addMeta('total-count', (int) $amountOfResults);
             $jsonapi->addMeta('page-count', (int) 1);
