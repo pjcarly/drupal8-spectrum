@@ -8,6 +8,8 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\Query\QueryInterface;
 use Drupal\spectrum\Data\ChunkedIterator;
 use Drupal\spectrum\Runnable\BatchableInterface;
+use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
+use Drupal\Core\Database\Query\AlterableInterface;
 
 /**
  * This class provides base functionality for different query types
@@ -99,6 +101,12 @@ abstract class Query implements BatchableInterface
   protected $entityType;
 
   /**
+   * @var AccessPolicyInterface|null
+   *   Indicates whether to use Spectrum Access Policy.
+   */
+  protected $accessPolicy;
+
+  /**
    * @param string $entityType The entity type you want to query
    */
   public function __construct(string $entityType)
@@ -146,9 +154,9 @@ abstract class Query implements BatchableInterface
    * Set a tag you want to add to the query
    *
    * @param string $tag
-   * @return Query
+   * @return self
    */
-  public function setTag(string $tag): Query
+  public function setTag(string $tag): self
   {
     $this->tag = $tag;
     return $this;
@@ -158,9 +166,9 @@ abstract class Query implements BatchableInterface
    * Add a Condition that will always be applied to the query, no matter what the logic is
    *
    * @param Condition $condition
-   * @return Query
+   * @return self
    */
-  public function addBaseCondition(Condition $condition): Query
+  public function addBaseCondition(Condition $condition): self
   {
     $this->baseConditions[] = $condition;
     return $this;
@@ -170,9 +178,9 @@ abstract class Query implements BatchableInterface
    * Add a condition to the query. If you set a conditionlogic, the numbers will be the order in which the conditions were added to the query
    *
    * @param Condition $condition
-   * @return Query
+   * @return self
    */
-  public function addCondition(Condition $condition): Query
+  public function addCondition(Condition $condition): self
   {
     $this->conditions[] = $condition;
     return $this;
@@ -182,9 +190,9 @@ abstract class Query implements BatchableInterface
    * Add a Query/ConditionGroup, in case multiple groups are added and/or conditions, they will be combined through AND.
    *
    * @param ConditionGroup $conditionGroup
-   * @return Query
+   * @return self
    */
-  public function addConditionGroup(ConditionGroup $conditionGroup): Query
+  public function addConditionGroup(ConditionGroup $conditionGroup): self
   {
     $this->conditionGroups[] = $conditionGroup;
     return $this;
@@ -194,9 +202,9 @@ abstract class Query implements BatchableInterface
    * Adds an expression to the query, that can be used in a sort order
    *
    * @param Expression $expression
-   * @return Query
+   * @return self
    */
-  public function addExpression(Expression $expression): Query
+  public function addExpression(Expression $expression): self
   {
     $this->expressions[$expression->getName()] = $expression;
     return $this;
@@ -205,9 +213,9 @@ abstract class Query implements BatchableInterface
   /**
    * Removes all the expressions from the Query
    *
-   * @return Query
+   * @return self
    */
-  public function clearExpressions(): Query
+  public function clearExpressions(): self
   {
     $this->expressions = [];
     return $this;
@@ -217,9 +225,9 @@ abstract class Query implements BatchableInterface
    * Sets the limit of amount of results you want to return, this will override any range that was previously set
    *
    * @param integer $limit
-   * @return Query
+   * @return self
    */
-  public function setLimit(int $limit): Query
+  public function setLimit(int $limit): self
   {
     $this->rangeStart = 0;
     $this->rangeLength = $limit;
@@ -240,9 +248,9 @@ abstract class Query implements BatchableInterface
    * Set the conditionlogic that needs to be appled to the conditions that were added. For example: "OR(1,2, AND(3,4, OR(1,5))"
    *
    * @param string $conditionLogic
-   * @return Query
+   * @return self
    */
-  public function setConditionLogic(string $conditionLogic): Query
+  public function setConditionLogic(string $conditionLogic): self
   {
     $this->conditionLogic = $conditionLogic;
     return $this;
@@ -253,9 +261,9 @@ abstract class Query implements BatchableInterface
    *
    * @param integer $start
    * @param integer $length
-   * @return Query
+   * @return self
    */
-  public function setRange(int $start, int $length): Query
+  public function setRange(int $start, int $length): self
   {
     $this->rangeStart = $start;
     $this->rangeLength = $length;
@@ -266,9 +274,9 @@ abstract class Query implements BatchableInterface
    * Add a sortorder to the query, the orders will be applied in the order they were added
    *
    * @param Order $order
-   * @return Query
+   * @return self
    */
-  public function addSortOrder(Order $order): Query
+  public function addSortOrder(Order $order): self
   {
     $this->sortOrders[$order->getFieldName()] = $order;
     return $this;
@@ -288,9 +296,9 @@ abstract class Query implements BatchableInterface
   /**
    * Remove all the sort orders from the query
    *
-   * @return Query
+   * @return self
    */
-  public function clearSortOrders(): Query
+  public function clearSortOrders(): self
   {
     $this->sortOrders = [];
     return $this;
@@ -401,6 +409,11 @@ abstract class Query implements BatchableInterface
       $expressionConditionGroup->applyConditionsOnQuery($query);
 
       $query->addTag('spectrum_query')->addMetaData('spectrum_query', $this);
+    }
+
+    if ($this->accessPolicy) {
+      $query->addTag('spectrum_query_use_access_policy');
+      $query->addMetaData('spectrum_query', $this);
     }
 
     return $query;
@@ -535,9 +548,9 @@ abstract class Query implements BatchableInterface
    * This function will copy all the base conditions, conditions and condition groups from the provided query, into this query
    *
    * @param Query $query
-   * @return Query
+   * @return self
    */
-  public function copyConditionsFrom(Query $query): Query
+  public function copyConditionsFrom(Query $query): self
   {
     foreach ($query->getBaseConditions() as $baseCondition) {
       $this->addBaseCondition($baseCondition);
@@ -571,9 +584,9 @@ abstract class Query implements BatchableInterface
   /**
    * This function will return a copy of the current Query, it will be a new reference, with all the same Conditions, Orders, Ranges, ...
    *
-   * @return Query
+   * @return self
    */
-  public function copy(): Query
+  public function copy(): self
   {
     $query = new EntityQuery($this->getEntityType()); // Doesnt matter what the subclass is, the conditions will be added below
     $query->copyConditionsFrom($this);
@@ -659,9 +672,9 @@ abstract class Query implements BatchableInterface
    * expression in the query.
    *
    * @param DrupalSelectQuery $drupalQuery
-   * @return Query
+   * @return self
    */
-  public function parseExpressions(DrupalSelectQuery $drupalQuery): Query
+  public function parseExpressions(DrupalSelectQuery $drupalQuery): self
   {
     $index = 0;
     $columnMapping = [];
@@ -707,6 +720,38 @@ abstract class Query implements BatchableInterface
       }
     }
 
+    return $this;
+  }
+
+  /**
+   * @param AccessPolicyInterface $accessPolicy
+   *
+   * @return self
+   */
+  public function setAccessPolicy(AccessPolicyInterface $accessPolicy): self
+  {
+    $this->accessPolicy = $accessPolicy;
+    return $this;
+  }
+
+  /**
+   * @param AlterableInterface $query
+   */
+  public function executeAccessPolicy(AlterableInterface $query)
+  {
+    if ($this->accessPolicy) {
+      $this->accessPolicy->onQuery($query);
+    }
+  }
+
+  /**
+   * Remove the accesspolicy to use this query with
+   *
+   * @return self
+   */
+  public function clearAccessPolicy(): self
+  {
+    $this->accessPolicy = null;
     return $this;
   }
 }

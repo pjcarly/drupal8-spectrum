@@ -22,6 +22,7 @@ use Drupal\spectrum\Analytics\ListViewInterface;
 
 use Drupal\spectrum\Exceptions\InvalidTypeException;
 use Drupal\spectrum\Model\PolymorphicCollection;
+use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
 use Drupal\spectrum\Query\MultiModelQuery;
 
 /**
@@ -101,6 +102,30 @@ class MultiModelApiHandler extends BaseApiHandler
 
     $modelClass = Model::getModelClassForEntityAndBundle($modelClassName::entityType(), $modelClassName::bundle());
     $this->modelClassNames[] = $modelClass;
+
+    if ($this->shouldUseAccessPolicy()) {
+      /** @var AccessPolicyInterface $accessPolicy */
+      $accessPolicy = null;
+      $allAccessPoliciesEqual = true;
+
+      foreach ($this->modelClassNames as $modelClass) {
+        /** @var Model $modelClass */
+        $modelAccessPolicy = $modelClass::getAccessPolicy();
+        if (!$accessPolicy) {
+          $accessPolicy = $modelAccessPolicy;
+        } else {
+          if (!is_a($modelAccessPolicy, get_class($accessPolicy))) {
+            $allAccessPoliciesEqual = false;
+            break;
+          }
+        }
+      }
+
+      if (!$allAccessPoliciesEqual) {
+        throw new InvalidTypeException("All modelclasses in a multimodelapihandler must use the same access policy");
+      }
+    }
+
     return $this;
   }
 
@@ -139,6 +164,17 @@ class MultiModelApiHandler extends BaseApiHandler
     $this->conditionGroups = [];
     $this->baseConditions = [];
     return $this;
+  }
+
+  /**
+   * Indicate whether or not to use the access policy
+   * This can be overridden by the implementation, but in most cases this should stay as it is
+   *
+   * @return boolean
+   */
+  protected function shouldUseAccessPolicy(): bool
+  {
+    return TRUE;
   }
 
   /**
@@ -210,14 +246,23 @@ class MultiModelApiHandler extends BaseApiHandler
       return new Response(null, 500, []);
     }
 
-
     $modelClassConditionGroup = new ConditionGroup();
     $count = [];
+
+    /** @var AccessPolicyInterface|null $accessPolicy */
+    $accessPolicy = null;
+
+    /** @var Model $modelClassName */
     foreach ($this->getModelClassNames() as $modelClassName) {
       if (!$modelClassName::userHasReadPermission()) {
         // No access, return a 405 response
         return new Response(null, 405, []);
       } else {
+
+        if (!$accessPolicy) {
+          $accessPolicy = $modelClassName::getAccessPolicy();
+        }
+
         $modelClassConditionGroup->addCondition(new Condition('type', '=', $modelClassName::bundle()));
         $count[] = sizeof($count) + 1;
       }
@@ -227,6 +272,14 @@ class MultiModelApiHandler extends BaseApiHandler
 
     $query = new MultiModelQuery($this->entityType);
     $query->addConditionGroup($modelClassConditionGroup);
+
+    if ($this->shouldUseAccessPolicy()) {
+      if ($accessPolicy) {
+        $query->setAccessPolicy($accessPolicy);
+      } else {
+        return new Response(null, 500, []);
+      }
+    }
 
     // We start by adding the link to this request
     $baseUrl = $request->getSchemeAndHttpHost() . $request->getPathInfo(); // this might not work with a different port than 80, check later
