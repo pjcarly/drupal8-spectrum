@@ -361,7 +361,7 @@ abstract class Query implements BatchableInterface
       }
     } else {
       // A logic was provided, we add all the conditions on the query to a ConditionGroup
-      // Apply the logic, and then add pass in the drupal query to apply the conditions with logic on.
+      // Apply the logic, and then pass in the drupal query to apply the conditions with logic on.
       $conditionGroup = new ConditionGroup();
       $conditionGroup->setLogic($this->conditionLogic);
 

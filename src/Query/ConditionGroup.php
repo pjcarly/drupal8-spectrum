@@ -3,7 +3,6 @@
 namespace Drupal\spectrum\Query;
 
 use Drupal\spectrum\Utils\ParenthesisParser;
-use Drupal\spectrum\Exceptions\InvalidOperatorException;
 use Drupal\spectrum\Exceptions\InvalidQueryException;
 use Drupal\Core\Entity\Query\QueryInterface;
 
@@ -37,9 +36,16 @@ class ConditionGroup
   /**
    * The different conditions in this ConditionGroup
    *
-   * @var array
+   * @var Condition[]|ConditionGroup[]
    */
   private $conditions;
+
+  /**
+   * This conjunction will be used when no logic was provided, this value can be either AND or OR
+   *
+   * @var string
+   */
+  private $defaultConjunction = 'AND';
 
   /**
    * The conditionLogic
@@ -57,11 +63,41 @@ class ConditionGroup
    * Adds a Condition to the ConditionGroup, filter logic will be applied in the order you add conditions to the conditiongroup
    *
    * @param Condition $condition
-   * @return ConditionGroup
+   * @return self
    */
-  public function addCondition(Condition $condition): ConditionGroup
+  public function addCondition(Condition $condition): self
   {
     $this->conditions[] = $condition;
+    return $this;
+  }
+
+
+  /**
+   * Adds a ConditionGroup to a ConditionGroup
+   *
+   * @param ConditionGroup $conditionGroup
+   * @return self
+   */
+  public function addConditionGroup(ConditionGroup $conditionGroup): self
+  {
+    $this->conditions[] = $conditionGroup;
+    return $this;
+  }
+
+  /**
+   * Sets the default conjunction, the value can be either AND or OR
+   *
+   * @param string $value
+   * @return self
+   */
+  public function setDefaultConjuntion(string $value): self
+  {
+    if ($value === 'AND' || $value === 'OR') {
+      $this->defaultConjunction = $value;
+    } else {
+      throw new InvalidQueryException('The default conjunction can be either AND or OR');
+    }
+
     return $this;
   }
 
@@ -83,9 +119,9 @@ class ConditionGroup
    * For example 'AND(1,2,OR(1,3,4))'
    *
    * @param string $logic
-   * @return ConditionGroup
+   * @return self
    */
-  public function setLogic(string $logic): ConditionGroup
+  public function setLogic(string $logic): self
   {
     $this->logic = $logic;
     return $this;
@@ -97,16 +133,30 @@ class ConditionGroup
    * @param QueryInterface $query
    * @return QueryInterface
    */
-  public function applyConditionsOnQuery(QueryInterface $query): QueryInterface
+  public function applyConditionsOnQuery(QueryInterface $query, $base = null): QueryInterface
   {
+    if (sizeof($this->conditions) === 0) {
+      throw new InvalidQueryException('No conditions added to conditiongroup');
+    }
+
     if (empty($this->logic)) {
-      throw new InvalidQueryException('No Condition logic passed for Condition Group');
+      // no logic was found, lets join everything by the default conjunction
+      $logic = strtr('@conjunction(@logic)', [
+        '@conjunction' => $this->defaultConjunction,
+        '@logic' => join(',', range(1, sizeof($this->conditions)))
+      ]);
+      $this->setLogic($logic);
     }
 
     $parser = new ParenthesisParser();
     $structure = $parser->parse($this->logic);
 
-    $this->setConditionsOnBase($query, $structure, $query);
+    if (empty($base)) {
+      $this->setConditionsOnBase($query, $structure, $query);
+    } else {
+      $this->setConditionsOnBase($base, $structure, $query);
+    }
+
     return $query;
   }
 
@@ -144,7 +194,11 @@ class ConditionGroup
         // check for condition in list
         if (array_key_exists($value - 1, $this->conditions)) {
           $condition = $this->conditions[$value - 1];
-          $condition->addQueryCondition($base, $drupalQuery);
+          if ($condition instanceof Condition) {
+            $condition->addQueryCondition($base, $drupalQuery);
+          } else if ($condition instanceof ConditionGroup) {
+            $condition->applyConditionsOnQuery($drupalQuery, $base);
+          }
         } else {
           // Condition doesnt exist, ignore it
         }
