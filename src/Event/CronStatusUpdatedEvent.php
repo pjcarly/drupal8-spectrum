@@ -3,73 +3,65 @@
 namespace Drupal\spectrum\Event;
 
 use Drupal\spectrum\Runnable\QueuedJob;
+use React\EventLoop\LoopInterface;
 use Symfony\Contracts\EventDispatcher\Event;
 
-class CronStatusUpdatedEvent extends Event
-{
+final class CronStatusUpdatedEvent extends Event {
 
-  protected QueuedJob $queuedJob;
-  protected int $current;
-  protected int $max;
+  private QueuedJob $queuedJob;
 
-  public function __construct(QueuedJob $queuedJob, int $current, int $max)
-  {
+  private int $current;
+
+  private int $max;
+
+  private ?LoopInterface $loop = null;
+
+  public function __construct(
+    QueuedJob $queuedJob,
+    int $current,
+    int $max,
+    ?LoopInterface $loop = null
+  ) {
     $this->queuedJob = $queuedJob;
     $this->current = $current;
     $this->max = $max;
+    $this->loop = $loop;
   }
 
-  /**
-   * @return QueuedJob
-   */
-  public function getQueuedJob(): QueuedJob
-  {
+  public function getQueuedJob(): QueuedJob {
     return $this->queuedJob;
   }
 
-  /**
-   * @param QueuedJob $queuedJob
-   * @return CronStatusUpdatedEvent
-   */
-  public function setQueuedJob(QueuedJob $queuedJob): self
-  {
+  public function setQueuedJob(QueuedJob $queuedJob): self {
     $this->queuedJob = $queuedJob;
     return $this;
   }
 
-  /**
-   * @return int
-   */
-  public function getCurrent(): int
-  {
+  public function getCurrent(): int {
     return $this->current;
   }
 
-  /**
-   * @param int $current
-   * @return CronStatusUpdatedEvent
-   */
-  public function setCurrent(int $current): self
-  {
+  public function setCurrent(int $current): self {
     $this->current = $current;
     return $this;
   }
 
-  /**
-   * @return int
-   */
-  public function getMax(): int
-  {
+  public function getMax(): int {
     return $this->max;
   }
 
-  /**
-   * @param int $max
-   * @return CronStatusUpdatedEvent
-   */
-  public function setMax(int $max)
-  {
+  public function setMax(int $max): self {
     $this->max = $max;
     return $this;
   }
+
+  public function getLoop(): ?LoopInterface {
+    return $this->loop;
+  }
+
+  public function setLoop(LoopInterface $loop): CronStatusUpdatedEvent {
+    $this->loop = $loop;
+    return $this;
+  }
+
 }
