@@ -65,8 +65,11 @@ abstract class BatchJob extends QueuedJob
     $progressBar->start();
     $counter = 0;
     $totalCounter = 0;
-    $event = new CronStatusUpdatedEvent($this, $totalCounter, $totalRecords, Drupal::service('react.loop'));
-    $eventDispatcher->dispatch($event);
+
+    if ($this->updateCronStatus) {
+      $event = new CronStatusUpdatedEvent($this, $totalCounter, $totalRecords, Drupal::service('react.loop'));
+      $eventDispatcher->dispatch($event);
+    }
 
     foreach ($batchable->getBatchGenerator() as $entity) {
       $this->process($entity);
@@ -75,14 +78,21 @@ abstract class BatchJob extends QueuedJob
       $totalCounter++;
       if ($counter % $batchSize === 0) {
         $this->clearCache();
-        $event = new CronStatusUpdatedEvent($this, $totalCounter, $totalRecords, Drupal::service('react.loop'));
-        $eventDispatcher->dispatch($event);
+
+        if ($this->updateCronStatus) {
+          $event = new CronStatusUpdatedEvent($this, $totalCounter, $totalRecords, Drupal::service('react.loop'));
+          $eventDispatcher->dispatch($event);
+        }
+
         $counter = 0;
       }
     }
 
-    $event = new CronStatusUpdatedEvent($this, $totalCounter, $totalRecords, Drupal::service('react.loop'));
-    $eventDispatcher->dispatch($event);
+    if ($this->updateCronStatus) {
+      $event = new CronStatusUpdatedEvent($this, $totalCounter, $totalRecords, Drupal::service('react.loop'));
+      $eventDispatcher->dispatch($event);
+    }
+    
     $progressBar->finish();
     $this->getOutput()->writeln('');
 
