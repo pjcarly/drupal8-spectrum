@@ -106,7 +106,7 @@ class QueuedJob extends RunnableModel
     if ($this->updateCronStatus) {
       /** @var EventDispatcherInterface $dispatcher */
       $dispatcher = Drupal::service('event_dispatcher');
-      $event = new CronStatusUpdatedEvent($this, 0, 0, Drupal::service('react.loop'));
+      $event = new CronStatusUpdatedEvent($this, 0, 0);
       $dispatcher->dispatch($event);
     }
   }

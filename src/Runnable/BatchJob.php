@@ -92,7 +92,7 @@ abstract class BatchJob extends QueuedJob
       $event = new CronStatusUpdatedEvent($this, $totalCounter, $totalRecords, Drupal::service('react.loop'));
       $eventDispatcher->dispatch($event);
     }
-    
+
     $progressBar->finish();
     $this->getOutput()->writeln('');
 
