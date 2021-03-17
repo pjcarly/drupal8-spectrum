@@ -457,7 +457,7 @@ class QueuedJob extends RunnableModel
     if (!$this instanceof BatchJob) {
       /** @var EventDispatcher $eventDispatcher */
       $eventDispatcher = Drupal::service('event_dispatcher');
-      $event = new CronStatusUpdatedEvent($this, 1, 1);
+      $event = new CronStatusUpdatedEvent($this, 1, 1, Drupal::service('react.loop'));
       $eventDispatcher->dispatch($event);
     }
 
