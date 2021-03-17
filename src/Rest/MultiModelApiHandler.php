@@ -226,6 +226,21 @@ class MultiModelApiHandler extends BaseApiHandler
     return $query;
   }
 
+
+  /**
+   * This method adds a hook to get the conditions for one of the modelclasses added to this api handler
+   * This way you can alter the query per modelclass if you want
+   *
+   * @param string $modelClassName
+   * @return ConditionGroup
+   */
+  protected function getConditionsForModelClass(string $modelClassName): ConditionGroup
+  {
+    /** @var Model $modelClassName */
+    return (new ConditionGroup)
+      ->addCondition(new Condition('type', '=', $modelClassName::bundle()));
+  }
+
   /**
    * This method executes get functionality for the Rest call. If a slug is provided, 1 result will be fetched from the database
    * If no slug was provided a list of results will be returend.
@@ -247,7 +262,7 @@ class MultiModelApiHandler extends BaseApiHandler
     }
 
     $modelClassConditionGroup = new ConditionGroup();
-    $count = [];
+    $modelClassConditionGroup->setDefaultConjuntion('OR');
 
     /** @var AccessPolicyInterface|null $accessPolicy */
     $accessPolicy = null;
@@ -263,12 +278,10 @@ class MultiModelApiHandler extends BaseApiHandler
           $accessPolicy = $modelClassName::getAccessPolicy();
         }
 
-        $modelClassConditionGroup->addCondition(new Condition('type', '=', $modelClassName::bundle()));
-        $count[] = sizeof($count) + 1;
+        /** @var string $modelClassName */
+        $modelClassConditionGroup->addConditionGroup($this->getConditionsForModelClass($modelClassName));
       }
     }
-
-    $modelClassConditionGroup->setLogic(strtr('OR(@logic)', ['@logic' => implode(',', $count)]));
 
     $query = new MultiModelQuery($this->entityType);
     $query->addConditionGroup($modelClassConditionGroup);
