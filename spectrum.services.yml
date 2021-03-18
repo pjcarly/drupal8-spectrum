@@ -15,6 +15,10 @@ services:
     parent: default_plugin_manager
     arguments:
       - "@logger.channel.spectrum"
+  spectrum.model_api_service:
+    class: Drupal\spectrum\Services\ModelApiService
+    arguments:
+      - "@spectrum.analytics_service"
   react.loop:
     class: React\EventLoop\LoopInterface
     factory: ["React\\EventLoop\\Factory", "create"]
