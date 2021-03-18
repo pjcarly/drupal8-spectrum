@@ -49,8 +49,8 @@ class ModelTrigger
 
       if ($model instanceof QueuedJob) {
         // Lets look for the implementation.
-        $model->fetch('job');
-        $modelClass = $model->getRegisteredJob()->getJobClass();
+        $modelClass = $model->entity->{'field_job'}->entity->{'field_class'}->value;
+
         /** @var Model $modelClass */
         $model = $modelClass::forgeByEntity($model->getEntity());
       }
