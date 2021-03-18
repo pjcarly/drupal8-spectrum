@@ -79,9 +79,9 @@ class MultiModelApiHandler extends BaseApiHandler
   /**
    * @param string $entityType the shared entityType of all modelclasses
    */
-  public function __construct(string $entityType)
+  public function __construct(string $entityType, $slug = null)
   {
-    parent::__construct();
+    parent::__construct($slug);
 
     $this->entityType = $entityType;
     $this->defaultHeaders['Content-Type'] = JsonApiRootNode::HEADER_CONTENT_TYPE;
@@ -215,6 +215,17 @@ class MultiModelApiHandler extends BaseApiHandler
   }
 
   /**
+   * This function can be used to change the JsonApi.org result before serializing it and returned in the response.
+   *
+   * @param Model $object
+   * @return JsonApiBaseNode
+   */
+  protected function getJsonApiNodeForModel(Model $object): JsonApiBaseNode
+  {
+    return $object->getJsonApiNode();
+  }
+
+  /**
    * This method adds a hook for the Get Request, where an implenentation can choose to alter the query just before the fetch is executed
    * The query returned will be executed
    *
@@ -266,6 +277,7 @@ class MultiModelApiHandler extends BaseApiHandler
 
     /** @var AccessPolicyInterface|null $accessPolicy */
     $accessPolicy = null;
+    $firstModelClassName = null;
 
     /** @var Model $modelClassName */
     foreach ($this->getModelClassNames() as $modelClassName) {
@@ -276,6 +288,10 @@ class MultiModelApiHandler extends BaseApiHandler
 
         if (!$accessPolicy) {
           $accessPolicy = $modelClassName::getAccessPolicy();
+        }
+
+        if (!$firstModelClassName) {
+          $firstModelClassName = $modelClassName;
         }
 
         /** @var string $modelClassName */
@@ -461,10 +477,76 @@ class MultiModelApiHandler extends BaseApiHandler
         $jsonapi->setData($node);
       }
     } else {
-      return new Response(null, 405, []);
+      // We musn't forget to add all the conditions that were potentially added to this ApiHandler
+      $this->applyAllConditionsToQuery($query);
+
+      // Next we add the specific condition for the slug
+      $query->addCondition(new Condition($firstModelClassName::getIdField(), '=', $this->slug));
+
+      // We call the GetFetch Hook, where an implementation can potentially alter the query
+      $query = $this->beforeGetFetch($query);
+
+      // And finally fetch the model
+      $result = $query->fetchSingleModel();
+
+      $this->addSingleLink($jsonapi, 'self', $baseUrl);
+      if (!empty($result)) {
+        // We load the translations on the result
+        $this->loadLanguages($request, $result);
+
+        // Lets check for our includes
+        $includes = [];
+        // The url might define includes
+        if ($request->query->has('include')) {
+          // includes in the url are comma seperated
+          $includes = array_merge($includes, explode(',', $request->query->get('include')));
+        }
+
+        // But some api handlers provide default includes as well
+        if (property_exists($this, 'defaultGetIncludes')) {
+          $includes = array_merge($includes, $this->defaultGetIncludes);
+        }
+
+        // And finally include them
+        if (!empty($includes)) {
+          $includeLimits = $this->getIncludeLimits($request);
+          $this->checkForIncludes($result, $jsonapi, $includes, $includeLimits);
+        }
+
+        // Finally we add the result
+        $jsonapi->addNode($this->getJsonApiNodeForModel($result));
+      } else {
+        // We dont have to set the content, jsonapi responds with an empty result out of the box
+        $responseCode = 404;
+      }
     }
 
     return new Response(json_encode($this->serialize($jsonapi)), $responseCode, []);
+  }
+
+  /**
+   * Returns an array keyed by relationshipNames and values the limit that should be used when including relationships
+   *
+   * @param Request $request
+   * @return array
+   */
+  protected function getIncludeLimits(Request $request): array
+  {
+    // Next check if there are includeLimits defined (to limit the amount of includes possible per relationshipName)
+    $includeLimits = [];
+    if ($request->query->has('includeLimits')) {
+      $includeLimitsParam = $request->query->get("includeLimits");
+
+      if (is_array($includeLimitsParam)) {
+        foreach ($includeLimitsParam as $relationshipName => $limit) {
+          if (is_numeric($limit) && is_string($relationshipName)) {
+            $includeLimits[$relationshipName] = (int) $limit;
+          }
+        }
+      }
+    }
+
+    return $includeLimits;
   }
 
   /**
@@ -545,7 +627,7 @@ class MultiModelApiHandler extends BaseApiHandler
    * @param array $relationshipNamesToInclude
    * @return MultiModelApiHandler
    */
-  protected function checkForIncludes($source, JsonApiRootNode $jsonApiRootNode, array $relationshipNamesToInclude): MultiModelApiHandler
+  protected function checkForIncludes($source, JsonApiRootNode $jsonApiRootNode, array $relationshipNamesToInclude, array $includeLimits = []): MultiModelApiHandler
   {
     if (!empty($source) && !$source->isEmpty) {
       $modelClassName = $this->modelClassName;
@@ -599,6 +681,12 @@ class MultiModelApiHandler extends BaseApiHandler
             }
           } else {
             continue;
+          }
+
+          if (array_key_exists($relationshipNameToInclude, $includeLimits)) {
+            if (!$entityQuery->hasLimit()) {
+              $entityQuery->setLimit($includeLimits[$relationshipNameToInclude]);
+            }
           }
 
           // first of all, we fetch the data
