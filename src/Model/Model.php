@@ -1475,7 +1475,6 @@ abstract class Model
   }
 
   /**
-   * @deprecated
    * Forge a new Model with either an Drupal Entity or an ID. For ease of use and readability use the methods "forgeById" or "forgeByEntity"
    * This is only used internally
    *

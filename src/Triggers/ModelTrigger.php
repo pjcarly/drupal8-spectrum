@@ -4,6 +4,7 @@ namespace Drupal\spectrum\Triggers;
 
 use Drupal\spectrum\Model\Model;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\spectrum\Runnable\QueuedJob;
 
 /**
  * This class provides functionality to translate drupal entity hooks, to model trigger methods
@@ -45,6 +46,15 @@ class ModelTrigger
       } else {
         $model = $modelClass::forgeByEntity($entity);
       }
+
+      if ($model instanceof QueuedJob) {
+        // Lets look for the implementation.
+        $model->fetch('job');
+        $modelClass = $model->getRegisteredJob()->getJobClass();
+        /** @var Model $modelClass */
+        $model = $modelClass::forgeByEntity($model->getEntity());
+      }
+
       $connection = \Drupal::database();
       $transaction = $connection->startTransaction();
       try {
