@@ -13,7 +13,7 @@ use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * The Job service is responsible for scheduling, running and registereing them in the system.
+ * The Job service is responsible for scheduling, running and registering them in the system.
  */
 class JobService extends DefaultPluginManager implements LoggerAwareInterface
 {

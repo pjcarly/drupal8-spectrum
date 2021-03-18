@@ -2,6 +2,8 @@
 
 namespace Drupal\spectrum\Runnable;
 
+use DateTime;
+use DateTimeZone;
 use Drupal;
 use Drupal\Core\Session\AccountSwitcherInterface;
 use Drupal\Core\Session\AnonymousUserSession;
@@ -14,7 +16,10 @@ use Drupal\spectrum\Exceptions\JobTerminateException;
 use Drupal\spectrum\Model\FieldRelationship;
 use Drupal\spectrum\Models\User;
 use Drupal\spectrum\Query\Condition;
+use Error;
+use Exception;
 use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
  * A queued job is an implementation of RunnableModel, it can be scheduled to be executed on a later time.
@@ -31,21 +36,13 @@ class QueuedJob extends RunnableModel
   const RESCHEDULE_FROM_START_TIME = 'Start Time';
   const RESCHEDULE_FROM_END_TIME = 'End Time';
 
-  /**
-   * The entityType for this model
-   *
-   * @return string
-   */
+  protected bool $updateCronStatus = false;
+
   public static function entityType(): string
   {
     return 'runnable';
   }
 
-  /**
-   * The Bundle for this Model
-   *
-   * @return string
-   */
   public static function bundle(): string
   {
     return 'queued_job';
@@ -61,10 +58,8 @@ class QueuedJob extends RunnableModel
 
   /**
    * An instance of AccountSwitcher. This gives you the ability to execute the Job as another user, and switch back afterwards.
-   *
-   * @var AccountSwitcherInterface
    */
-  private $accountSwitcher;
+  private AccountSwitcherInterface $accountSwitcher;
 
   public static function relationships()
   {
@@ -74,13 +69,13 @@ class QueuedJob extends RunnableModel
 
   /**
    * This function will be executed just before starting the execution of the job.
-   * Here the status will be set to Runninng and the start time will be set to the current time
+   * Here the status will be set to Running and the start time will be set to the current time
    *
    * @return void
    */
   public final function preExecution(): void
   {
-    $currentTime = new \DateTime('now', new \DateTimeZone('UTC'));
+    $currentTime = new DateTime('now', new DateTimeZone('UTC'));
     $this->print('Job with ID: ' . $this->getId() . ' STARTED at ' . $currentTime->format('Y-m-d\TH:i:s') . ' (' . $this->getTitle() . ')');
 
     $this->setStatus(QueuedJob::STATUS_RUNNING);
@@ -92,17 +87,27 @@ class QueuedJob extends RunnableModel
     // Check the user context we need to execute in, and switch to the provided user if necessary.
     // If no provided user, execute as anonymous
 
-    $this->accountSwitcher = \Drupal::service('account_switcher');
+    $this->accountSwitcher = Drupal::service('account_switcher');
     if (empty($this->getRunAsUserId()) || $this->getRunAsUserId() === 0 || empty($this->fetch('run_as'))) {
       $this->accountSwitcher->switchTo(new AnonymousUserSession());
     } else {
       $this->accountSwitcher->switchTo($this->getRunAsUser()->entity);
     }
-    if (!$this instanceof BatchJob) {
+
+    if (!$this instanceof BatchJob && $this->updateCronStatus) {
       /** @var EventDispatcher $eventDispatcher */
       $eventDispatcher = Drupal::service('event_dispatcher');
-      $event = new CronStatusUpdatedEvent($this, 0, 1);
+      $event = new CronStatusUpdatedEvent($this, 0, 1, Drupal::service('react.loop'));
       $eventDispatcher->dispatch($event);
+    }
+  }
+
+  public function afterInsert() {
+    if ($this->updateCronStatus) {
+      /** @var EventDispatcherInterface $dispatcher */
+      $dispatcher = Drupal::service('event_dispatcher');
+      $event = new CronStatusUpdatedEvent($this, 0, 0);
+      $dispatcher->dispatch($event);
     }
   }
 
@@ -159,18 +164,22 @@ class QueuedJob extends RunnableModel
   }
 
   /**
-   * @return \DateTime|null
+   * @return DateTime|null
    */
-  public function getStartTime(): ?\DateTime
+  public function getStartTime(): ?DateTime
   {
     if (empty($this->entity->{'field_start_time'}->value)) {
       return null;
     }
 
-    return \DateTime::createFromFormat(DateTimeItemInterface::DATETIME_STORAGE_FORMAT, $this->entity->{'field_start_time'}->value, new \DateTimeZone(DateTimeItemInterface::STORAGE_TIMEZONE));
+    return DateTime::createFromFormat(
+      DateTimeItemInterface::DATETIME_STORAGE_FORMAT,
+      $this->entity->{'field_start_time'}->value,
+      new DateTimeZone(DateTimeItemInterface::STORAGE_TIMEZONE)
+    );
   }
 
-  public function setStartTime(?\DateTime $value): QueuedJob
+  public function setStartTime(?DateTime $value): QueuedJob
   {
     if (empty($value)) {
       $this->entity->{'field_start_time'}->value = null;
@@ -180,25 +189,29 @@ class QueuedJob extends RunnableModel
     $value = clone $value;
 
     $this->entity->{'field_start_time'}->value = $value
-      ->setTimezone(new \DateTimeZone(DateTimeItemInterface::STORAGE_TIMEZONE))
+      ->setTimezone(new DateTimeZone(DateTimeItemInterface::STORAGE_TIMEZONE))
       ->format(DateTimeItemInterface::DATETIME_STORAGE_FORMAT);
 
     return $this;
   }
 
   /**
-   * @return \DateTime|null
+   * @return DateTime|null
    */
-  public function getEndTime(): ?\DateTime
+  public function getEndTime(): ?DateTime
   {
     if (empty($this->entity->{'field_end_time'}->value)) {
       return null;
     }
 
-    return \DateTime::createFromFormat(DateTimeItemInterface::DATETIME_STORAGE_FORMAT, $this->entity->{'field_end_time'}->value, new \DateTimeZone(DateTimeItemInterface::STORAGE_TIMEZONE));
+    return DateTime::createFromFormat(
+      DateTimeItemInterface::DATETIME_STORAGE_FORMAT,
+      $this->entity->{'field_end_time'}->value,
+      new DateTimeZone(DateTimeItemInterface::STORAGE_TIMEZONE)
+    );
   }
 
-  public function setEndTime(?\DateTime $value): QueuedJob
+  public function setEndTime(?DateTime $value): QueuedJob
   {
     if (empty($value)) {
       $this->entity->{'field_end_time'}->value = null;
@@ -208,29 +221,33 @@ class QueuedJob extends RunnableModel
     $value = clone $value;
 
     $this->entity->{'field_end_time'}->value = $value
-      ->setTimezone(new \DateTimeZone(DateTimeItemInterface::STORAGE_TIMEZONE))
+      ->setTimezone(new DateTimeZone(DateTimeItemInterface::STORAGE_TIMEZONE))
       ->format(DateTimeItemInterface::DATETIME_STORAGE_FORMAT);
 
     return $this;
   }
 
   /**
-   * @return \DateTime|null
+   * @return DateTime|null
    */
-  public function getScheduledTime(): ?\DateTime
+  public function getScheduledTime(): ?DateTime
   {
     if (empty($this->entity->{'field_scheduled_time'}->value)) {
       return null;
     }
 
-    return \DateTime::createFromFormat(DateTimeItemInterface::DATETIME_STORAGE_FORMAT, $this->entity->{'field_scheduled_time'}->value, new \DateTimeZone(DateTimeItemInterface::STORAGE_TIMEZONE));
+    return DateTime::createFromFormat(
+      DateTimeItemInterface::DATETIME_STORAGE_FORMAT,
+      $this->entity->{'field_scheduled_time'}->value,
+      new DateTimeZone(DateTimeItemInterface::STORAGE_TIMEZONE)
+    );
   }
 
   /**
-   * @param \DateTime|null $value
+   * @param DateTime|null $value
    * @return QueuedJob
    */
-  public function setScheduledTime(?\DateTime $value): QueuedJob
+  public function setScheduledTime(?DateTime $value): QueuedJob
   {
     if (empty($value)) {
       $this->entity->{'field_scheduled_time'}->value = null;
@@ -240,7 +257,7 @@ class QueuedJob extends RunnableModel
     $value = clone $value;
 
     $this->entity->{'field_scheduled_time'}->value = $value
-      ->setTimezone(new \DateTimeZone(DateTimeItemInterface::STORAGE_TIMEZONE))
+      ->setTimezone(new DateTimeZone(DateTimeItemInterface::STORAGE_TIMEZONE))
       ->format(DateTimeItemInterface::DATETIME_STORAGE_FORMAT);
 
     return $this;
@@ -368,19 +385,19 @@ class QueuedJob extends RunnableModel
    *
    * @param string $jobName (required) The Name of the Job
    * @param string $variable (optional) Provide a variable for the job, it can be accessed on execution time
-   * @param \DateTime $date (optional) The date you want to schedule the job on. If left blank, "now" will be chosen
+   * @param DateTime $date (optional) The date you want to schedule the job on. If left blank, "now" will be chosen
    * @return QueuedJob
    */
-  public static function schedule(string $jobName, string $variable = '', \DateTime $date = null): QueuedJob
+  public static function schedule(string $jobName, string $variable = '', DateTime $date = null): QueuedJob
   {
     $registeredJob = RegisteredJob::getByKey($jobName);
 
     if (empty($registeredJob)) {
-      throw new \Exception('Registered Job (' . $jobName . ') not found');
+      throw new Exception('Registered Job (' . $jobName . ') not found');
     }
 
     if (empty($date)) {
-      $date = new \DateTime('now', new \DateTimeZone('UTC'));
+      $date = new DateTime('now', new DateTimeZone('UTC'));
     }
 
     /** @var QueuedJob $queuedJob */
@@ -423,7 +440,7 @@ class QueuedJob extends RunnableModel
     $this->accountSwitcher->switchBack();
 
     // Lets put the job to completed
-    $currentTime = new \DateTime('now', new \DateTimeZone('UTC'));
+    $currentTime = new DateTime('now', new DateTimeZone('UTC'));
     $this->print(strtr('Job with ID: @jobId FINISHED at @finishedTime (@jobName)', [
       '@jobId' => $this->getId(),
       '@finishedTime' => $currentTime->format(DateTimeItemInterface::DATETIME_STORAGE_FORMAT),
@@ -437,10 +454,10 @@ class QueuedJob extends RunnableModel
     $this->setEndTime($currentTime);
     $this->save();
 
-    if (!$this instanceof BatchJob) {
+    if (!$this instanceof BatchJob && $this->updateCronStatus) {
       /** @var EventDispatcher $eventDispatcher */
       $eventDispatcher = Drupal::service('event_dispatcher');
-      $event = new CronStatusUpdatedEvent($this, 1, 1);
+      $event = new CronStatusUpdatedEvent($this, 1, 1, Drupal::service('react.loop'));
       $eventDispatcher->dispatch($event);
     }
 
@@ -474,7 +491,7 @@ class QueuedJob extends RunnableModel
     $rescheduleFrom = $this->getRescheduleFrom();
     if (!empty($rescheduleIn) && $rescheduleIn > 0 && !empty($rescheduleFrom)) {
 
-      $now = new \DateTime('now', new \DateTimeZone('UTC'));
+      $now = new DateTime('now', new DateTimeZone('UTC'));
       $newScheduledTime = null;
 
       if ($rescheduleFrom === QueuedJob::RESCHEDULE_FROM_SCHEDULED_TIME) {
@@ -514,16 +531,16 @@ class QueuedJob extends RunnableModel
   /**
    * Sets the job failed, this method will be called from within the scheduler in case an Exception was raised.
    *
-   * @param \Exception $ex
+   * @param Exception $ex
    * @param string $message
    * @return void
    */
-  public final function failedExecution(?\Exception $ex = null, string $message = null): void
+  public final function failedExecution(?Exception $ex = null, string $message = null): void
   {
     // Execution failed, set the status to failed
     // Set a possible error message
 
-    $currentTime = new \DateTime('now', new \DateTimeZone('UTC'));
+    $currentTime = new DateTime('now', new DateTimeZone('UTC'));
 
     $this->print(strtr('Job with ID: @jobId FAILED at @finishedTime (@jobName)', [
       '@jobId' => $this->getId(),
@@ -539,7 +556,7 @@ class QueuedJob extends RunnableModel
       if (!($ex instanceof JobTerminateException)) {
         $message = '(' . $message . ') ' . $ex->getTraceAsString();
 
-        \Drupal::logger('spectrum_cron')->error($ex->getMessage() . ' ' . $ex->getTraceAsString());
+        Drupal::logger('spectrum_cron')->error($ex->getMessage() . ' ' . $ex->getTraceAsString());
       }
 
       $this->setErrorMessage($message);
@@ -551,12 +568,12 @@ class QueuedJob extends RunnableModel
     $this->checkForReschedule();
   }
 
-  public final function runtimeError(\Error $error): void
+  public final function runtimeError(Error $error): void
   {
     // Execution failed, set the status to failed
     // Set a possible error message
 
-    $currentTime = new \DateTime('now', new \DateTimeZone('UTC'));
+    $currentTime = new DateTime('now', new DateTimeZone('UTC'));
 
     $this->print(strtr('Job with ID: @jobId generated RUNTIME ERROR at @finishedTime (@jobName)', [
       '@jobId' => $this->getId(),
@@ -570,8 +587,8 @@ class QueuedJob extends RunnableModel
     $message = $error->getMessage();
     $message = '(' . $message . ') ' . $error->getTraceAsString();
 
-    \Drupal::logger('spectrum_cron')->error($error->getMessage());
-    \Drupal::logger('spectrum_cron')->error($error->getTraceAsString());
+    Drupal::logger('spectrum_cron')->error($error->getMessage());
+    Drupal::logger('spectrum_cron')->error($error->getTraceAsString());
 
     $this->setErrorMessage($message);
     $this->save();
