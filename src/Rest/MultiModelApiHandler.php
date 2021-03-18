@@ -487,17 +487,14 @@ class MultiModelApiHandler extends BaseApiHandler
       // We call the GetFetch Hook, where an implementation can potentially alter the query
       $query = $this->beforeGetFetch($query);
 
-      // Next we check if we should only return Ids
-      $modelSerializationType = $modelClassName::getSerializationType();
-      $onlyIds = $this->modelApiService->shouldReturnOnlyIdsForType($request, $modelSerializationType);
+      // Next we fetch the entire model
+      $result = $query->fetchSingleModel();
 
-      // And fetch the model or the ids if needed
-      $result = null;
-      if ($onlyIds) {
-        $result = $query->fetchIds();
-      } else {
-        $result = $query->fetchSingleModel();
-      }
+      // Unfortunately, there is no way of knowing before fetching the entire entity 
+      // if we should have only queried the ids. Because we can't know what the type is before querying
+      // And the Jsonapi spec tells us, that the listed fields must be per type
+      $modelSerializationType = $result::getSerializationType();
+      $onlyIds = $this->modelApiService->shouldReturnOnlyIdsForType($request, $modelSerializationType);
 
       $this->modelApiService->addSingleLink($jsonapi, 'self', $baseUrl);
       if (!empty($result)) {
@@ -531,7 +528,7 @@ class MultiModelApiHandler extends BaseApiHandler
           $node = new JsonApiNode();
 
           $node->setType($modelSerializationType);
-          $node->setId(array_shift($result));
+          $node->setId($result->getId());
           $dataNode->addNode($node);
 
           $jsonapi->setData($dataNode);
