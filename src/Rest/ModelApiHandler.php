@@ -7,7 +7,6 @@ use Drupal\spectrum\Serializer\JsonApiErrorNode;
 use Drupal\spectrum\Serializer\JsonApiErrorRootNode;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-
 use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Query\ConditionGroup;
 use Drupal\spectrum\Query\Order;
@@ -20,24 +19,23 @@ use Drupal\spectrum\Model\ReferencedRelationship;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Serializer\JsonApiRootNode;
 use Drupal\spectrum\Serializer\JsonApiBaseNode;
-use Drupal\spectrum\Serializer\JsonApiLink;
-
 use Drupal\spectrum\Exceptions\InvalidTypeException;
 use Drupal\spectrum\Exceptions\NotImplementedException;
 use Drupal\spectrum\Exceptions\ModelNotFoundException;
 use Drupal\Core\Validation\Plugin\Validation\Constraint\NotNullConstraint;
-use Drupal\spectrum\Analytics\AnalyticsServiceInterface;
-use Drupal\spectrum\Analytics\ListViewInterface;
 use Drupal\spectrum\Model\Validation;
 use Drupal\spectrum\Serializer\JsonApiDataNode;
 use Drupal\spectrum\Serializer\JsonApiErrorParsableInterface;
 use Drupal\spectrum\Serializer\JsonApiNode;
+use Drupal\spectrum\Services\ModelApiServiceInterface;
 
 /**
  * This class provides an implementation of an BaseApiHandler for a Model in a jsonapi.org compliant way
  */
 class ModelApiHandler extends BaseApiHandler
 {
+  protected ModelApiServiceInterface $modelApiService;
+
   /**
    * Embedded API relationships for this ApiHandler, this provides an extension to the jsonapi.org spec, by giving the opportunity to
    * save or update a model record plus any related other records
@@ -119,6 +117,8 @@ class ModelApiHandler extends BaseApiHandler
   public function __construct(string $modelClassName, $slug = null)
   {
     parent::__construct($slug);
+    $this->modelApiService = \Drupal::service('spectrum.model_api_service');
+
     $this->modelClassName = Model::getModelClassForEntityAndBundle(
       $modelClassName::entityType(),
       $modelClassName::bundle()
@@ -333,7 +333,7 @@ class ModelApiHandler extends BaseApiHandler
           }
 
           // Lets see if a listView was passed and found (done in the conditionListforfliterarray function)
-          $listview = static::getListViewForFilterArray($modelClassName, $filter);
+          $listview = $this->modelApiService->getListViewForFilterArray($modelClassName, $filter);
           if (!empty($listview)) {
             // a matching listview was found, we now apply the query to be adjusted by the list view
             $listview->applyListViewOnQuery($query);
@@ -342,7 +342,7 @@ class ModelApiHandler extends BaseApiHandler
       }
 
       // Here we build the links of the request
-      $this->addSingleLink($jsonapi, 'self', $baseUrl, $limit, $page, $sort); // here we add the self link
+      $this->modelApiService->addSingleLink($jsonapi, 'self', $baseUrl, $limit, $page, $sort); // here we add the self link
 
       // We call the GetFetch Hook, where an implementation can potentially alter the query
       $query = $this->beforeGetFetch($query);
@@ -356,21 +356,8 @@ class ModelApiHandler extends BaseApiHandler
         $jsonapi->asArray(false);
       }
 
-      $onlyIds = false;
       $modelSerializationType = $modelClassName::getSerializationType();
-      // TODO: Add support fields, currently only supports Id field for the main class name
-      // This way only the Ids will be fetched
-      if ($request->query->has("fields")) {
-        $fieldLimits = $request->query->get("fields");
-
-        if (array_key_exists($modelSerializationType, $fieldLimits)) {
-          $limitFields = array_map('trim', explode(',', $fieldLimits[$modelSerializationType]));
-
-          if ($limitFields && sizeof($limitFields) === 1 && $limitFields[0] === 'id') {
-            $onlyIds = true;
-          }
-        }
-      }
+      $onlyIds = $this->modelApiService->shouldReturnOnlyIdsForType($request, $modelSerializationType);
 
       $result = null;
       if ($onlyIds) {
@@ -403,12 +390,12 @@ class ModelApiHandler extends BaseApiHandler
             $jsonapi->addMeta('result-row-last', (int) $amountOfResults);
           } else {
             // the first link is easy, it is the first page
-            $this->addSingleLink($jsonapi, 'first', $baseUrl, 0, 1, $sort);
+            $this->modelApiService->addSingleLink($jsonapi, 'first', $baseUrl, 0, 1, $sort);
 
             $previousPage = empty($page) ? 0 : $page - 1;
             // the previous link, checks if !empty, so pages with value 0 will not be displayed
             if (!empty($previousPage)) {
-              $this->addSingleLink($jsonapi, 'prev', $baseUrl, 0, $previousPage, $sort);
+              $this->modelApiService->addSingleLink($jsonapi, 'prev', $baseUrl, 0, $previousPage, $sort);
             }
 
             $totalCount = $query->fetchTotalCount();
@@ -416,7 +403,7 @@ class ModelApiHandler extends BaseApiHandler
               $lastPage = ceil($totalCount / $limit);
               $currentPage = empty($page) ? 1 : $page;
 
-              $this->addSingleLink($jsonapi, 'last', $baseUrl, 0, $lastPage, $sort);
+              $this->modelApiService->addSingleLink($jsonapi, 'last', $baseUrl, 0, $lastPage, $sort);
 
               // let's include some meta data
               $jsonapi->addMeta('count', (int) $amountOfResults);
@@ -431,7 +418,7 @@ class ModelApiHandler extends BaseApiHandler
               // and finally, we also check if the next page isn't larger than the last page
               $nextPage = empty($page) ? 2 : $page + 1;
               if ($nextPage <= $lastPage) {
-                $this->addSingleLink($jsonapi, 'next', $baseUrl, 0, $nextPage, $sort);
+                $this->modelApiService->addSingleLink($jsonapi, 'next', $baseUrl, 0, $nextPage, $sort);
                 $jsonapi->addMeta('page-next', (int) $nextPage);
               }
 
@@ -459,7 +446,7 @@ class ModelApiHandler extends BaseApiHandler
 
           // And finally include them
           if (!empty($includes)) {
-            $includeLimits = $this->getIncludeLimits($request);
+            $includeLimits = $this->modelApiService->getIncludeLimits($request);
             $this->checkForIncludes($result, $jsonapi, $includes, $includeLimits);
           }
 
@@ -498,35 +485,55 @@ class ModelApiHandler extends BaseApiHandler
       // We call the GetFetch Hook, where an implementation can potentially alter the query
       $query = $this->beforeGetFetch($query);
 
-      // And finally fetch the model
-      $result = $query->fetchSingleModel();
+      // Next we check if we should only return Ids
+      $modelSerializationType = $modelClassName::getSerializationType();
+      $onlyIds = $this->modelApiService->shouldReturnOnlyIdsForType($request, $modelSerializationType);
 
-      $this->addSingleLink($jsonapi, 'self', $baseUrl);
+      // And fetch the model or the ids if needed
+      $result = null;
+      if ($onlyIds) {
+        $result = $query->fetchIds();
+      } else {
+        $result = $query->fetchSingleModel();
+      }
+
+      $this->modelApiService->addSingleLink($jsonapi, 'self', $baseUrl);
       if (!empty($result)) {
-        // We load the translations on the result
-        $this->loadLanguages($request, $result);
+        if (!$onlyIds) {
+          // We load the translations on the result
+          $this->loadLanguages($request, $result);
 
-        // Lets check for our includes
-        $includes = [];
-        // The url might define includes
-        if ($request->query->has('include')) {
-          // includes in the url are comma seperated
-          $includes = array_merge($includes, explode(',', $request->query->get('include')));
+          // Lets check for our includes
+          $includes = [];
+          // The url might define includes
+          if ($request->query->has('include')) {
+            // includes in the url are comma seperated
+            $includes = array_merge($includes, explode(',', $request->query->get('include')));
+          }
+
+          // But some api handlers provide default includes as well
+          if (property_exists($this, 'defaultGetIncludes')) {
+            $includes = array_merge($includes, $this->defaultGetIncludes);
+          }
+
+          // And finally include them
+          if (!empty($includes)) {
+            $includeLimits = $this->modelApiService->getIncludeLimits($request);
+            $this->checkForIncludes($result, $jsonapi, $includes, $includeLimits);
+          }
+
+          // Finally we add the result
+          $jsonapi->addNode($this->getJsonApiNodeForModelOrCollection($result));
+        } else {
+          $dataNode = new JsonApiDataNode();
+          $node = new JsonApiNode();
+
+          $node->setType($modelSerializationType);
+          $node->setId(array_shift($result));
+          $dataNode->addNode($node);
+
+          $jsonapi->setData($dataNode);
         }
-
-        // But some api handlers provide default includes as well
-        if (property_exists($this, 'defaultGetIncludes')) {
-          $includes = array_merge($includes, $this->defaultGetIncludes);
-        }
-
-        // And finally include them
-        if (!empty($includes)) {
-          $includeLimits = $this->getIncludeLimits($request);
-          $this->checkForIncludes($result, $jsonapi, $includes, $includeLimits);
-        }
-
-        // Finally we add the result
-        $jsonapi->addNode($this->getJsonApiNodeForModelOrCollection($result));
       } else {
         // We dont have to set the content, jsonapi responds with an empty result out of the box
         $responseCode = 404;
@@ -534,31 +541,6 @@ class ModelApiHandler extends BaseApiHandler
     }
 
     return new Response(json_encode($this->serialize($jsonapi)), $responseCode, []);
-  }
-
-  /**
-   * Returns an array keyed by relationshipNames and values the limit that should be used when including relationships
-   *
-   * @param Request $request
-   * @return array
-   */
-  protected function getIncludeLimits(Request $request): array
-  {
-    // Next check if there are includeLimits defined (to limit the amount of includes possible per relationshipName)
-    $includeLimits = [];
-    if ($request->query->has('includeLimits')) {
-      $includeLimitsParam = $request->query->get("includeLimits");
-
-      if (is_array($includeLimitsParam)) {
-        foreach ($includeLimitsParam as $relationshipName => $limit) {
-          if (is_numeric($limit) && is_string($relationshipName)) {
-            $includeLimits[$relationshipName] = (int) $limit;
-          }
-        }
-      }
-    }
-
-    return $includeLimits;
   }
 
   /**
@@ -717,7 +699,7 @@ class ModelApiHandler extends BaseApiHandler
 
         // And finally include them
         if (!empty($includes)) {
-          $includeLimits = $this->getIncludeLimits($request);
+          $includeLimits = $this->modelApiService->getIncludeLimits($request);
           $this->checkForIncludes($model, $jsonapi, $includes, $includeLimits);
         }
 
@@ -890,7 +872,7 @@ class ModelApiHandler extends BaseApiHandler
 
           // And finally include them
           if (!empty($includes)) {
-            $includeLimits = $this->getIncludeLimits($request);
+            $includeLimits = $this->modelApiService->getIncludeLimits($request);
             $this->checkForIncludes($model, $jsonapi, $includes, $includeLimits);
           }
 
@@ -983,35 +965,6 @@ class ModelApiHandler extends BaseApiHandler
 
     return new Response(isset($response) ? json_encode($response) : null, $responseCode, []);
   }
-
-  /**
-   * Adds a link to JsonApiRoot node, this adds meta information. needed to do pagination for example
-   *
-   * @param JsonApiRootNode $jsonapi
-   * @param string $name
-   * @param string $baseUrl
-   * @param integer $limit
-   * @param integer $page
-   * @param string $sort
-   * @return ModelApiHandler
-   */
-  protected function addSingleLink(JsonApiRootNode $jsonapi, string $name, string $baseUrl, ?int $limit = 0, ?int $page = 0, ?string $sort = null): ModelApiHandler
-  {
-    $link = new JsonApiLink($name, $baseUrl);
-    if (!empty($limit)) {
-      $link->addParam('limit', $limit);
-    }
-    if (!empty($sort)) {
-      $link->addParam('sort', $sort);
-    }
-    if (!empty($page)) {
-      $link->addParam('page', $page);
-    }
-    $jsonapi->addLink($name, $link);
-
-    return $this;
-  }
-
 
   /**
    * Add includes to the JsonApiRootNode based on the indlues in the query or in the api handler.
@@ -1244,32 +1197,6 @@ class ModelApiHandler extends BaseApiHandler
     }
 
     return $conditions;
-  }
-
-  /**
-   * This method checks if there is a listview parameter in the filter array and fetches it from the DB
-   *
-   * @param string $modelClassName
-   * @param array $filter
-   * @return ListViewInterface|null
-   */
-  public static function getListViewForFilterArray(string $modelClassName, array $filter): ?ListViewInterface
-  {
-    if (array_key_exists('_listview', $filter)) {
-      $listViewParameterValue = $filter['_listview'];
-      if (!empty($listViewParameterValue) && is_numeric($listViewParameterValue)) {
-
-        /** @var AnalyticsServiceInterface $analyticsService */
-        $analyticsService = \Drupal::service(AnalyticsServiceInterface::SERVICE_NAME);
-        $listview = $analyticsService->getListViewById($listViewParameterValue);
-
-        if (!empty($listview) && $listview->getEntityName() === $modelClassName::entityType() && $listview->getBundleName() === $modelClassName::bundle()) {
-          return $listview;
-        }
-      }
-    }
-
-    return null;
   }
 
   /**
