@@ -69,6 +69,7 @@ class JobService extends DefaultPluginManager implements LoggerAwareInterface
     foreach ($definitions as $key => $definition) {
       if (array_key_exists($key, $currentJobsByKey)) {
         $currentJobsByKey[$key]->selected = true;
+        $currentJobsByKey[$key]->setJobClass($definition['class']);
       } else {
         /** @var RegisteredJob $newJob */
         $newJob = $currentJobs->putNew();
