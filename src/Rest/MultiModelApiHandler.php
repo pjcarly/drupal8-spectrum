@@ -490,14 +490,14 @@ class MultiModelApiHandler extends BaseApiHandler
       // Next we fetch the entire model
       $result = $query->fetchSingleModel();
 
-      // Unfortunately, there is no way of knowing before fetching the entire entity 
-      // if we should have only queried the ids. Because we can't know what the type is before querying
-      // And the Jsonapi spec tells us, that the listed fields must be per type
-      $modelSerializationType = $result::getSerializationType();
-      $onlyIds = $this->modelApiService->shouldReturnOnlyIdsForType($request, $modelSerializationType);
-
       $this->modelApiService->addSingleLink($jsonapi, 'self', $baseUrl);
       if (!empty($result)) {
+        // Unfortunately, there is no way of knowing before fetching the entire entity 
+        // if we should have only queried the ids. Because we can't know what the type is before querying
+        // And the Jsonapi spec tells us, that the listed fields must be per type
+        $modelSerializationType = $result::getSerializationType();
+        $onlyIds = $this->modelApiService->shouldReturnOnlyIdsForType($request, $modelSerializationType);
+
         if (!$onlyIds) {
           // We load the translations on the result
           $this->loadLanguages($request, $result);
