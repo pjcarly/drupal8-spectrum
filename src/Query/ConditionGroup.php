@@ -104,11 +104,47 @@ class ConditionGroup
   /**
    * Returns an array containing the conditions
    *
-   * @return array
+   * @return Condition[]|ConditionGroup[]
    */
   public function getConditions(): array
   {
     return $this->conditions;
+  }
+
+  /**
+   * Removes the provided condition group from this conditiongroup
+   *
+   * @param ConditionGroup $conditionGroup
+   * @return self
+   */
+  public function removeConditionGroup(ConditionGroup $conditionGroup): self
+  {
+    $key = array_search($conditionGroup, $this->conditions, true);
+
+    if ($key !== false) {
+      unset($this->conditions[$key]);
+      $this->conditions = array_values($this->conditions);
+    }
+
+    return $this;
+  }
+
+  /**
+   * Removes the provided condition from this conditiongroup
+   *
+   * @param Condition $condition
+   * @return self
+   */
+  public function removeCondition(Condition $condition): self
+  {
+    $key = array_search($condition, $this->conditions, true);
+
+    if ($key !== false) {
+      unset($this->conditions[$key]);
+      $this->conditions = array_values($this->conditions);
+    }
+
+    return $this;
   }
 
   /**
