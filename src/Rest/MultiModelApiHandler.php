@@ -231,9 +231,10 @@ class MultiModelApiHandler extends BaseApiHandler
    * The query returned will be executed
    *
    * @param MultiModelQuery $query
+   * @param Request $request
    * @return MultiModelQuery
    */
-  protected function beforeGetFetch(MultiModelQuery $query): MultiModelQuery
+  protected function beforeGetFetch(MultiModelQuery $query, Request $request): MultiModelQuery
   {
     return $query;
   }
@@ -356,11 +357,19 @@ class MultiModelApiHandler extends BaseApiHandler
         $sort = $request->query->get('sort');
         $sortQueryFields = explode(',', $sort);
 
-        // We cannot simply sort on a field. We must check every modelclass for the sort orders
-        $sortOrders = static::getSortOrderListForSortArray($this->getModelClassNames(), $sortQueryFields);
+        $sortOrdersPerModelClassName = [];
+        foreach ($this->modelClassNames as $modelClassName) {
+          $sortOrdersPerModelClassName[] = $this->modelApiService->getSortOrderListForSortArray($modelClassName, $sortQueryFields);
+        }
 
-        foreach ($sortOrders as $sortOrder) {
-          $query->addSortOrder($sortOrder);
+        // Lets now add and deduplicate the sort fields
+        foreach ($sortOrdersPerModelClassName as $sortOrders) {
+          /** @var Order $sortOrder */
+          foreach ($sortOrders as $sortOrder) {
+            if (!$query->hasSortOrderForField($sortOrder->getFieldName())) {
+              $query->addSortOrder($sortOrder);
+            }
+          }
         }
       }
 
@@ -398,7 +407,7 @@ class MultiModelApiHandler extends BaseApiHandler
       $this->modelApiService->addSingleLink($jsonapi, 'self', $baseUrl, $limit, $page, $sort); // here we add the self link
 
       // We call the GetFetch Hook, where an implementation can potentially alter the query
-      $query = $this->beforeGetFetch($query);
+      $query = $this->beforeGetFetch($query, $request);
 
       // And finally fetch the model
       $result = $query->fetchCollection();
@@ -485,7 +494,7 @@ class MultiModelApiHandler extends BaseApiHandler
       $query->addCondition(new Condition($firstModelClassName::getIdField(), '=', $this->slug));
 
       // We call the GetFetch Hook, where an implementation can potentially alter the query
-      $query = $this->beforeGetFetch($query);
+      $query = $this->beforeGetFetch($query, $request);
 
       // Next we fetch the entire model
       $result = $query->fetchSingleModel();
@@ -830,82 +839,6 @@ class MultiModelApiHandler extends BaseApiHandler
     }
 
     return $conditions;
-  }
-
-  /**
-   * This method returns an array of sort orders found in the sort array (generally passed in the query parameters of the request)
-   *
-   * @param string[] $modelClassName
-   * @param array $sortQueryFields
-   * @return Order[]
-   */
-  public static function getSortOrderListForSortArray(array $modelClassNames, array $sortQueryFields): array
-  {
-    $sortOrders = [];
-
-    // In this array we hold the column to field mapping. And for each modelclass we check it to make sure we can sort on the field/column combination or not.
-    $sortOrderFieldColumns = [];
-
-    foreach ($modelClassNames as $modelClassName) {
-      $prettyToFieldsMap = $modelClassName::getPrettyFieldsToFieldsMapping();
-
-      foreach ($sortQueryFields as $sortQueryField) {
-        $sortOrder = null;
-        $field = null;
-        $column = null;
-
-        // the json-api spec tells us, that all fields are sorted ascending, unless the field is prepended by a '-'
-        // http://jsonapi.org/format/#fetching-sorting
-        $direction = (!empty($sortQueryField) && $sortQueryField[0] === '-') ? 'DESC' : 'ASC';
-        $prettyField = ltrim($sortQueryField, '-'); // lets remove the '-' from the start of the field if it exists
-
-        $prettyFieldParts = explode('.', $prettyField);
-
-        // if the pretty field exists, lets add it to the sort order
-        if (array_key_exists($prettyFieldParts[0], $prettyToFieldsMap)) {
-          $field = $prettyToFieldsMap[$prettyFieldParts[0]];
-          $fieldDefinition = $modelClassName::getFieldDefinition($field);
-          $fieldType = $fieldDefinition->getType();
-
-          if (sizeof($prettyFieldParts) > 1) // meaning we have a extra column present
-          {
-            // Only certain types are allowed to sort on a different column
-            $typePrettyToFieldsMap = $modelClassName::getTypePrettyFieldToFieldsMapping();
-
-            if (array_key_exists($fieldType, $typePrettyToFieldsMap) && array_key_exists($prettyFieldParts[1], $typePrettyToFieldsMap[$fieldType])) {
-              $column = $typePrettyToFieldsMap[$fieldType][$prettyFieldParts[1]];
-              $sortOrder = new Order($field . '.' . $column, $direction);
-            }
-          } else {
-            if ($fieldType === 'entity_reference' || $fieldType === 'entity_reference_revisions') {
-              // In case the field type is entity reference, we want to sort by the title, not the ID
-              // Because the user entity works differently than any other, we must also check for the target_type
-              $settings = $fieldDefinition->getSettings();
-              if ($settings['target_type'] === 'user') {
-                $column = 'entity.name';
-                $sortOrder = new Order($field . '.' . $column, $direction);
-              } else {
-                $column = 'entity.title';
-                $sortOrder = new Order($field . '.' . $column, $direction);
-              }
-            } else {
-              // Any other field, can be sorted like normal
-              $column = null;
-              $sortOrder = new Order($field, $direction);
-            }
-          }
-        }
-
-        if (!empty($sortOrder)) {
-          if (!array_key_exists($field, $sortOrderFieldColumns) || $sortOrderFieldColumns[$field] === $column) {
-            $sortOrders[] = $sortOrder;
-            $sortOrderFieldColumns[$field] = $column;
-          }
-        }
-      }
-    }
-
-    return $sortOrders;
   }
 
   /**

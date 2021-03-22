@@ -5,12 +5,22 @@ namespace Drupal\spectrum\Services;
 use Drupal\spectrum\Analytics\ListViewInterface;
 use Drupal\spectrum\Serializer\JsonApiRootNode;
 use Symfony\Component\HttpFoundation\Request;
+use Drupal\spectrum\Query\Order;
 
 /**
  * The ModelApiService abstracts functionality that is shared between ModelApiHandler and MultiModelApiHandler
  */
 interface ModelApiServiceInterface
 {
+  /**
+   * This method returns an array of sort orders found in the sort array (generally passed in the query parameters of the request)
+   *
+   * @param string $modelClassName
+   * @param string[] $sortQueryFields
+   * @return Order[]
+   */
+  public function getSortOrderListForSortArray(string $modelClassName, array $sortQueryFields): array;
+
   /**
    * This function checks if only Ids should be returned (instead of all attributes by default)
    *
