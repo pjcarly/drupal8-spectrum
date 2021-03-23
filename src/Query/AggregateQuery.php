@@ -2,8 +2,9 @@
 
 namespace Drupal\spectrum\Query;
 
-use Drupal\Core\Database\Query\Condition as DrupalCondition;
 use Drupal\Core\Entity\Query\QueryAggregateInterface;
+use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
+use Drupal\Core\Database\Query\AlterableInterface;
 
 /**
  * This class provides base functionality for different query types
@@ -72,6 +73,12 @@ class AggregateQuery
    * @var string
    */
   protected $entityType;
+
+  /**
+   * @var AccessPolicyInterface|null
+   *   Indicates whether to use Spectrum Access Policy.
+   */
+  protected $accessPolicy;
 
   /**
    * @param string $entityType The entity type you want to query
@@ -279,6 +286,11 @@ class AggregateQuery
       $query->addTag($this->tag);
     }
 
+    if ($this->accessPolicy) {
+      $query->addTag('spectrum_query_use_access_policy');
+      $query->addMetaData('spectrum_query', $this);
+    }
+
     return $query;
   }
 
@@ -417,6 +429,38 @@ class AggregateQuery
   public function addGrouping(string $fieldName): self
   {
     $this->groupings[] = $fieldName;
+    return $this;
+  }
+
+  /**
+   * @param AccessPolicyInterface $accessPolicy
+   *
+   * @return self
+   */
+  public function setAccessPolicy(AccessPolicyInterface $accessPolicy): self
+  {
+    $this->accessPolicy = $accessPolicy;
+    return $this;
+  }
+
+  /**
+   * @param \Drupal\Core\Database\Query\AlterableInterface $query
+   */
+  public function executeAccessPolicy(AlterableInterface $query)
+  {
+    if ($this->accessPolicy) {
+      $this->accessPolicy->onQuery($query);
+    }
+  }
+
+  /**
+   * Remove the accesspolicy to use this query with
+   *
+   * @return self
+   */
+  public function clearAccessPolicy(): self
+  {
+    $this->accessPolicy = null;
     return $this;
   }
 }

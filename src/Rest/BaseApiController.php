@@ -9,7 +9,6 @@ use Symfony\Component\HttpFoundation\Response;
 use Drupal\Core\Routing\RouteMatchInterface;
 
 use Drupal\Core\Path\PathMatcher;
-use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
 use Drupal\cors\EventSubscriber\CorsResponseEventSubscriber;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Models\User;

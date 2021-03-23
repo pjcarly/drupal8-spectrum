@@ -4,7 +4,6 @@ namespace Drupal\spectrum\Rest;
 
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-
 use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Query\ConditionGroup;
 use Drupal\spectrum\Query\Order;
@@ -16,13 +15,13 @@ use Drupal\spectrum\Model\ReferencedRelationship;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Serializer\JsonApiRootNode;
 use Drupal\spectrum\Serializer\JsonApiBaseNode;
-use Drupal\spectrum\Serializer\JsonApiLink;
-use Drupal\spectrum\Analytics\AnalyticsServiceInterface;
-use Drupal\spectrum\Analytics\ListViewInterface;
-
 use Drupal\spectrum\Exceptions\InvalidTypeException;
 use Drupal\spectrum\Model\PolymorphicCollection;
+use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
 use Drupal\spectrum\Query\MultiModelQuery;
+use Drupal\spectrum\Serializer\JsonApiDataNode;
+use Drupal\spectrum\Serializer\JsonApiNode;
+use Drupal\spectrum\Services\ModelApiServiceInterface;
 
 /**
  * This class provides an implementation of a BaseApiHandler for multiple Models (of the same entity) in a jsonapi.org compliant way
@@ -30,6 +29,8 @@ use Drupal\spectrum\Query\MultiModelQuery;
  */
 class MultiModelApiHandler extends BaseApiHandler
 {
+  protected ModelApiServiceInterface $modelApiService;
+
   /**
    * The fully qualified classname of the model you want to use in this apihandler
    *
@@ -78,10 +79,11 @@ class MultiModelApiHandler extends BaseApiHandler
   /**
    * @param string $entityType the shared entityType of all modelclasses
    */
-  public function __construct(string $entityType)
+  public function __construct(string $entityType, $slug = null)
   {
-    parent::__construct();
+    parent::__construct($slug);
 
+    $this->modelApiService = \Drupal::service('spectrum.model_api_service');
     $this->entityType = $entityType;
     $this->defaultHeaders['Content-Type'] = JsonApiRootNode::HEADER_CONTENT_TYPE;
   }
@@ -101,6 +103,30 @@ class MultiModelApiHandler extends BaseApiHandler
 
     $modelClass = Model::getModelClassForEntityAndBundle($modelClassName::entityType(), $modelClassName::bundle());
     $this->modelClassNames[] = $modelClass;
+
+    if ($this->shouldUseAccessPolicy()) {
+      /** @var AccessPolicyInterface $accessPolicy */
+      $accessPolicy = null;
+      $allAccessPoliciesEqual = true;
+
+      foreach ($this->modelClassNames as $modelClass) {
+        /** @var Model $modelClass */
+        $modelAccessPolicy = $modelClass::getAccessPolicy();
+        if (!$accessPolicy) {
+          $accessPolicy = $modelAccessPolicy;
+        } else {
+          if (!is_a($modelAccessPolicy, get_class($accessPolicy))) {
+            $allAccessPoliciesEqual = false;
+            break;
+          }
+        }
+      }
+
+      if (!$allAccessPoliciesEqual) {
+        throw new InvalidTypeException("All modelclasses in a multimodelapihandler must use the same access policy");
+      }
+    }
+
     return $this;
   }
 
@@ -142,6 +168,17 @@ class MultiModelApiHandler extends BaseApiHandler
   }
 
   /**
+   * Indicate whether or not to use the access policy
+   * This can be overridden by the implementation, but in most cases this should stay as it is
+   *
+   * @return boolean
+   */
+  protected function shouldUseAccessPolicy(): bool
+  {
+    return TRUE;
+  }
+
+  /**
    * This function will add all the Conditions in this ApiHandler to the provided Query
    *
    * @param MultiModelQuery $query The query you want to add the conditions to
@@ -179,15 +216,42 @@ class MultiModelApiHandler extends BaseApiHandler
   }
 
   /**
+   * This function can be used to change the JsonApi.org result before serializing it and returned in the response.
+   *
+   * @param Model $object
+   * @return JsonApiBaseNode
+   */
+  protected function getJsonApiNodeForModel(Model $object): JsonApiBaseNode
+  {
+    return $object->getJsonApiNode();
+  }
+
+  /**
    * This method adds a hook for the Get Request, where an implenentation can choose to alter the query just before the fetch is executed
    * The query returned will be executed
    *
    * @param MultiModelQuery $query
+   * @param Request $request
    * @return MultiModelQuery
    */
-  protected function beforeGetFetch(MultiModelQuery $query): MultiModelQuery
+  protected function beforeGetFetch(MultiModelQuery $query, Request $request): MultiModelQuery
   {
     return $query;
+  }
+
+
+  /**
+   * This method adds a hook to get the conditions for one of the modelclasses added to this api handler
+   * This way you can alter the query per modelclass if you want
+   *
+   * @param string $modelClassName
+   * @return ConditionGroup
+   */
+  protected function getConditionsForModelClass(string $modelClassName): ConditionGroup
+  {
+    /** @var Model $modelClassName */
+    return (new ConditionGroup)
+      ->addCondition(new Condition('type', '=', $modelClassName::bundle()));
   }
 
   /**
@@ -210,23 +274,43 @@ class MultiModelApiHandler extends BaseApiHandler
       return new Response(null, 500, []);
     }
 
-
     $modelClassConditionGroup = new ConditionGroup();
-    $count = [];
+    $modelClassConditionGroup->setDefaultConjuntion('OR');
+
+    /** @var AccessPolicyInterface|null $accessPolicy */
+    $accessPolicy = null;
+    $firstModelClassName = null;
+
+    /** @var Model $modelClassName */
     foreach ($this->getModelClassNames() as $modelClassName) {
       if (!$modelClassName::userHasReadPermission()) {
         // No access, return a 405 response
         return new Response(null, 405, []);
       } else {
-        $modelClassConditionGroup->addCondition(new Condition('type', '=', $modelClassName::bundle()));
-        $count[] = sizeof($count) + 1;
+
+        if (!$accessPolicy) {
+          $accessPolicy = $modelClassName::getAccessPolicy();
+        }
+
+        if (!$firstModelClassName) {
+          $firstModelClassName = $modelClassName;
+        }
+
+        /** @var string $modelClassName */
+        $modelClassConditionGroup->addConditionGroup($this->getConditionsForModelClass($modelClassName));
       }
     }
 
-    $modelClassConditionGroup->setLogic(strtr('OR(@logic)', ['@logic' => implode(',', $count)]));
-
     $query = new MultiModelQuery($this->entityType);
     $query->addConditionGroup($modelClassConditionGroup);
+
+    if ($this->shouldUseAccessPolicy()) {
+      if ($accessPolicy) {
+        $query->setAccessPolicy($accessPolicy);
+      } else {
+        return new Response(null, 500, []);
+      }
+    }
 
     // We start by adding the link to this request
     $baseUrl = $request->getSchemeAndHttpHost() . $request->getPathInfo(); // this might not work with a different port than 80, check later
@@ -273,11 +357,19 @@ class MultiModelApiHandler extends BaseApiHandler
         $sort = $request->query->get('sort');
         $sortQueryFields = explode(',', $sort);
 
-        // We cannot simply sort on a field. We must check every modelclass for the sort orders
-        $sortOrders = static::getSortOrderListForSortArray($this->getModelClassNames(), $sortQueryFields);
+        $sortOrdersPerModelClassName = [];
+        foreach ($this->modelClassNames as $modelClassName) {
+          $sortOrdersPerModelClassName[] = $this->modelApiService->getSortOrderListForSortArray($modelClassName, $sortQueryFields);
+        }
 
-        foreach ($sortOrders as $sortOrder) {
-          $query->addSortOrder($sortOrder);
+        // Lets now add and deduplicate the sort fields
+        foreach ($sortOrdersPerModelClassName as $sortOrders) {
+          /** @var Order $sortOrder */
+          foreach ($sortOrders as $sortOrder) {
+            if (!$query->hasSortOrderForField($sortOrder->getFieldName())) {
+              $query->addSortOrder($sortOrder);
+            }
+          }
         }
       }
 
@@ -303,7 +395,8 @@ class MultiModelApiHandler extends BaseApiHandler
           }
 
           // Lets see if a listView was passed and found (done in the conditionListforfliterarray function)
-          $listview = static::getListViewForFilterArray($this->entityType, $filter);
+          /** @var string $firstModelClassName */
+          $listview = $this->modelApiService->getListViewForFilterArray($firstModelClassName, $filter, true);
           if (!empty($listview)) {
             // a matching listview was found, we now apply the query to be adjusted by the list view
             $listview->applyListViewOnQuery($query);
@@ -312,10 +405,10 @@ class MultiModelApiHandler extends BaseApiHandler
       }
 
       // Here we build the links of the request
-      $this->addSingleLink($jsonapi, 'self', $baseUrl, $limit, $page, $sort); // here we add the self link
+      $this->modelApiService->addSingleLink($jsonapi, 'self', $baseUrl, $limit, $page, $sort); // here we add the self link
 
       // We call the GetFetch Hook, where an implementation can potentially alter the query
-      $query = $this->beforeGetFetch($query);
+      $query = $this->beforeGetFetch($query, $request);
 
       // And finally fetch the model
       $result = $query->fetchCollection();
@@ -335,12 +428,12 @@ class MultiModelApiHandler extends BaseApiHandler
           $jsonapi->addMeta('result-row-last', (int) $amountOfResults);
         } else {
           // the first link is easy, it is the first page
-          $this->addSingleLink($jsonapi, 'first', $baseUrl, 0, 1, $sort);
+          $this->modelApiService->addSingleLink($jsonapi, 'first', $baseUrl, 0, 1, $sort);
 
           $previousPage = empty($page) ? 0 : $page - 1;
           // the previous link, checks if !empty, so pages with value 0 will not be displayed
           if (!empty($previousPage)) {
-            $this->addSingleLink($jsonapi, 'prev', $baseUrl, 0, $previousPage, $sort);
+            $this->modelApiService->addSingleLink($jsonapi, 'prev', $baseUrl, 0, $previousPage, $sort);
           }
 
           $totalCount = $query->fetchTotalCount();
@@ -348,7 +441,7 @@ class MultiModelApiHandler extends BaseApiHandler
             $lastPage = ceil($totalCount / $limit);
             $currentPage = empty($page) ? 1 : $page;
 
-            $this->addSingleLink($jsonapi, 'last', $baseUrl, 0, $lastPage, $sort);
+            $this->modelApiService->addSingleLink($jsonapi, 'last', $baseUrl, 0, $lastPage, $sort);
 
             // let's include some meta data
             $jsonapi->addMeta('count', (int) $amountOfResults);
@@ -363,7 +456,7 @@ class MultiModelApiHandler extends BaseApiHandler
             // and finally, we also check if the next page isn't larger than the last page
             $nextPage = empty($page) ? 2 : $page + 1;
             if ($nextPage <= $lastPage) {
-              $this->addSingleLink($jsonapi, 'next', $baseUrl, 0, $nextPage, $sort);
+              $this->modelApiService->addSingleLink($jsonapi, 'next', $baseUrl, 0, $nextPage, $sort);
               $jsonapi->addMeta('page-next', (int) $nextPage);
             }
 
@@ -395,7 +488,65 @@ class MultiModelApiHandler extends BaseApiHandler
         $jsonapi->setData($node);
       }
     } else {
-      return new Response(null, 405, []);
+      // We musn't forget to add all the conditions that were potentially added to this ApiHandler
+      $this->applyAllConditionsToQuery($query);
+
+      // Next we add the specific condition for the slug
+      $query->addCondition(new Condition($firstModelClassName::getIdField(), '=', $this->slug));
+
+      // We call the GetFetch Hook, where an implementation can potentially alter the query
+      $query = $this->beforeGetFetch($query, $request);
+
+      // Next we fetch the entire model
+      $result = $query->fetchSingleModel();
+
+      $this->modelApiService->addSingleLink($jsonapi, 'self', $baseUrl);
+      if (!empty($result)) {
+        // Unfortunately, there is no way of knowing before fetching the entire entity 
+        // if we should have only queried the ids. Because we can't know what the type is before querying
+        // And the Jsonapi spec tells us, that the listed fields must be per type
+        $modelSerializationType = $result::getSerializationType();
+        $onlyIds = $this->modelApiService->shouldReturnOnlyIdsForType($request, $modelSerializationType);
+
+        if (!$onlyIds) {
+          // We load the translations on the result
+          $this->loadLanguages($request, $result);
+
+          // Lets check for our includes
+          $includes = [];
+          // The url might define includes
+          if ($request->query->has('include')) {
+            // includes in the url are comma seperated
+            $includes = array_merge($includes, explode(',', $request->query->get('include')));
+          }
+
+          // But some api handlers provide default includes as well
+          if (property_exists($this, 'defaultGetIncludes')) {
+            $includes = array_merge($includes, $this->defaultGetIncludes);
+          }
+
+          // And finally include them
+          if (!empty($includes)) {
+            $includeLimits = $this->modelApiService->getIncludeLimits($request);
+            $this->checkForIncludes($result, $jsonapi, $includes, $includeLimits);
+          }
+
+          // Finally we add the result
+          $jsonapi->addNode($this->getJsonApiNodeForModel($result));
+        } else {
+          $dataNode = new JsonApiDataNode();
+          $node = new JsonApiNode();
+
+          $node->setType($modelSerializationType);
+          $node->setId($result->getId());
+          $dataNode->addNode($node);
+
+          $jsonapi->setData($dataNode);
+        }
+      } else {
+        // We dont have to set the content, jsonapi responds with an empty result out of the box
+        $responseCode = 404;
+      }
     }
 
     return new Response(json_encode($this->serialize($jsonapi)), $responseCode, []);
@@ -442,35 +593,6 @@ class MultiModelApiHandler extends BaseApiHandler
   }
 
   /**
-   * Adds a link to JsonApiRoot node, this adds meta information. needed to do pagination for example
-   *
-   * @param JsonApiRootNode $jsonapi
-   * @param string $name
-   * @param string $baseUrl
-   * @param integer $limit
-   * @param integer $page
-   * @param string $sort
-   * @return MultiModelApiHandler
-   */
-  protected function addSingleLink(JsonApiRootNode $jsonapi, string $name, string $baseUrl, ?int $limit = 0, ?int $page = 0, ?string $sort = null): MultiModelApiHandler
-  {
-    $link = new JsonApiLink($name, $baseUrl);
-    if (!empty($limit)) {
-      $link->addParam('limit', $limit);
-    }
-    if (!empty($sort)) {
-      $link->addParam('sort', $sort);
-    }
-    if (!empty($page)) {
-      $link->addParam('page', $page);
-    }
-    $jsonapi->addLink($name, $link);
-
-    return $this;
-  }
-
-
-  /**
    * Add includes to the JsonApiRootNode based on the indlues in the query or in the api handler.
    * Includes are other related Models that are also serialized to a jsonapi.org document
    *
@@ -479,7 +601,7 @@ class MultiModelApiHandler extends BaseApiHandler
    * @param array $relationshipNamesToInclude
    * @return MultiModelApiHandler
    */
-  protected function checkForIncludes($source, JsonApiRootNode $jsonApiRootNode, array $relationshipNamesToInclude): MultiModelApiHandler
+  protected function checkForIncludes($source, JsonApiRootNode $jsonApiRootNode, array $relationshipNamesToInclude, array $includeLimits = []): MultiModelApiHandler
   {
     if (!empty($source) && !$source->isEmpty) {
       $modelClassName = $this->modelClassName;
@@ -533,6 +655,12 @@ class MultiModelApiHandler extends BaseApiHandler
             }
           } else {
             continue;
+          }
+
+          if (array_key_exists($relationshipNameToInclude, $includeLimits)) {
+            if (!$entityQuery->hasLimit()) {
+              $entityQuery->setLimit($includeLimits[$relationshipNameToInclude]);
+            }
           }
 
           // first of all, we fetch the data
@@ -712,108 +840,6 @@ class MultiModelApiHandler extends BaseApiHandler
     }
 
     return $conditions;
-  }
-
-  /**
-   * This method checks if there is a listview parameter in the filter array and fetches it from the DB
-   *
-   * @param string $entityType
-   * @param array $filter
-   * @return ListViewInterface|null
-   */
-  public static function getListViewForFilterArray(string $entityType, array $filter): ?ListViewInterface
-  {
-    if (array_key_exists('_listview', $filter)) {
-      $listViewParameterValue = $filter['_listview'];
-      if (!empty($listViewParameterValue) && is_numeric($listViewParameterValue)) {
-
-        /** @var AnalyticsServiceInterface $analyticsService */
-        $analyticsService = \Drupal::service(AnalyticsServiceInterface::SERVICE_NAME);
-        $listview = $analyticsService->getListViewById($listViewParameterValue);
-
-        if (!empty($listview) && $listview->getEntityName() === $entityType) {
-          return $listview;
-        }
-      }
-    }
-
-    return null;
-  }
-
-  /**
-   * This method returns an array of sort orders found in the sort array (generally passed in the query parameters of the request)
-   *
-   * @param string[] $modelClassName
-   * @param array $sortQueryFields
-   * @return Order[]
-   */
-  public static function getSortOrderListForSortArray(array $modelClassNames, array $sortQueryFields): array
-  {
-    $sortOrders = [];
-
-    // In this array we hold the column to field mapping. And for each modelclass we check it to make sure we can sort on the field/column combination or not.
-    $sortOrderFieldColumns = [];
-
-    foreach ($modelClassNames as $modelClassName) {
-      $prettyToFieldsMap = $modelClassName::getPrettyFieldsToFieldsMapping();
-
-      foreach ($sortQueryFields as $sortQueryField) {
-        $sortOrder = null;
-        $field = null;
-        $column = null;
-
-        // the json-api spec tells us, that all fields are sorted ascending, unless the field is prepended by a '-'
-        // http://jsonapi.org/format/#fetching-sorting
-        $direction = (!empty($sortQueryField) && $sortQueryField[0] === '-') ? 'DESC' : 'ASC';
-        $prettyField = ltrim($sortQueryField, '-'); // lets remove the '-' from the start of the field if it exists
-
-        $prettyFieldParts = explode('.', $prettyField);
-
-        // if the pretty field exists, lets add it to the sort order
-        if (array_key_exists($prettyFieldParts[0], $prettyToFieldsMap)) {
-          $field = $prettyToFieldsMap[$prettyFieldParts[0]];
-          $fieldDefinition = $modelClassName::getFieldDefinition($field);
-          $fieldType = $fieldDefinition->getType();
-
-          if (sizeof($prettyFieldParts) > 1) // meaning we have a extra column present
-          {
-            // Only certain types are allowed to sort on a different column
-            $typePrettyToFieldsMap = $modelClassName::getTypePrettyFieldToFieldsMapping();
-
-            if (array_key_exists($fieldType, $typePrettyToFieldsMap) && array_key_exists($prettyFieldParts[1], $typePrettyToFieldsMap[$fieldType])) {
-              $column = $typePrettyToFieldsMap[$fieldType][$prettyFieldParts[1]];
-              $sortOrder = new Order($field . '.' . $column, $direction);
-            }
-          } else {
-            if ($fieldType === 'entity_reference' || $fieldType === 'entity_reference_revisions') {
-              // In case the field type is entity reference, we want to sort by the title, not the ID
-              // Because the user entity works differently than any other, we must also check for the target_type
-              $settings = $fieldDefinition->getSettings();
-              if ($settings['target_type'] === 'user') {
-                $column = 'entity.name';
-                $sortOrder = new Order($field . '.' . $column, $direction);
-              } else {
-                $column = 'entity.title';
-                $sortOrder = new Order($field . '.' . $column, $direction);
-              }
-            } else {
-              // Any other field, can be sorted like normal
-              $column = null;
-              $sortOrder = new Order($field, $direction);
-            }
-          }
-        }
-
-        if (!empty($sortOrder)) {
-          if (!array_key_exists($field, $sortOrderFieldColumns) || $sortOrderFieldColumns[$field] === $column) {
-            $sortOrders[] = $sortOrder;
-            $sortOrderFieldColumns[$field] = $column;
-          }
-        }
-      }
-    }
-
-    return $sortOrders;
   }
 
   /**
