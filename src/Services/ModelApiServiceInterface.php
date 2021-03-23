@@ -56,7 +56,8 @@ interface ModelApiServiceInterface
    *
    * @param string $modelClassName
    * @param array $filter
+   * @param bool $ignoreBundle If the bundle should be ingored for the listview check
    * @return ListViewInterface|null
    */
-  public function getListViewForFilterArray(string $modelClassName, array $filter): ?ListViewInterface;
+  public function getListViewForFilterArray(string $modelClassName, array $filter, bool $ignoreBundle = false): ?ListViewInterface;
 }

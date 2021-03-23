@@ -395,7 +395,8 @@ class MultiModelApiHandler extends BaseApiHandler
           }
 
           // Lets see if a listView was passed and found (done in the conditionListforfliterarray function)
-          $listview = $this->modelApiService->getListViewForFilterArray($this->entityType, $filter);
+          /** @var string $firstModelClassName */
+          $listview = $this->modelApiService->getListViewForFilterArray($firstModelClassName, $filter, true);
           if (!empty($listview)) {
             // a matching listview was found, we now apply the query to be adjusted by the list view
             $listview->applyListViewOnQuery($query);

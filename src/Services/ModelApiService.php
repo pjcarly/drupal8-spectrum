@@ -142,7 +142,7 @@ class ModelApiService implements ModelApiServiceInterface
   /**
    * {@inheritdoc}
    */
-  public function getListViewForFilterArray(string $modelClassName, array $filter): ?ListViewInterface
+  public function getListViewForFilterArray(string $modelClassName, array $filter, bool $ignoreBundle = false): ?ListViewInterface
   {
     if (array_key_exists('_listview', $filter)) {
       $listViewParameterValue = $filter['_listview'];
@@ -150,7 +150,7 @@ class ModelApiService implements ModelApiServiceInterface
 
         $listview = $this->analyticsService->getListViewById($listViewParameterValue);
 
-        if (!empty($listview) && $listview->getEntityName() === $modelClassName::entityType() && $listview->getBundleName() === $modelClassName::bundle()) {
+        if (!empty($listview) && $listview->getEntityName() === $modelClassName::entityType() && ($ignoreBundle || $listview->getBundleName() === $modelClassName::bundle())) {
           return $listview;
         }
       }
