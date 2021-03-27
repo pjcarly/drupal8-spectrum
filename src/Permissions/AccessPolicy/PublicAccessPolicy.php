@@ -60,7 +60,7 @@ class PublicAccessPolicy extends AccessPolicyBase
   /**
    * @inheritDoc
    */
-  public function onQuery(Select $query): Select
+  public function onQuery(Select $query, int $userId): Select
   {
     return $query;
   }
@@ -84,7 +84,8 @@ class PublicAccessPolicy extends AccessPolicyBase
   /**
    * @inheritDoc
    */
-  public function getUserIdsWithAccess(string $entityTypeId, string $entityId): array {
+  public function getUserIdsWithAccess(string $entityTypeId, string $entityId): array
+  {
     if (self::$uids === null) {
       self::$uids = Drupal::entityTypeManager()
         ->getStorage('user')

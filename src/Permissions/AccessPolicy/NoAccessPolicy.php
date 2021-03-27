@@ -33,9 +33,9 @@ class NoAccessPolicy implements AccessPolicyInterface
   /**
    * @inheritDoc
    */
-  public function onQuery(Select $query): Select
+  public function onQuery(Select $query, int $userId): Select
   {
-    $query->condition('base_table.id','-1');
+    $query->condition('base_table.id', '-1');
     return $query;
   }
 
@@ -74,7 +74,8 @@ class NoAccessPolicy implements AccessPolicyInterface
   /**
    * @inheritDoc
    */
-  public function getUserIdsWithAccess(string $entityTypeId, string $entityId): array {
+  public function getUserIdsWithAccess(string $entityTypeId, string $entityId): array
+  {
     return [];
   }
 }

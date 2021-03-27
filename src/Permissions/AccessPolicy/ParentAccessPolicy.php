@@ -188,7 +188,7 @@ class ParentAccessPolicy extends AccessPolicyBase
   /**
    * @inheritDoc
    */
-  public function onQuery(Select $query): Select
+  public function onQuery(Select $query, int $userId): Select
   {
     $table = $query->getTables()['base_table']['table'];
     $condition = strtr('ser.entity_type = \'@type\' AND ser.entity_id = base_table.id', [
@@ -201,7 +201,7 @@ class ParentAccessPolicy extends AccessPolicyBase
 
     $condition = new \Drupal\Core\Database\Query\Condition('OR');
     // Private access, see PrivateAccessPolicy.
-    $condition->condition('sea.uid', \Drupal::currentUser()->id());
+    $condition->condition('sea.uid', $userId);
     // Public access, see PublicAccessPolicy.
     $condition->condition('sea.uid', 0);
     $query->condition($condition);
@@ -343,7 +343,8 @@ class ParentAccessPolicy extends AccessPolicyBase
   /**
    * @inheritDoc
    */
-  public function getUserIdsWithAccess(string $entityTypeId, string $entityId): array {
+  public function getUserIdsWithAccess(string $entityTypeId, string $entityId): array
+  {
     $query = Drupal::database()->select($entityTypeId, 'bt');
 
     $query->leftJoin(
