@@ -2,6 +2,7 @@
 
 namespace Drupal\spectrum\Model;
 
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\spectrum\Query\Query;
 use Drupal\spectrum\Query\BundleQuery;
 use Drupal\spectrum\Query\Condition;
@@ -640,7 +641,7 @@ class Collection implements \IteratorAggregate, \Countable
    * Forge a new Collection with the provided models
    *
    * @param string|null $modelType
-   * @param array $models
+   * @param Model[] $models
    * @return Collection
    */
   public static function forgeByModels(?string $modelType, array $models): Collection
@@ -652,7 +653,7 @@ class Collection implements \IteratorAggregate, \Countable
    * Forge a new Collection with the provided entities, all entities will be wrapped in a Model
    *
    * @param string|null $modelType
-   * @param array $entities
+   * @param EntityInterface[] $entities
    * @return Collection
    */
   public static function forgeByEntities(?string $modelType, array $entities): Collection
@@ -661,13 +662,12 @@ class Collection implements \IteratorAggregate, \Countable
   }
 
   /**
-   * @deprecated
    * Forge a new Collection, try to use the more readable helper methods "forgeByIds", "forgeByModels" or "forgeByEntites" instead
    *
    * @param string $modelType is optional when this is a Polymorphic collection
-   * @param array|null $models
-   * @param array|null $entities
-   * @param array|null $ids
+   * @param Model[]|null $models
+   * @param EntityInterface[]|null $entities
+   * @param string[]|int[]|null $ids
    * @return Collection
    */
   private static function forge(string $modelType = null, ?array $models = [], ?array $entities = [], ?array $ids = []): Collection
@@ -690,6 +690,11 @@ class Collection implements \IteratorAggregate, \Countable
     return $collection;
   }
 
+  /**
+   * @param string $modelType
+   * @param string[]|int[] $ids
+   * @return EntityInterface[]
+   */
   private static function fetchEntities(string $modelType, array $ids): array
   {
     $query = new BundleQuery($modelType::entityType(), $modelType::bundle());

@@ -422,7 +422,7 @@ abstract class Query implements BatchableInterface
   /**
    * Execute the query, and return the entities in an array
    *
-   * @return array
+   * @return EntityInterface[]
    */
   public function fetch(): array
   {
