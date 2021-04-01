@@ -731,14 +731,22 @@ abstract class Query implements BatchableInterface
   }
 
   /**
-   * @param AccessPolicyInterface $accessPolicy
+   * @param AccessPolicyInterface|null $accessPolicy
    *
    * @return self
    */
-  public function setAccessPolicy(AccessPolicyInterface $accessPolicy): self
+  public function setAccessPolicy(?AccessPolicyInterface $accessPolicy): self
   {
     $this->accessPolicy = $accessPolicy;
     return $this;
+  }
+
+  /**
+   * @return AccessPolicyInterface|null
+   */
+  public function getAccessPolicy(): ?AccessPolicyInterface
+  {
+    return $this->accessPolicy;
   }
 
   /**
@@ -747,7 +755,8 @@ abstract class Query implements BatchableInterface
   public function executeAccessPolicy(AlterableInterface $query)
   {
     if ($this->accessPolicy) {
-      $this->accessPolicy->onQuery($query, $this->getUserIdForAccessPolicy());
+      $userId = $this->getUserIdForAccessPolicy() ?? \Drupal::currentUser()->id();
+      $this->accessPolicy->onQuery($query, $userId);
     }
   }
 
@@ -768,7 +777,7 @@ abstract class Query implements BatchableInterface
    * @param integer $userId
    * @return self
    */
-  public function setUserIdForAccessPolicy(int $userId): self
+  public function setUserIdForAccessPolicy(?int $userId): self
   {
     $this->userIdForAccessPolicy = $userId;
     return $this;
@@ -780,7 +789,7 @@ abstract class Query implements BatchableInterface
    *
    * @return integer
    */
-  public function getUserIdForAccessPolicy(): int
+  public function getUserIdForAccessPolicy(): ?int
   {
     return $this->userIdForAccessPolicy ?? \Drupal::currentUser()->id();
   }

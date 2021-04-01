@@ -440,6 +440,8 @@ abstract class Model
       // Lets see if we need to copy in some default conditions
       if (!empty($queryToCopyFrom)) {
         $relationshipQuery->copyConditionsFrom($queryToCopyFrom);
+        $relationshipQuery->setUserIdForAccessPolicy($queryToCopyFrom->getUserIdForAccessPolicy());
+        $relationshipQuery->setAccessPolicy($queryToCopyFrom->getAccessPolicy());
 
         if ($queryToCopyFrom->hasLimit()) {
           $relationshipQuery->setRange($queryToCopyFrom->getRangeStart(), $queryToCopyFrom->getRangeLength());

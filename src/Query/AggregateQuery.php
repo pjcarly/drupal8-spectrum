@@ -456,7 +456,8 @@ class AggregateQuery
   public function executeAccessPolicy(AlterableInterface $query)
   {
     if ($this->accessPolicy) {
-      $this->accessPolicy->onQuery($query, $this->getUserIdForAccessPolicy());
+      $userId = $this->getUserIdForAccessPolicy() ?? \Drupal::currentUser()->id();
+      $this->accessPolicy->onQuery($query, $userId);
     }
   }
 
@@ -489,9 +490,9 @@ class AggregateQuery
    *
    * @return integer
    */
-  public function getUserIdForAccessPolicy(): int
+  public function getUserIdForAccessPolicy(): ?int
   {
-    return $this->userIdForAccessPolicy ?? \Drupal::currentUser()->id();
+    return $this->userIdForAccessPolicy;
   }
 
   /**
