@@ -8,19 +8,15 @@ use Symfony\Contracts\EventDispatcher\Event;
 
 final class CronStatusUpdatedEvent extends Event
 {
-
   private QueuedJob $queuedJob;
-
-  private int $current;
-
-  private int $max;
-
+  private ?int $current;
+  private ?int $max;
   private ?LoopInterface $loop = null;
 
   public function __construct(
     QueuedJob $queuedJob,
-    int $current,
-    int $max,
+    ?int $current = null,
+    ?int $max = null,
     ?LoopInterface $loop = null
   ) {
     $this->queuedJob = $queuedJob;
@@ -40,23 +36,23 @@ final class CronStatusUpdatedEvent extends Event
     return $this;
   }
 
-  public function getCurrent(): int
+  public function getCurrent(): ?int
   {
     return $this->current;
   }
 
-  public function setCurrent(int $current): self
+  public function setCurrent(?int $current): self
   {
     $this->current = $current;
     return $this;
   }
 
-  public function getMax(): int
+  public function getMax(): ?int
   {
     return $this->max;
   }
 
-  public function setMax(int $max): self
+  public function setMax(?int $max): self
   {
     $this->max = $max;
     return $this;

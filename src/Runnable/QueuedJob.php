@@ -97,16 +97,17 @@ class QueuedJob extends RunnableModel
     if (!$this instanceof BatchJob && $this->updateCronStatus) {
       /** @var EventDispatcher $eventDispatcher */
       $eventDispatcher = Drupal::service('event_dispatcher');
-      $event = new CronStatusUpdatedEvent($this, 0, 1, Drupal::service('react.loop'));
+      $event = new CronStatusUpdatedEvent($this);
       $eventDispatcher->dispatch($event);
     }
   }
 
-  public function afterInsert() {
+  public function afterInsert()
+  {
     if ($this->updateCronStatus) {
       /** @var EventDispatcherInterface $dispatcher */
       $dispatcher = Drupal::service('event_dispatcher');
-      $event = new CronStatusUpdatedEvent($this, 0, 0);
+      $event = new CronStatusUpdatedEvent($this);
       $dispatcher->dispatch($event);
     }
   }
@@ -454,10 +455,10 @@ class QueuedJob extends RunnableModel
     $this->setEndTime($currentTime);
     $this->save();
 
-    if (!$this instanceof BatchJob && $this->updateCronStatus) {
+    if ($this->updateCronStatus) {
       /** @var EventDispatcher $eventDispatcher */
       $eventDispatcher = Drupal::service('event_dispatcher');
-      $event = new CronStatusUpdatedEvent($this, 1, 1, Drupal::service('react.loop'));
+      $event = new CronStatusUpdatedEvent($this);
       $eventDispatcher->dispatch($event);
     }
 

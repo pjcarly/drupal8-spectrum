@@ -67,7 +67,7 @@ abstract class BatchJob extends QueuedJob
     $totalCounter = 0;
 
     if ($this->updateCronStatus) {
-      $event = new CronStatusUpdatedEvent($this, $totalCounter, $totalRecords, Drupal::service('react.loop'));
+      $event = new CronStatusUpdatedEvent($this, $totalCounter, $totalRecords);
       $eventDispatcher->dispatch($event);
     }
 
@@ -80,17 +80,12 @@ abstract class BatchJob extends QueuedJob
         $this->clearCache();
 
         if ($this->updateCronStatus) {
-          $event = new CronStatusUpdatedEvent($this, $totalCounter, $totalRecords, Drupal::service('react.loop'));
+          $event = new CronStatusUpdatedEvent($this, $totalCounter, $totalRecords);
           $eventDispatcher->dispatch($event);
         }
 
         $counter = 0;
       }
-    }
-
-    if ($this->updateCronStatus) {
-      $event = new CronStatusUpdatedEvent($this, $totalCounter, $totalRecords, Drupal::service('react.loop'));
-      $eventDispatcher->dispatch($event);
     }
 
     $progressBar->finish();
