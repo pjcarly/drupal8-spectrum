@@ -5,6 +5,7 @@ namespace Drupal\spectrum\Runnable;
 use DateTime;
 use DateTimeZone;
 use Drupal;
+use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Session\AccountSwitcherInterface;
 use Drupal\Core\Session\AnonymousUserSession;
 use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface;
@@ -91,7 +92,9 @@ class QueuedJob extends RunnableModel
     if (empty($this->getRunAsUserId()) || $this->getRunAsUserId() === 0 || empty($this->fetch('run_as'))) {
       $this->accountSwitcher->switchTo(new AnonymousUserSession());
     } else {
-      $this->accountSwitcher->switchTo($this->getRunAsUser()->entity);
+      $account = $this->getRunAsUser()->entity;
+      /** @var AccountInterface $account */
+      $this->accountSwitcher->switchTo($account);
     }
 
     if (!$this instanceof BatchJob && $this->updateCronStatus) {
