@@ -266,6 +266,10 @@ class User extends Model
    */
   public function getUsername(): string
   {
+    if ($this->getId() == 0) {
+      return 'Anonymous';
+    }
+
     return $this->entity->{'name'}->value;
   }
 

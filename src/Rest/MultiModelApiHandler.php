@@ -59,7 +59,7 @@ class MultiModelApiHandler extends BaseApiHandler
    *
    * @var integer
    */
-  protected $defaultLimit = 10;
+  protected $defaultLimit = 25;
 
 
   /**

@@ -37,10 +37,11 @@ interface AccessPolicyInterface
 
   /**
    * @param Select $query
+   * @param int $userId
    *
    * @return Select
    */
-  public function onQuery(Select $query): Select;
+  public function onQuery(Select $query, int $userId): Select;
 
   /**
    * @param Model $model

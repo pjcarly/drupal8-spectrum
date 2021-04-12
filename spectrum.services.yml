@@ -22,8 +22,3 @@ services:
   react.loop:
     class: React\EventLoop\LoopInterface
     factory: ["React\\EventLoop\\Factory", "create"]
-  symfony.style_factory: 
-    class: Drupal\spectrum\Console\SymfonyStyleFactory
-  symfony.output:
-    class: Symfony\Component\Console\Style\SymfonyStyle
-    factory: ['@symfony.style_factory', 'create']

@@ -107,6 +107,13 @@ abstract class Query implements BatchableInterface
   protected $accessPolicy;
 
   /**
+   * Custom userId to use for access policy query
+   *
+   * @var int|null
+   */
+  protected $userIdForAccessPolicy;
+
+  /**
    * @param string $entityType The entity type you want to query
    */
   public function __construct(string $entityType)
@@ -724,14 +731,22 @@ abstract class Query implements BatchableInterface
   }
 
   /**
-   * @param AccessPolicyInterface $accessPolicy
+   * @param AccessPolicyInterface|null $accessPolicy
    *
    * @return self
    */
-  public function setAccessPolicy(AccessPolicyInterface $accessPolicy): self
+  public function setAccessPolicy(?AccessPolicyInterface $accessPolicy): self
   {
     $this->accessPolicy = $accessPolicy;
     return $this;
+  }
+
+  /**
+   * @return AccessPolicyInterface|null
+   */
+  public function getAccessPolicy(): ?AccessPolicyInterface
+  {
+    return $this->accessPolicy;
   }
 
   /**
@@ -740,7 +755,8 @@ abstract class Query implements BatchableInterface
   public function executeAccessPolicy(AlterableInterface $query)
   {
     if ($this->accessPolicy) {
-      $this->accessPolicy->onQuery($query);
+      $userId = $this->getUserIdForAccessPolicy() ?? \Drupal::currentUser()->id();
+      $this->accessPolicy->onQuery($query, $userId);
     }
   }
 
@@ -752,6 +768,40 @@ abstract class Query implements BatchableInterface
   public function clearAccessPolicy(): self
   {
     $this->accessPolicy = null;
+    return $this;
+  }
+
+  /**
+   * Sets a custom userId to use for the Access Policy
+   *
+   * @param integer $userId
+   * @return self
+   */
+  public function setUserIdForAccessPolicy(?int $userId): self
+  {
+    $this->userIdForAccessPolicy = $userId;
+    return $this;
+  }
+
+  /**
+   * Returns the UserId that is going to be used when this query should be executed with an access policy
+   * If no custom userId is set, the loggedInUser will be returned
+   *
+   * @return integer
+   */
+  public function getUserIdForAccessPolicy(): ?int
+  {
+    return $this->userIdForAccessPolicy ?? \Drupal::currentUser()->id();
+  }
+
+  /**
+   * Removes the custom userIdForAccess policy, instead the loggedInUser will be used by default
+   *
+   * @return self
+   */
+  public function clearUserIdForAccessPolicy(): self
+  {
+    unset($this->userIdForAccessPolicy);
     return $this;
   }
 }

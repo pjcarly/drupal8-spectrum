@@ -9,7 +9,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Query\ConditionGroup;
-use Drupal\spectrum\Query\Order;
 use Drupal\spectrum\Query\EntityQuery;
 use Drupal\spectrum\Query\ModelQuery;
 use Drupal\spectrum\Model\Collection;
@@ -67,7 +66,7 @@ class ModelApiHandler extends BaseApiHandler
    *
    * @var integer
    */
-  protected $defaultLimit = 10;
+  protected $defaultLimit = 25;
 
   /**
    * Base conditions that will be added to all queries done in the api handler
