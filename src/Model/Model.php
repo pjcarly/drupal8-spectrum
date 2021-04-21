@@ -1491,6 +1491,11 @@ abstract class Model
 
       // add a condition on the id
       $query->addCondition(new Condition(static::getIdField(), '=', $id));
+
+      if ($bundle = static::bundle()) {
+        $query->addCondition(new Condition('type', '=', $bundle));
+      }
+
       $model = $query->fetchSingleModel();
 
       return $model;
