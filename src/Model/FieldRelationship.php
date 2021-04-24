@@ -199,4 +199,12 @@ class FieldRelationship extends Relationship
       }
     }
   }
+
+  /**
+   * @return string
+   */
+  public function getFirstModelClass(): string
+  {
+    return $this->firstModelType;
+  }
 }
