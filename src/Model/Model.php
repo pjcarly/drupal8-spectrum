@@ -1714,11 +1714,7 @@ abstract class Model
     $alias = array_key_exists($key, static::$serializationTypeAliases) ? static::$serializationTypeAliases[$key] : null;
 
     if (empty($alias)) {
-      if (empty(static::bundle())) {
-        $returnValue = static::entityType();
-      } else {
-        $returnValue = static::bundle();
-      }
+      $returnValue = static::getBundleKey();
     } else {
       $returnValue = $alias;
     }

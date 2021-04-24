@@ -29,7 +29,7 @@ class ModelAggregateQuery extends AggregateQuery
   {
     parent::__construct($modelType::entityType());
     $this->modelType = $modelType;
-    if (!empty($this->bundle)) {
+    if (!empty($modelType::bundle())) {
       $this->addBaseCondition(new Condition('type', '=', $modelType::bundle()));
     }
   }
