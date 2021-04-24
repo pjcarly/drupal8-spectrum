@@ -167,13 +167,18 @@ class Collection implements \IteratorAggregate, \Countable
   /**
    * Sort the collection according to a sorting function on the implemented Models
    *
-   * @param string $sortingFunction
+   * @param string|callable $sortingFunction
    * @return self
    */
-  public function sort(string $sortingFunction): self
+  public function sort($sortingFunction): self
   {
-    // Bug in PHP causes PHP warnings for uasort, we surpressed warnings with @, but be weary!
-    @uasort($this->models, [$this->modelType, $sortingFunction]);
+    if (is_string($sortingFunction)) {
+      // Bug in PHP causes PHP warnings for uasort, we surpressed warnings with @, but be weary!
+      @uasort($this->models, [$this->modelType, $sortingFunction]);
+    } else if (is_callable($sortingFunction)) {
+      uasort($this->models, $sortingFunction);
+    }
+
     return $this;
   }
 
