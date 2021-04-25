@@ -440,6 +440,7 @@ abstract class Model
       // Lets see if we need to copy in some default conditions
       if (!empty($queryToCopyFrom)) {
         $relationshipQuery->copyConditionsFrom($queryToCopyFrom);
+        $relationshipQuery->copySortOrdersFrom($queryToCopyFrom);
         $relationshipQuery->setUserIdForAccessPolicy($queryToCopyFrom->getUserIdForAccessPolicy());
         $relationshipQuery->setAccessPolicy($queryToCopyFrom->getAccessPolicy());
 
@@ -483,6 +484,9 @@ abstract class Model
                 $referencedModel = $referencedModelType::forgeByEntity($referencedEntity);
                 $returnValue = $this->put($relationship, $referencedModel, true);
               }
+
+              // And finally sort it according to the field delta
+              $this->sortFieldRelationshipByFieldDelta($relationship);
             }
           } else // single value
           {
@@ -542,6 +546,25 @@ abstract class Model
     }
 
     return $returnValue;
+  }
+
+  /**
+   * Sorts a multi FieldRelationship by the field delta
+   *
+   * @param FieldRelationship $relationship
+   * @return self
+   */
+  public function sortFieldRelationshipByFieldDelta(FieldRelationship $relationship): self
+  {
+    /** @var Collection $collection */
+    if ($relationship->getFieldCardinality() !== 1 && $collection = $this->get($relationship)) {
+      // First we get the ids from the field, they will be sorted according to the field delta
+      $fieldId = $this->getFieldId($relationship);
+      // We sort by keys with uksort, and use the values of the fieldId that are returned in order
+      $collection->sort(fn (Model $model1, Model $model2) => array_search($model1->key, $fieldId) <=> array_search($model2->key, $fieldId));
+    }
+
+    return $this;
   }
 
   /**

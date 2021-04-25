@@ -418,6 +418,7 @@ class Collection implements \IteratorAggregate, \Countable
       // Lets see if we need to copy in some default conditions
       if (!empty($queryToCopyFrom)) {
         $relationshipQuery->copyConditionsFrom($queryToCopyFrom);
+        $relationshipQuery->copySortOrdersFrom($queryToCopyFrom);
         $relationshipQuery->setUserIdForAccessPolicy($queryToCopyFrom->getUserIdForAccessPolicy());
         $relationshipQuery->setAccessPolicy($queryToCopyFrom->getAccessPolicy());
 
