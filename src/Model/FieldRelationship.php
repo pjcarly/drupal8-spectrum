@@ -207,4 +207,12 @@ class FieldRelationship extends Relationship
   {
     return $this->firstModelType;
   }
+
+  /**
+   * @return integer
+   */
+  public function getFieldCardinality(): int
+  {
+    return $this->fieldCardinality;
+  }
 }
