@@ -149,6 +149,18 @@ class Collection implements \IteratorAggregate, \Countable
   }
 
   /**
+   * Returns the Model on a certain position
+   *
+   * @param integer $number (0 based position)
+   * @return void
+   */
+  public function getModelOnPosition(int $number): ?Model
+  {
+    $sliced = array_slice($this->models, $number, 1, false);
+    return sizeof($sliced) > 0 ? $sliced[0] : null;
+  }
+
+  /**
    * This function loads the translation on all the models in this collection, the first found translation will be used on the model. In case no translation is found, the default language will be loaded
    * If not all models have a translation, it is possible that you get models in different languages
    *
