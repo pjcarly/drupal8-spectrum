@@ -2,7 +2,6 @@
 
 use Drupal\Core\Database\Query\AlterableInterface;
 use Drupal\spectrum\Query\Query;
-use Drupal\spectrum\Services\JobService;
 use Drupal\spectrum\Triggers\ModelTrigger;
 
 function spectrum_entity_presave($entity)
