@@ -550,12 +550,12 @@ abstract class QueryBase
 
     // First we find the column mapping from the drupal query and the key to unset
     foreach ($drupalQuery->conditions() as $key => $condition) {
-      if ($condition['field'] instanceof DrupalCondition) {
+      if (is_array($condition) && $condition['field'] instanceof DrupalCondition) {
         /** @var DrupalCondition $conditionGroup */
         $conditionGroup = $condition['field'];
 
         foreach ($conditionGroup->conditions() as $subCondition) {
-          if ($subCondition['value'] === '__pseudo_placeholder') {
+          if (is_array($subCondition) && $subCondition['value'] === '__pseudo_placeholder') {
             $pseudoConditionGroupKey = $key;
             // Also record the parsed column name, so we know what column to use in the expression later
             $columnMapping[$index] = $subCondition['field'];
