@@ -2,13 +2,18 @@
 
 namespace Drupal\spectrum\Query;
 
+use Drupal\Core\Database\Query\Select;
 use Drupal\Core\Entity\Query\QueryAggregateInterface;
+use Drupal\Core\Entity\Query\QueryInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 
 /**
  * This class provides base functionality for different query types
  */
 class AggregateQuery extends QueryBase
 {
+  private EntityTypeManagerInterface $entityTypeManager;
+
   /**
    * Here the Aggregations are stored
    *
@@ -16,12 +21,20 @@ class AggregateQuery extends QueryBase
    */
   protected $aggregations = [];
 
+  private $expressionInGroupings = false;
+
   /**
    * All the fields where groupings were added
    *
    * @var string[]
    */
   private $groupings;
+
+  public function __construct(string $entityType)
+  {
+    parent::__construct($entityType);
+    $this->entityTypeManager = \Drupal::service('entity_type.manager');
+  }
 
   /**
    * @param Aggregation $aggregation
@@ -68,71 +81,55 @@ class AggregateQuery extends QueryBase
   }
 
   /**
-   * Return a DrupalQuery with all the conditions and other configurations applied (except for the range or limit)
-   self
-   * @return AggregateQueryInterface
+   * {@inheritdoc}
+   */
+  protected final function getDrupalQuery(): QueryInterface
+  {
+    return $this->entityTypeManager->getStorage($this->entityType)->getAggregateQuery();
+  }
+
+  /**
+   * {@inheritdoc}
    */
   protected function getBaseQuery(): QueryAggregateInterface
   {
-    // We abstracted the getQuery and getTotalCountQuery functions in this function, to avoid duplicate code
-    $query = \Drupal::entityQueryAggregate($this->entityType);
-
-    // next we check for conditions and add them if needed
-
-    // Base conditions must always be applied, regardless of the logic
-    foreach ($this->baseConditions as $condition) {
-      $condition->addQueryCondition($query, $query);
-    }
-
-    // We might have a logic, lets check for it
-    if (empty($this->conditionLogic)) {
-      foreach ($this->conditions as $condition) {
-        $condition->addQueryCondition($query, $query);
-      }
-    } else {
-      // A logic was provided, we add all the conditions on the query to a ConditionGroup
-      // Apply the logic, and then add pass in the drupal query to apply the conditions with logic on.
-      $conditionGroup = new ConditionGroup();
-      $conditionGroup->setLogic($this->conditionLogic);
-
-      foreach ($this->conditions as $condition) {
-        $conditionGroup->addCondition($condition);
-      }
-
-      $conditionGroup->applyConditionsOnQuery($query);
-    }
-
-    // Next the possible added condition groups
-    foreach ($this->conditionGroups as $conditionGroup) {
-      $conditionGroup->applyConditionsOnQuery($query);
-    }
+    /** @var QueryAggregateInterface $query */
+    $query = parent::getBaseQuery();
 
     // Next the aggregations
     /** @var Aggregation $aggregation */
     foreach ($this->getAggregations() as $aggregation) {
-      $query->aggregate($aggregation->getFieldName(), $aggregation->getAggregateFunction());
+      if (!$this->hasExpression($aggregation->getFieldName())) {
+        $query->aggregate($aggregation->getFieldName(), $aggregation->getAggregateFunction());
+      }
     }
 
-    // Next the groupings
-    foreach ($this->getGroupings() as $grouping) {
-      $query->groupBy($grouping);
-    }
-
-    // and finally apply an order if needed
-    foreach ($this->sortOrders as $sortOrder) {
-      $query->sort($sortOrder->getFieldName(), $sortOrder->getDirection(), $sortOrder->getLangcode());
-    }
-
-    if (!empty($this->tag)) {
-      $query->addTag($this->tag);
-    }
-
-    if ($this->accessPolicy) {
-      $query->addTag('spectrum_query_use_access_policy');
-      $query->addMetaData('spectrum_query', $this);
-    }
+    $this->prepareGroupings($query);
 
     return $query;
+  }
+
+  /**
+   * @param QueryAggregateInterface $drupalQuery
+   * @return self
+   */
+  private function prepareGroupings(QueryAggregateInterface $drupalQuery): self
+  {
+    // Next the groupings
+    foreach ($this->getGroupings() as $grouping) {
+      if ($this->hasExpression($grouping)) {
+        $this->expressionInGroupings = true;
+        break;
+      }
+    }
+
+    if (!$this->expressionInGroupings) {
+      foreach ($this->getGroupings() as $grouping) {
+        $drupalQuery->groupBy($grouping);
+      }
+    }
+
+    return $this;
   }
 
   /**
@@ -163,6 +160,22 @@ class AggregateQuery extends QueryBase
   public function addGrouping(string $fieldName): self
   {
     $this->groupings[] = $fieldName;
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function parseExpressions(Select $drupalQuery): self
+  {
+    parent::parseExpressions($drupalQuery);
+
+    if ($this->expressionInGroupings) {
+      foreach ($this->groupings as $grouping) {
+        $drupalQuery->groupBy($grouping);
+      }
+    }
+
     return $this;
   }
 }

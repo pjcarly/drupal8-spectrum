@@ -2,73 +2,95 @@
 
 namespace Drupal\spectrum\Query;
 
+use Drupal\Core\Database\Query\Condition as DrupalCondition;
+use Drupal\Core\Database\Query\Select as DrupalSelectQuery;
 use Drupal\Core\Database\Query\AlterableInterface;
 use Drupal\Core\Entity\Query\QueryInterface;
+use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
 
 abstract class QueryBase
 {
+  private AccountProxyInterface $currentUser;
+
   /**
    * This array holds the base conditions, no matter what, they will always be applied on the query, regardless of logic or implementation
    *
    * @var Condition[]
    */
-  protected $baseConditions = [];
+  protected array $baseConditions = [];
 
   /**
    * This holds all the Conditions on the query, and will be applied in the order you add them.
    *
    * @var Condition[]
    */
-  protected $conditions = [];
+  protected array $conditions = [];
 
   /**
    * Here the ConditionGroups are stored, the condition groups will be applied in the order you add them.
    *
    * @var ConditionGroup[]
    */
-  protected $conditionGroups = [];
+  protected array $conditionGroups = [];
 
   /**
    * Here the Query/Order are stored, the orders will be applied in the order you add them
    *
    * @var Order[]
    */
-  protected $sortOrders = [];
+  protected array $sortOrders = [];
 
   /**
    * Potential Drupal tag you want to add to the query
    *
    * @var string
    */
-  protected $tag;
+  protected string $tag;
 
   /**
    * The logic that will be applied to the conditions (not baseConditions, and not ConditionGroups)
    *
    * @var string
    */
-  protected $conditionLogic;
+  protected string $conditionLogic;
 
   /**
    * The entity type you want to query
    *
    * @var string
    */
-  protected $entityType;
+  protected string $entityType;
 
   /**
    * @var AccessPolicyInterface|null
    *   Indicates whether to use Spectrum Access Policy.
    */
-  protected $accessPolicy;
+  protected ?AccessPolicyInterface $accessPolicy = null;
 
   /**
    * Custom userId to use for access policy query
    *
    * @var int|null
    */
-  protected $userIdForAccessPolicy;
+  protected ?int $userIdForAccessPolicy = null;
+
+  /**
+   * Here you can find the expressions attached to this query. They will be added in the order you add them
+   *
+   * @var Expression[]
+   */
+  protected array $expressions = [];
+
+  /**
+   * Flag to indicate if there are expressions in sort orders
+   * this will be used pure internally, and is needed because instances
+   * of this query are passed around in drupal 
+   * We need this in getBaseQuery and parseExpressions
+   *
+   * @var boolean
+   */
+  private $expressionsInSortOrders = false;
 
   /**
    * @param string $entityType The entity type you want to query
@@ -76,6 +98,105 @@ abstract class QueryBase
   public function __construct(string $entityType)
   {
     $this->entityType = $entityType;
+    $this->currentUser = \Drupal::service('current_user');
+  }
+
+  protected abstract function getDrupalQuery(): QueryInterface;
+
+  /**
+   * Return a DrupalQuery with all the conditions and other configurations applied (except for the range or limit)
+   *
+   * @return QueryInterface
+   */
+  protected function getBaseQuery(): QueryInterface
+  {
+    // We abstracted the getQuery and getTotalCountQuery functions in this function, to avoid duplicate code
+    $drupalQuery = $this->getDrupalQuery();
+
+    // next we check for conditions and add them if needed
+
+    // Base conditions must always be applied, regardless of the logic
+    foreach ($this->baseConditions as $condition) {
+      $condition->addQueryCondition($drupalQuery, $drupalQuery);
+    }
+
+    // We might have a logic, lets check for it
+    if (empty($this->conditionLogic)) {
+      foreach ($this->conditions as $condition) {
+        $condition->addQueryCondition($drupalQuery, $drupalQuery);
+      }
+    } else {
+      // A logic was provided, we add all the conditions on the query to a ConditionGroup
+      // Apply the logic, and then pass in the drupal query to apply the conditions with logic on.
+      $conditionGroup = new ConditionGroup();
+      $conditionGroup->setLogic($this->conditionLogic);
+
+      foreach ($this->conditions as $condition) {
+        $conditionGroup->addCondition($condition);
+      }
+
+      $conditionGroup->applyConditionsOnQuery($drupalQuery);
+    }
+
+    // Next the possible added condition groups
+    foreach ($this->conditionGroups as $conditionGroup) {
+      $conditionGroup->applyConditionsOnQuery($drupalQuery);
+    }
+
+    $this->prepareSortOrders($drupalQuery);
+
+    if (!empty($this->tag)) {
+      $drupalQuery->addTag($this->tag);
+    }
+
+    if (!empty($this->expressions)) {
+      // Here we do some hackory to get Expressions working
+      // We create a conditiongroup which contains a condition with all the fields of the expressions
+      // This makes sure that there is a JOIN added for the fields needed
+      // Then later in the Query alter hook, we remove this conditiongroup,
+      // and parse the field names in the expression with the correct database column name
+      $expressionConditionGroup = new ConditionGroup();
+
+      $logic = [];
+      foreach ($this->expressions as $expression) {
+        foreach ($expression->getFields() as $field) {
+          $logic[] = sizeof($logic) + 1;
+          $expressionConditionGroup->addCondition(new Condition($field, '=', '__pseudo_placeholder'));
+        }
+      }
+
+      $expressionConditionGroup->setLogic('OR(' . implode(',', $logic) . ')');
+      $expressionConditionGroup->applyConditionsOnQuery($drupalQuery);
+
+      $drupalQuery->addTag('spectrum_query')->addMetaData('spectrum_query', $this);
+    }
+
+    if ($this->accessPolicy) {
+      $drupalQuery->addTag('spectrum_query_use_access_policy');
+      $drupalQuery->addMetaData('spectrum_query', $this);
+    }
+
+    return $drupalQuery;
+  }
+
+  private function prepareSortOrders(QueryInterface $drupalQuery): self
+  {
+    // and finally apply an order if needed
+    foreach ($this->getSortOrders() as $sortOrder) {
+      // We filter out any possible fieldname that was used in an expression
+      if ($this->hasExpression($sortOrder->getFieldName())) {
+        $this->expressionsInSortOrders = true;
+        break;
+      }
+    }
+
+    if (!$this->expressionsInSortOrders) {
+      foreach ($this->getSortOrders() as $sortOrder) {
+        $drupalQuery->sort($sortOrder->getFieldName(), $sortOrder->getDirection(), $sortOrder->getLangcode());
+      }
+    }
+
+    return $this;
   }
 
   /**
@@ -317,7 +438,7 @@ abstract class QueryBase
   public function executeAccessPolicy(AlterableInterface $query)
   {
     if ($this->accessPolicy) {
-      $userId = $this->getUserIdForAccessPolicy() ?? \Drupal::currentUser()->id();
+      $userId = $this->getUserIdForAccessPolicy() ?? $this->currentUser->id();
       $this->accessPolicy->onQuery($query, $userId);
     }
   }
@@ -353,7 +474,7 @@ abstract class QueryBase
    */
   public function getUserIdForAccessPolicy(): ?int
   {
-    return $this->userIdForAccessPolicy ?? \Drupal::currentUser()->id();
+    return $this->userIdForAccessPolicy ?? $this->currentUser->id();
   }
 
   /**
@@ -364,6 +485,110 @@ abstract class QueryBase
   public function clearUserIdForAccessPolicy(): self
   {
     unset($this->userIdForAccessPolicy);
+    return $this;
+  }
+
+  /**
+   * Adds an expression to the query, these can be used in an sort order or grouping
+   *
+   * @param Expression $expression
+   * @return self
+   */
+  public function addExpression(Expression $expression): self
+  {
+    $this->expressions[$expression->getName()] = $expression;
+    return $this;
+  }
+
+  /**
+   * Removes all the expressions from the Query
+   *
+   * @return self
+   */
+  public function clearExpressions(): self
+  {
+    $this->expressions = [];
+    return $this;
+  }
+
+  /**
+   * Returns all the expressions of this query
+   *
+   * @return Expression[]
+   */
+  public function getExpressions(): array
+  {
+    return $this->expressions;
+  }
+
+  /**
+   * Returns TRUE if this query has an expression with the provided name
+   *
+   * @param string $name
+   * @return boolean
+   */
+  public function hasExpression(string $name): bool
+  {
+    return array_key_exists($name, $this->expressions);
+  }
+
+  /**
+   * This function parses the Expressions into the Drupal Select Query.
+   * When an expression is added to a spectrum query, it isn't added as a sort
+   * order at first. Instead it is ignored, and later added through a
+   * alter_query hook. This function is called through the hook, and parses the
+   * expression in the query.
+   *
+   * @param DrupalSelectQuery $drupalQuery
+   * @return self
+   */
+  public function parseExpressions(DrupalSelectQuery $drupalQuery): self
+  {
+    $index = 0;
+    $columnMapping = [];
+    $pseudoConditionGroupKey = null;
+
+    // First we find the column mapping from the drupal query and the key to unset
+    foreach ($drupalQuery->conditions() as $key => $condition) {
+      if ($condition['field'] instanceof DrupalCondition) {
+        /** @var DrupalCondition $conditionGroup */
+        $conditionGroup = $condition['field'];
+
+        foreach ($conditionGroup->conditions() as $subCondition) {
+          if ($subCondition['value'] === '__pseudo_placeholder') {
+            $pseudoConditionGroupKey = $key;
+            // Also record the parsed column name, so we know what column to use in the expression later
+            $columnMapping[$index] = $subCondition['field'];
+            $index++;
+          }
+        }
+      }
+    }
+
+    // We unset the conditiongroup
+    unset($drupalQuery->conditions()[$pseudoConditionGroupKey]);
+
+    // Now we have the initial colums, we match those with the fields in the expressions
+    $index = 0;
+    foreach ($this->expressions as $expression) {
+      $expressionString = $expression->getExpression();
+      foreach ($expression->getFields() as $field) {
+        $column = $columnMapping[$index];
+        $expressionString = str_replace($field, $column, $expressionString);
+
+        $index++;
+      }
+
+      $drupalQuery->addExpression($expressionString, $expression->getName());
+    }
+
+    // And now we add the conditions and sort orders from the expression
+    if ($this->expressionsInSortOrders) {
+      foreach ($this->getSortOrders() as $sortOrder) {
+        $drupalQuery->orderBy($sortOrder->getFieldName(), $sortOrder->getDirection());
+      }
+    }
+
     return $this;
   }
 }
