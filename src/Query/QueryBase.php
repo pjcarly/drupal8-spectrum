@@ -44,16 +44,16 @@ abstract class QueryBase
   /**
    * Potential Drupal tag you want to add to the query
    *
-   * @var string
+   * @var string|null
    */
-  protected string $tag;
+  protected ?string $tag = null;
 
   /**
    * The logic that will be applied to the conditions (not baseConditions, and not ConditionGroups)
    *
-   * @var string
+   * @var string|null
    */
-  protected string $conditionLogic;
+  protected ?string $conditionLogic;
 
   /**
    * The entity type you want to query
@@ -90,7 +90,7 @@ abstract class QueryBase
    *
    * @var boolean
    */
-  private $expressionsInSortOrders = false;
+  private bool $expressionsInSortOrders = false;
 
   /**
    * @param string $entityType The entity type you want to query

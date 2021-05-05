@@ -19,9 +19,9 @@ class AggregateQuery extends QueryBase
    *
    * @var Aggregation[]
    */
-  protected $aggregations = [];
+  protected array $aggregations = [];
 
-  private $expressionInGroupings = false;
+  private bool $expressionInGroupings = false;
 
   /**
    * All the fields where groupings were added
