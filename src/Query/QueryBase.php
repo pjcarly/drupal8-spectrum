@@ -53,7 +53,7 @@ abstract class QueryBase
    *
    * @var string|null
    */
-  protected ?string $conditionLogic;
+  protected ?string $conditionLogic = null;
 
   /**
    * The entity type you want to query
