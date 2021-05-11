@@ -38,7 +38,7 @@ use RuntimeException;
  * Together with Collection and Relationship, this is the Core of the Spectrum framework
  * This functionality is loosly based on BookshelfJS (http://bookshelfjs.org/)
  */
-abstract class Model
+abstract class Model implements ModelInterface
 {
   use \Drupal\spectrum\Serializer\ModelSerializerMixin;
   use \Drupal\spectrum\Serializer\ModelDeserializerMixin;
@@ -147,7 +147,7 @@ abstract class Model
    *
    * @var array
    */
-  public $relatedViaFieldOnEntity = [];
+  protected $relatedViaFieldOnEntity = [];
 
   /**
    * An array containing all the ReferencedRelationships to this Entity, with as Key the relationship name
@@ -155,7 +155,7 @@ abstract class Model
    *
    * @var array
    */
-  public $relatedViaFieldOnExternalEntity = [];
+  protected $relatedViaFieldOnExternalEntity = [];
 
   /**
    * In the constructor for the Model, an drupal entity must be provided
@@ -205,10 +205,9 @@ abstract class Model
    *
    * @param string|NULL $relationshipName
    *
-   * @return \Drupal\spectrum\Model\Model
-   * @throws \Drupal\Core\Entity\EntityStorageException
+   * @return self
    */
-  public function save(string $relationshipName = NULL): Model
+  public function save(string $relationshipName = NULL): self
   {
     if (empty($relationshipName)) {
       $isNew = $this->isNew();
@@ -229,9 +228,9 @@ abstract class Model
    * Delete the Model from the database. This should only be used when this model doesnt exists in a Collection (whether it is a relationship or not)
    * Else delete it via the Collection, so the UnitOfWork can do its job
    *
-   * @return Model
+   * @return self
    */
-  public function delete(): Model
+  public function delete(): self
   {
     if (!$this->isNew()) {
       $this->entity->delete();
@@ -266,9 +265,9 @@ abstract class Model
    * Update the Key of this Model with the ID, and update the key in every Relationship (and inverse) where this Model was already put
    * This is used when a temporary Key is generated, the Model is saved, and the Key is updated to the ID of the model
    *
-   * @return Model
+   * @return self
    */
-  private function updateKeys(): Model
+  private function updateKeys(): self
   {
     // we start of by reputting our keys
     $oldKey = $this->key;
@@ -340,9 +339,9 @@ abstract class Model
    *
    * @param string $relationshipName
    * @param bool $unsetField (optional) when settings this true, the FieldRelationship will also unset the field on the entity (only works on field relationships)
-   * @return Model
+   * @return self
    */
-  public function clear(string $relationshipName, bool $unsetField = false): Model
+  public function clear(string $relationshipName, bool $unsetField = false): self
   {
     $relationship = static::getRelationship($relationshipName);
     if ($relationship instanceof FieldRelationship) {
@@ -395,9 +394,9 @@ abstract class Model
    * This is important for when you have multiple related models in memory who haven't been inserted
    * and are just related in memory, by setting the ID we know how to relate them in the DB
    *
-   * @return Model
+   * @return self
    */
-  private function setFieldForReferencedRelationships(): Model
+  private function setFieldForReferencedRelationships(): self
   {
     $relationships = static::getRelationships();
     foreach ($relationships as $relationship) {
@@ -606,6 +605,7 @@ abstract class Model
       }
 
       if ($relationship instanceof FieldRelationship) {
+
         if ($relationship->isMultiple) {
           if (!array_key_exists($relationship->getName(), $this->relatedViaFieldOnEntity)) {
             $this->createNewCollection($relationship);
@@ -731,9 +731,9 @@ abstract class Model
    *
    * @param FieldRelationship $relationship
    * @param Model $referencedModel
-   * @return Model
+   * @return self
    */
-  private function putInverse(FieldRelationship $fieldRelationship, Model $referencedModel): Model
+  private function putInverse(FieldRelationship $fieldRelationship, Model $referencedModel): self
   {
     // if the relationship is polymorphic we can get multiple bundles, so we must define the modeltype based on the bundle and entity of the current looping entity
     // or if the related modeltype isn't set yet, we must set it once
@@ -967,9 +967,9 @@ abstract class Model
    * @param string $fieldName
    * @param string $constraintName
    * @param array $options
-   * @return Model
+   * @return self
    */
-  public function addFieldConstraint(string $fieldName, string $constraintName, array $options = []): Model
+  public function addFieldConstraint(string $fieldName, string $constraintName, array $options = []): self
   {
     $this->entity->getFieldDefinition($fieldName)->addConstraint($constraintName, $options);
     return $this;
@@ -1032,9 +1032,9 @@ abstract class Model
    * Sets the isNewlyInserted flag
    *
    * @param boolean $value
-   * @return Model
+   * @return self
    */
-  public function __setIsNewlyInserted(bool $value): Model
+  public function __setIsNewlyInserted(bool $value): self
   {
     $this->__isNewlyInserted = $value;
     return $this;
@@ -1056,9 +1056,9 @@ abstract class Model
    * Sets the isBeingDeleted flag
    *
    * @param boolean $value
-   * @return Model
+   * @return self
    */
-  public function __setIsBeingDeleted(bool $value): Model
+  public function __setIsBeingDeleted(bool $value): self
   {
     $this->__isBeingDeleted = $value;
     return $this;
@@ -1302,9 +1302,9 @@ abstract class Model
    *
    * This does not work on the entities, and will throw an Exception if tried
    *
-   * @return Model
+   * @return self
    */
-  public function refresh(): Model
+  public function refresh(): self
   {
     if ($this->isNew()) {
       throw new ModelNotFoundException('You cant refresh a model which doesnt exist in the database');
@@ -2078,9 +2078,9 @@ abstract class Model
    * This function loads the translations, the first found translation will be used on the entity. In case no translation is found, the default language will be loaded
    *
    * @param String[] $languageCodes an array containing the languagecodes you want to load on the entity
-   * @return Model
+   * @return self
    */
-  public function loadTranslation(array $languageCodes): Model
+  public function loadTranslation(array $languageCodes): self
   {
     $entity = $this->entity;
 
@@ -2118,7 +2118,7 @@ abstract class Model
    * @param \DateTime $value
    * @return self
    */
-  public function setCreatedDate(\DateTime $value): Model
+  public function setCreatedDate(\DateTime $value): self
   {
     $this->entity->{'created'}->value = $value->format('U');
     return $this;
@@ -2139,7 +2139,7 @@ abstract class Model
    * @param \DateTime $value
    * @return self
    */
-  public function setLastModifiedDate(\DateTime $value): Model
+  public function setLastModifiedDate(\DateTime $value): self
   {
     $this->entity->{'created'}->value = $value->format('U');
     return $this;
@@ -2512,7 +2512,7 @@ abstract class Model
    *
    * @return  self
    */
-  public function setEntity(EntityInterface $entity): Model
+  public function setEntity(EntityInterface $entity): self
   {
     $this->entity = $entity;
 
@@ -2525,7 +2525,7 @@ abstract class Model
    * @param string $relationshipName
    * @return self
    */
-  public function setRelationshipSelected(string $relationshipName): Model
+  public function setRelationshipSelected(string $relationshipName): self
   {
     $valuesToSet = $this->get($relationshipName);
 
@@ -2546,7 +2546,7 @@ abstract class Model
    * @param string $relationshipName
    * @return self
    */
-  public function setRelationshipDeselected(string $relationshipName): Model
+  public function setRelationshipDeselected(string $relationshipName): self
   {
     $valuesToSet = $this->get($relationshipName);
 
@@ -2559,5 +2559,37 @@ abstract class Model
     }
 
     return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function isRelatedViaFieldRelationshipInMemory(string $relationshipName): bool
+  {
+    return array_key_exists($relationshipName, $this->relatedViaFieldOnEntity);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function isRelatedViaReferencedRelationshipInMemory(string $relationshipName): bool
+  {
+    return array_key_exists($relationshipName, $this->relatedViaFieldOnExternalEntity);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getReferencedRelationshipsInMemory(): array
+  {
+    return $this->relatedViaFieldOnExternalEntity;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getFieldRelationshipsInMemory(): array
+  {
+    return $this->relatedViaFieldOnEntity;
   }
 }
