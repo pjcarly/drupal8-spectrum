@@ -45,25 +45,17 @@ abstract class Model implements ModelInterface
   use \Drupal\spectrum\Serializer\ModelSQLHelperMixin;
 
   /**
-   * The entity type of this model (for example "node"), this should be defined
-   * in every subclass
-   *
-   * @var string
-   * @return string
+   * {@inheritdoc}
    */
   public abstract static function entityType(): string;
 
   /**
-   * The bundle of this model (for example "article"), this should be defined
-   * in every subclass
-   *
-   * @var string
-   * @return string
+   * {@inheritdoc}
    */
   public abstract static function bundle(): string;
 
   /**
-   * @return \Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface
+   * {@inheritdoc}
    */
   public abstract static function getAccessPolicy(): AccessPolicyInterface;
 

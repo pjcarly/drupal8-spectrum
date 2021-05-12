@@ -2,6 +2,7 @@
 
 namespace Drupal\spectrum\Model;
 
+use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
 use Drupal\spectrum\Query\Query;
 
 /**
@@ -11,6 +12,31 @@ use Drupal\spectrum\Query\Query;
  */
 interface ModelInterface
 {
+
+  /**
+   * The entity type of this model (for example "node"), this should be defined
+   * in every subclass
+   *
+   * @var string
+   * @return string
+   */
+  public static function entityType(): string;
+
+  /**
+   * The bundle of this model (for example "article"), this should be defined
+   * in every subclass
+   *
+   * @var string
+   * @return string
+   */
+  public static function bundle(): string;
+
+  /**
+   * What access policy should be used to access records of this model
+   * 
+   * @return AccessPolicyInterface
+   */
+  public static function getAccessPolicy(): AccessPolicyInterface;
 
   /**
    * @param string|NULL $relationshipName
