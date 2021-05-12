@@ -11,4 +11,19 @@ interface ModelServiceInterface
    * @return string[]
    */
   public function getRegisteredModelClasses(): array;
+
+  /**
+   * Clears the drupal entity cache for the provided model
+   *
+   * @param string $modelClass
+   * @return self
+   */
+  public function clearDrupalEntityCacheForModel(string $modelClass): self;
+
+  /**
+   * Loops over every registered model, and clears the drupal entity cache in memory
+   *
+   * @return self
+   */
+  public function clearDrupalEntityCachesForAllModels(): self;
 }
