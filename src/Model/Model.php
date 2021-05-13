@@ -44,6 +44,8 @@ abstract class Model implements ModelInterface
   use \Drupal\spectrum\Serializer\ModelDeserializerMixin;
   use \Drupal\spectrum\Serializer\ModelSQLHelperMixin;
 
+  protected ModelServiceInterface $modelService;
+
   /**
    * {@inheritdoc}
    */
@@ -157,6 +159,7 @@ abstract class Model implements ModelInterface
   public function __construct(EntityInterface $entity)
   {
     $this->entity = $entity;
+    $this->modelService = \Drupal::service("spectrum.model");
 
     // TODO: implement __spectrumModel for Triggers
     // We set the new instance of the Model on the entity, this way we can reuse the model state in triggers
@@ -1305,7 +1308,7 @@ abstract class Model implements ModelInterface
     // Drupal caches the entities in memory for the remainder of the transaction
     // we want to clear that cash, because we want the data as it is in the database
     $modelClass = get_called_class();
-    $modelClass::clearDrupalStaticEntityCache();
+    $this->modelService->clearDrupalEntityCacheForModelClass($modelClass);
 
     // We do a new entity query
     $entityQuery = static::getEntityQuery();
@@ -1422,17 +1425,6 @@ abstract class Model implements ModelInterface
   public static function getNextKey(): string
   {
     return 'PLH' . (static::$keyIndex++);
-  }
-
-  /**
-   * @deprecated
-   * Use forgeNew() instead
-   *
-   * @return Model
-   */
-  public static function createNew(): Model
-  {
-    return static::forgeNew();
   }
 
   /**
@@ -1562,42 +1554,6 @@ abstract class Model implements ModelInterface
     }
 
     return static::$cachedModelTypes[$requestedModelType];
-  }
-
-  /**
-   * This function will clear the static entity cache drupal stores in memory for the remainder of the transaction
-   * Any entities that are present in the cache will not be loaded from the database again, instead the php object in the cache will be returned
-   * After calling this function, the cache of the entire ENTITY (so all including bundles) will be cleared, and any queries for the entity will
-   * be fetched from the database again
-   *
-   * @return void
-   *
-   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
-   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
-   */
-  public static function clearDrupalStaticEntityCache(): void
-  {
-    $entityType = static::entityType();
-    \Drupal::entityTypeManager()
-      ->getStorage($entityType)
-      ->resetCache();
-  }
-
-  /**
-   * This function will clear all the entity caches for every model class in the application (see Model::clearDrupalStaticEntityCache() for more details)
-   *
-   * @return void
-   */
-  public static function clearAllDrupalStaticEntityCaches(): void
-  {
-    $clearedEntitytypes = [];
-
-    foreach (static::getModelClasses() as $modelClass) {
-      if (!in_array($modelClass::entityType(), $clearedEntitytypes)) {
-        $modelClass::clearDrupalStaticEntityCache();
-        $clearedEntitytypes[] = $modelClass::entityType();
-      }
-    }
   }
 
   /**
@@ -1783,9 +1739,7 @@ abstract class Model implements ModelInterface
   }
 
   /**
-   * Returns the drupal field definitions for the entity of this Model
-   *
-   * @return FieldDefinitionInterface[]
+   * @deprecated moved to modelservice
    */
   public static function getFieldDefinitions()
   {
@@ -1809,10 +1763,7 @@ abstract class Model implements ModelInterface
   }
 
   /**
-   * Returns the drupal FieldDefinition for the provided fieldName
-   *
-   * @param string $fieldName
-   * @return \Drupal\Core\Field\FieldDefinitionInterface|null
+   * @deprecated moved to modelservice
    */
   public static function getFieldDefinition(string $fieldName): ?\Drupal\Core\Field\FieldDefinitionInterface
   {
@@ -1842,22 +1793,6 @@ abstract class Model implements ModelInterface
   }
 
   /**
-   * Returns the Label based on the Drupal BundleInfo
-   *
-   * @return string
-   */
-  public static function getLabel(): string
-  {
-    $label = '';
-    $bundleInfo = static::getBundleInfo();
-    if (array_key_exists('label', $bundleInfo)) {
-      $label = $bundleInfo['label'];
-    }
-
-    return $label;
-  }
-
-  /**
    * Returns the BundleKey, this is either the entityType when no bundle is provided (for example with user) or bundle in all other cases
    *
    * @return string
@@ -1865,16 +1800,6 @@ abstract class Model implements ModelInterface
   public static function getBundleKey(): string
   {
     return empty(static::bundle()) ? static::entityType() : static::bundle();
-  }
-
-  /**
-   * Returns the Drupal BundleInfo of the entityType
-   *
-   */
-  public static function getBundleInfo()
-  {
-    $bundleInfo = \Drupal::service("entity_type.bundle.info")->getBundleInfo(static::entityType());
-    return $bundleInfo[static::getBundleKey()];
   }
 
   /**
@@ -2204,11 +2129,7 @@ abstract class Model implements ModelInterface
   }
 
   /**
-   * Checks if there is a Model Class defined for the Entity / Bundle
-   *
-   * @param string $entity
-   * @param string|null $bundle
-   * @return boolean
+   * @deprecated moved to modelservice
    */
   public static function hasModelClassForEntityAndBundle(string $entity, ?string $bundle): bool
   {
@@ -2219,11 +2140,7 @@ abstract class Model implements ModelInterface
   }
 
   /**
-   * Returns the fully qualified classname for the provided entity/bundle
-   *
-   * @param string $entity
-   * @param string|null $bundle
-   * @return string
+   * @deprecated moved to modelservice
    */
   public static function getModelClassForEntityAndBundle(string $entity, ?string $bundle): string
   {
@@ -2236,10 +2153,7 @@ abstract class Model implements ModelInterface
   }
 
   /**
-   * Returns the corresponding modelclass for an entity instance.
-   *
-   * @param EntityInterface $entityInstance
-   * @return string
+   * @deprecated moved to modelservice
    */
   public static function getModelClassForEntity(EntityInterface $entityInstance): string
   {
@@ -2250,6 +2164,8 @@ abstract class Model implements ModelInterface
   }
 
   /**
+   * @deprecated use dependency injection on @spectrum.model
+   * 
    * Returns the ModelService that is responsible for the registration of Model Classes in the system
    * This should be implemented by every drupal installation using Spectrum (see ModelServiceInterface for documentation)
    *
@@ -2270,6 +2186,7 @@ abstract class Model implements ModelInterface
   }
 
   /**
+   * @deprecated use dependency injection on @spectrum.model_store
    * Returns the registered ModelStore
    *
    * @return ModelStoreInterface
@@ -2307,9 +2224,7 @@ abstract class Model implements ModelInterface
   }
 
   /**
-   * Returns an Array of all registered Model Classes in the system. (see ModelServiceInterface for documentation)
-   *
-   * @return array
+   * @deprecated use ModelService->getRegisteredModelClasses
    */
   public static function getModelClasses(): array
   {
@@ -2336,6 +2251,7 @@ abstract class Model implements ModelInterface
   }
 
   /**
+   * @deprecated
    * This method will set an array on the abstract Model object, with all the registered models in.
    *
    * @return void
@@ -2361,11 +2277,7 @@ abstract class Model implements ModelInterface
   }
 
   /**
-   * Get a unique key for this model class
-   *
-   * @param string $entity
-   * @param string|null $bundle
-   * @return string
+   * @deprecated moved to modelservice
    */
   public static function getKeyForEntityAndBundle(string $entity, ?string $bundle): string
   {
@@ -2392,31 +2304,8 @@ abstract class Model implements ModelInterface
     return str_replace('.', '_', static::getModelClassKey());
   }
 
-  public static function getReadPermissionKey(): string
-  {
-    $permissionKey = static::getBasePermissionKey();
-    return 'spectrum api ' . $permissionKey . ' read';
-  }
-
-  public static function getCreatePermissionKey(): string
-  {
-    $permissionKey = static::getBasePermissionKey();
-    return 'spectrum api ' . $permissionKey . ' create';
-  }
-
-  public static function getDeletePermissionKey(): string
-  {
-    $permissionKey = static::getBasePermissionKey();
-    return 'spectrum api ' . $permissionKey . ' delete';
-  }
-
-  public static function getEditPermissionKey(): string
-  {
-    $permissionKey = static::getBasePermissionKey();
-    return 'spectrum api ' . $permissionKey . ' edit';
-  }
-
   /**
+   * @deprecated use dependency injection on @spectrum.permissions
    * Returns the Registered Permission Service in the Container
    *
    * @return PermissionServiceInterface
