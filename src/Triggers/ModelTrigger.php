@@ -4,6 +4,7 @@ namespace Drupal\spectrum\Triggers;
 
 use Drupal\spectrum\Model\Model;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\spectrum\Model\ModelServiceInterface;
 use Drupal\spectrum\Runnable\QueuedJob;
 
 /**
@@ -30,14 +31,14 @@ class ModelTrigger
       return;
     }
 
+    /** @var ModelServiceInterface $modelService */
+    $modelService = \Drupal::service("spectrum.model");
+
     $entityType = $entity->getEntityTypeId();
     $bundle = $entity->bundle();
 
-    if (Model::hasModelClassForEntityAndBundle($entityType, $bundle)) {
-      $modelClass = Model::getModelClassForEntityAndBundle(
-        $entityType,
-        $bundle
-      );
+    if ($modelService->hasModelClassForEntityAndBundle($entityType, $bundle)) {
+      $modelClass = $modelService->getModelClassForEntityAndBundle($entityType, $bundle);
 
       // We check the model reference on the entity itself, this way we can reuse the previous model state in the triggers
       $modelOnEntity = $entity->__spectrumModel;

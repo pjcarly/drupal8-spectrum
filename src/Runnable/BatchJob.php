@@ -9,12 +9,26 @@ use Drupal\Core\Cache\MemoryCache\MemoryCacheInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\spectrum\Event\CronStatusUpdatedEvent;
 use Drupal\spectrum\Model\Model;
+use Drupal\spectrum\Model\ModelServiceInterface;
+use Drupal\spectrum\Services\ModelStoreInterface;
 use Exception;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
 abstract class BatchJob extends QueuedJob
 {
+  protected ModelStoreInterface $modelStore;
+  protected ModelServiceInterface $modelService;
+  protected MemoryCacheInterface $memoryCache;
+
+  public function __construct(EntityInterface $entity)
+  {
+    parent::__construct($entity);
+    $this->modelStore = \Drupal::service("spectrum.model_store");
+    $this->modelService = \Drupal::service("spectrum.model");
+    $this->memoryCache = \Drupal::service("entity.memory_cache");
+  }
+
   /**
    * {@inheritdoc}
    */
@@ -136,13 +150,11 @@ abstract class BatchJob extends QueuedJob
   private function clearCache()
   {
     // This will clear all the entity caches, and free entities from memory
-    Model::clearAllDrupalStaticEntityCaches();
+    $this->modelService->clearDrupalEntityCachesForAllModels();
 
-    /** @var MemoryCacheInterface $cache */
-    $cache = Drupal::service('entity.memory_cache');
-    $cache->deleteAll();
+    $this->memoryCache->deleteAll();
 
     // And finally clear the model store of any data as well
-    Model::getModelStore()->unloadAll();
+    $this->modelStore->unloadAll();
   }
 }
