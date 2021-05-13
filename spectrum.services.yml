@@ -10,6 +10,11 @@ services:
   spectrum.model_store:
     class: Drupal\spectrum\Services\ModelStore
     arguments: []
+  spectrum.model_serializer:
+    class: Drupal\spectrum\Services\ModelSerializer
+    arguments:
+      - "@logger.channel.spectrum"
+      - "@entity_field.manager"
   spectrum.jobs:
     class: Drupal\spectrum\Services\JobService
     parent: default_plugin_manager

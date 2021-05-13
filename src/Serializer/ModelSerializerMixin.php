@@ -494,11 +494,7 @@ trait ModelSerializerMixin
 
     if (!array_key_exists($modelClassKey, static::$fieldsMappingIndex)) {
       $prettyMapping = static::getPrettyFieldsToFieldsMapping();
-
-      $mapping = [];
-      foreach ($prettyMapping as $pretty => $field) {
-        $mapping[$field] = $pretty;
-      }
+      $mapping = array_flip($prettyMapping);
 
       static::$fieldsMappingIndex[$modelClassKey] = $mapping;
     }
