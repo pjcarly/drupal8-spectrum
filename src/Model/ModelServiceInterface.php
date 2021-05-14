@@ -3,6 +3,7 @@
 namespace Drupal\spectrum\Model;
 
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
 
 interface ModelServiceInterface
@@ -87,4 +88,12 @@ interface ModelServiceInterface
    * @return FieldDefinitionInterface|null
    */
   public function getFieldDefinition(string $modelClass, string $fieldName): ?FieldDefinitionInterface;
+
+  /**
+   * Returns a Drupal Entity Type for the provided modelclass
+   *
+   * @param string $modelClass
+   * @return EntityTypeInterface
+   */
+  public function getEntityType(string $modelClass): EntityTypeInterface;
 }

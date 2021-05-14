@@ -4,6 +4,7 @@ namespace Drupal\spectrum\Model;
 
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\spectrum\Exceptions\ModelClassNotDefinedException;
@@ -150,5 +151,14 @@ abstract class ModelService implements ModelServiceInterface
       $fieldDefinition = $fieldDefinitions[$fieldName];
     }
     return $fieldDefinition;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getEntityType(string $modelClass): EntityTypeInterface
+  {
+    /** @var ModelInterface $modelClass */
+    return $this->entityTypeManager->getDefinition($modelClass::entityType());
   }
 }
