@@ -5,7 +5,6 @@ namespace Drupal\spectrum\Model;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Field\EntityReferenceFieldItemList;
-use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\Plugin\Field\FieldType\EntityReferenceItem;
 use Drupal\spectrum\Exceptions\CascadeNoDeleteException;
 use Drupal\spectrum\Exceptions\InvalidEntityException;
@@ -42,9 +41,6 @@ abstract class Model implements ModelInterface
 {
   use \Drupal\spectrum\Serializer\ModelSerializerMixin;
   use \Drupal\spectrum\Serializer\ModelDeserializerMixin;
-  use \Drupal\spectrum\Serializer\ModelSQLHelperMixin;
-
-  protected ModelServiceInterface $modelService;
 
   /**
    * {@inheritdoc}
@@ -159,7 +155,6 @@ abstract class Model implements ModelInterface
   public function __construct(EntityInterface $entity)
   {
     $this->entity = $entity;
-    $this->modelService = \Drupal::service("spectrum.model");
 
     // TODO: implement __spectrumModel for Triggers
     // We set the new instance of the Model on the entity, this way we can reuse the model state in triggers
@@ -172,17 +167,6 @@ abstract class Model implements ModelInterface
     } else {
       $this->key = static::getNextKey();
     }
-  }
-
-  /**
-   * Returns a string that can be used in a BaseApiController to switch on and create a ModelApiHandler
-   * This should be overridden in every ModelClass you want to define a Generic ModelApiHandler for with the key you want the BaseApiController to discover the Model with
-   *
-   * @return string
-   */
-  public static function getGenericApiHandlerKey(): string
-  {
-    return '';
   }
 
   /**
@@ -280,7 +264,7 @@ abstract class Model implements ModelInterface
           foreach ($referencedModels as $referencedModel) {
             $referencedEntityType = $referencedModel->entity->getEntityTypeId();
             $referencedEntityBundle = empty($referencedModel->entity->type) ? null : $referencedModel->entity->{'type'}->target_id;
-            $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
+            $referencedModelType = static::service()->getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
 
             // we must also check for an inverse relationship and, if found, put the inverse as well
             $referencedRelationship = $referencedModelType::getReferencedRelationshipForFieldRelationship($relationship);
@@ -295,7 +279,7 @@ abstract class Model implements ModelInterface
           if (!empty($referencedModel)) {
             $referencedEntityType = $referencedModel->entity->getEntityTypeId();
             $referencedEntityBundle = empty($referencedModel->entity->type) ? null : $referencedModel->entity->{'type'}->target_id;
-            $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
+            $referencedModelType = static::service()->getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
 
             // we must also check for an inverse relationship and, if found, put the inverse as well
             $referencedRelationship = $referencedModelType::getReferencedRelationshipForFieldRelationship($relationship);
@@ -471,7 +455,7 @@ abstract class Model implements ModelInterface
                   // or if the related modeltype isn't set yet, we must set it once
                   $referencedEntityType = $referencedEntity->getEntityTypeId();
                   $referencedEntityBundle = empty($referencedEntity->type) ? null : $referencedEntity->type->target_id;
-                  $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
+                  $referencedModelType = static::service()->getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
                 }
 
                 // now that we have a model, lets put them one by one
@@ -495,7 +479,7 @@ abstract class Model implements ModelInterface
               // if the relationship is polymorphic we can get multiple bundles, so we must define the modeltype based on the bundle and entity of the fetched entity
               $referencedEntityType = $referencedEntity->getEntityTypeId();
               $referencedEntityBundle = empty($referencedEntity->type) ? null : $referencedEntity->type->target_id;
-              $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
+              $referencedModelType = static::service()->getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
 
               // now that we have a model, lets put them one by one
               $referencedModel = $referencedModelType::forgeByEntity($referencedEntity);
@@ -519,7 +503,7 @@ abstract class Model implements ModelInterface
                 // if the referencing modeltype isn't set yet, we must set it once
                 $referencingEntityType = $referencingEntity->getEntityTypeId();
                 $referencingEntityBundle = empty($referencingEntity->type) ? null : $referencingEntity->type->target_id;
-                $referencingModelType = Model::getModelClassForEntityAndBundle($referencingEntityType, $referencingEntityBundle);
+                $referencingModelType = static::service()->getModelClassForEntityAndBundle($referencingEntityType, $referencingEntityBundle);
               }
 
               // now that we have a model, lets put them one by one
@@ -642,8 +626,10 @@ abstract class Model implements ModelInterface
    */
   public static function getIdField(): string
   {
-    $drupalEntityType = static::getDrupalEntityType();
-    return $drupalEntityType->getKeys()['id'];
+    /** @var ModelServiceInterface $modelService */
+    $modelService = \Drupal::service("spectrum.model");
+    $modelService->getEntityType(static::class)->getKeys()['id'];
+    return $modelService->getEntityType(static::class)->getKeys()['id'];
   }
 
   /**
@@ -734,7 +720,7 @@ abstract class Model implements ModelInterface
     // or if the related modeltype isn't set yet, we must set it once
     $referencedEntityType = $referencedModel->entity->getEntityTypeId();
     $referencedEntityBundle = empty($referencedModel->entity->type) ? null : $referencedModel->entity->{'type'}->target_id;
-    $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
+    $referencedModelType = static::service()->getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
 
     // we must also check for an inverse relationship and, if found, put the inverse as well
     $referencedRelationship = $referencedModelType::getReferencedRelationshipForFieldRelationship($fieldRelationship);
@@ -1089,7 +1075,7 @@ abstract class Model implements ModelInterface
     // Next we check if the field actually changed
     if ($this->fieldChanged($fieldName)) {
       // Now we know the field changed, lets compare it to the oldvalue
-      $fieldDefinition = static::getFieldDefinition($fieldName);
+      $fieldDefinition = static::service()->getFieldDefinition(static::class, $fieldName);
       $oldAttribute = $this->entity->original->$fieldName;
 
       switch ($fieldDefinition->getType()) {
@@ -1132,7 +1118,7 @@ abstract class Model implements ModelInterface
     // Next we check if the field actually changed
     if ($this->fieldChanged($fieldName)) {
       // Now we know the field changed, lets compare it to the oldvalue
-      $fieldDefinition = static::getFieldDefinition($fieldName);
+      $fieldDefinition = static::service()->getFieldDefinition(static::class, $fieldName);
       $newAttribute = $this->entity->$fieldName;
       $oldAttribute = isset($this->entity->original) ? $this->entity->original->$fieldName : null;
 
@@ -1178,7 +1164,7 @@ abstract class Model implements ModelInterface
     // Next we check if the field actually changed
     if ($this->fieldChanged($fieldName)) {
       // Now we know the field changed, lets compare it to the new value
-      $fieldDefinition = static::getFieldDefinition($fieldName);
+      $fieldDefinition = static::service()->getFieldDefinition(static::class, $fieldName);
       $newAttribute = $this->entity->$fieldName;
 
       switch ($fieldDefinition->getType()) {
@@ -1247,7 +1233,7 @@ abstract class Model implements ModelInterface
       return false;
     }
 
-    $fieldDefinition = static::getFieldDefinition($fieldName);
+    $fieldDefinition = static::service()->getFieldDefinition(static::class, $fieldName);
 
     if ($ignoreFieldDoesNotExist && empty($fieldDefinition)) {
       return false;
@@ -1308,7 +1294,7 @@ abstract class Model implements ModelInterface
     // Drupal caches the entities in memory for the remainder of the transaction
     // we want to clear that cash, because we want the data as it is in the database
     $modelClass = get_called_class();
-    $this->modelService->clearDrupalEntityCacheForModelClass($modelClass);
+    static::service()->clearDrupalEntityCacheForModelClass($modelClass);
 
     // We do a new entity query
     $entityQuery = static::getEntityQuery();
@@ -1472,18 +1458,6 @@ abstract class Model implements ModelInterface
   }
 
   /**
-   * Forge a collection of this modeltype
-   *
-   * @return Collection
-   */
-  public static function forgeCollection(): Collection
-  {
-    $requestedModelType = get_called_class();
-    $registeredModelType = static::getRegisteredModelTypeForModelType($requestedModelType);
-    return Collection::forgeNew($registeredModelType);
-  }
-
-  /**
    * Forge a new Model with either an Drupal Entity or an ID. For ease of use and readability use the methods "forgeById" or "forgeByEntity"
    * This is only used internally
    *
@@ -1513,12 +1487,9 @@ abstract class Model implements ModelInterface
     }
 
     if (!empty($entity)) {
-      $registeredModelType = static::getModelClassForEntityAndBundle(
-        $entity->getEntityTypeId(),
-        $entity->bundle()
-      );
-
+      $registeredModelType = static::service()->getModelClassForEntity($entity);
       $requestedModelType = get_called_class();
+
       if (is_subclass_of($requestedModelType, $registeredModelType)) {
         // When the requestedmodeltype is a subclass of the registeredmodeltype, we use the requestedmodeltype
         // As it might just as well be a seperate implementation for another purpose.
@@ -1533,27 +1504,6 @@ abstract class Model implements ModelInterface
     }
 
     return null;
-  }
-
-  /**
-   * Returns the registered fully qualified classname for another fully qualified model classname.
-   * Per system another implementation of the Model might exist.
-   *
-   * @param string $requestedModelType
-   *
-   * @return string
-   * @throws \Drupal\spectrum\Exceptions\ModelClassNotDefinedException
-   */
-  public static final function getRegisteredModelTypeForModelType(string $requestedModelType): string
-  {
-    if (!array_key_exists($requestedModelType, static::$cachedModelTypes)) {
-      static::$cachedModelTypes[$requestedModelType] = Model::getModelClassForEntityAndBundle(
-        $requestedModelType::entityType(),
-        $requestedModelType::bundle()
-      );
-    }
-
-    return static::$cachedModelTypes[$requestedModelType];
   }
 
   /**
@@ -1748,18 +1698,6 @@ abstract class Model implements ModelInterface
     } else {
       return \Drupal::service('entity_field.manager')->getFieldDefinitions(static::entityType(), static::bundle());
     }
-  }
-
-  /**
-   * Gets the EntityType from Drupal for this Entity
-   *
-   * @return \Drupal\Core\Entity\EntityTypeInterface
-   */
-  public static function getDrupalEntityType(): \Drupal\Core\Entity\EntityTypeInterface
-  {
-    $entityType = static::entityType();
-    $entityTypeManager = \Drupal::entityTypeManager();
-    return $entityTypeManager->getDefinition($entityType);
   }
 
   /**
@@ -2153,17 +2091,6 @@ abstract class Model implements ModelInterface
   }
 
   /**
-   * @deprecated moved to modelservice
-   */
-  public static function getModelClassForEntity(EntityInterface $entityInstance): string
-  {
-    $bundle = $entityInstance->bundle();
-    $entity = $entityInstance->getEntityTypeId();
-
-    return static::getModelClassForEntityAndBundle($entity, $bundle);
-  }
-
-  /**
    * @deprecated use dependency injection on @spectrum.model
    * 
    * Returns the ModelService that is responsible for the registration of Model Classes in the system
@@ -2173,16 +2100,22 @@ abstract class Model implements ModelInterface
    */
   public static function getModelService(): ModelServiceInterface
   {
+    return static::service();
+  }
+
+  /**
+   * Returns the ModelService currently in the container,
+   * This should only be used from within a Model
+   *
+   * @return ModelServiceInterface
+   */
+  private static final function service(): ModelServiceInterface
+  {
     if (!\Drupal::hasService('spectrum.model')) {
       throw new NotImplementedException('No model service found in the Container, please create a custom module, register a service and implement \Drupal\spectrum\Model\ModelServiceInterface');
     }
 
-    $modelService = \Drupal::service('spectrum.model');
-    if (!($modelService instanceof ModelServiceInterface)) {
-      throw new NotImplementedException('Model service must implement \Drupal\spectrum\Model\ModelServiceInterface');
-    }
-
-    return $modelService;
+    return \Drupal::service('spectrum.model');
   }
 
   /**
@@ -2381,7 +2314,7 @@ abstract class Model implements ModelInterface
    *
    * @return  EntityInterface
    */
-  public function getEntity(): EntityInterface
+  public final function getEntity(): EntityInterface
   {
     return $this->entity;
   }
@@ -2393,7 +2326,7 @@ abstract class Model implements ModelInterface
    *
    * @return  self
    */
-  public function setEntity(EntityInterface $entity): self
+  public final function setEntity(EntityInterface $entity): self
   {
     $this->entity = $entity;
 

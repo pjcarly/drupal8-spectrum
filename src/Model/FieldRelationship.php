@@ -2,6 +2,7 @@
 
 namespace Drupal\spectrum\Model;
 
+use Drupal\spectrum\Exceptions\InvalidFieldException;
 use Drupal\spectrum\Query\EntityQuery;
 use Drupal\spectrum\Query\Condition;
 
@@ -105,7 +106,7 @@ class FieldRelationship extends Relationship
     $relationshipSource = $this->relationshipSource;
     $fieldDefinition = $relationshipSource::getFieldDefinition($this->getField());
     if (empty($fieldDefinition)) {
-      throw new \Drupal\spectrum\Exceptions\InvalidFieldException('Field ' . $this->getField() . ' not found on modeltype: ' . $relationshipSource);
+      throw new InvalidFieldException('Field ' . $this->getField() . ' not found on modeltype: ' . $relationshipSource);
     }
     $fieldSettings = $fieldDefinition->getItemDefinition()->getSettings();
 
@@ -119,14 +120,14 @@ class FieldRelationship extends Relationship
       $relationshipBundle = reset($fieldSettings['handler_settings']['target_bundles']);
     }
 
-    $this->firstModelType = Model::getModelClassForEntityAndBundle($relationshipEntityType, $relationshipBundle);
+    $this->firstModelType = $this->modelService->getModelClassForEntityAndBundle($relationshipEntityType, $relationshipBundle);
 
     if (isset($fieldSettings['handler_settings']['target_bundles']) && sizeof($fieldSettings['handler_settings']['target_bundles']) > 1) {
       $this->isPolymorphic = true;
       $this->modelType = NULL;
 
       foreach ($fieldSettings['handler_settings']['target_bundles'] as $targetBundle) {
-        $this->polymorphicModelTypes[] = Model::getModelClassForEntityAndBundle($relationshipEntityType, $targetBundle);
+        $this->polymorphicModelTypes[] = $this->modelService->getModelClassForEntityAndBundle($relationshipEntityType, $targetBundle);
       }
     } else {
       $this->modelType = $this->firstModelType;
@@ -171,7 +172,7 @@ class FieldRelationship extends Relationship
   /**
    * Magic getter for ease of access
    *
-   * @param [type] $property
+   * @param string $property
    * @return void
    */
   public function __get($property)

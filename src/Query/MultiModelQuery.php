@@ -3,7 +3,7 @@
 namespace Drupal\spectrum\Query;
 
 use Drupal\spectrum\Model\Collection;
-use Drupal\spectrum\Model\Model;
+use Drupal\spectrum\Model\ModelServiceInterface;
 use Drupal\spectrum\Model\PolymorphicCollection;
 
 /**
@@ -20,9 +20,11 @@ class MultiModelQuery extends EntityQuery
   {
     $collection = PolymorphicCollection::forgeNew(null);
     $entities = $this->fetch();
+    /** @var ModelServiceInterface $modelService */
+    $modelService = \Drupal::service("spectrum.model");
 
     foreach ($entities as $entity) {
-      $modelClass = Model::getModelClassForEntity($entity);
+      $modelClass = $modelService->getModelClassForEntity($entity);
       $model = $modelClass::forgeByEntity($entity);
 
       $collection->put($model);
