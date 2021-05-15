@@ -17,14 +17,14 @@ use Drupal\Component\Annotation\Plugin;
 class Job extends Plugin
 {
   /**
-   * The ID of the VAT calculator
+   * The ID of the Job
    *
    * @var string
    */
   public $id;
 
   /**
-   * A description of the VATCalculator.
+   * A description of Job.
    *
    * @var string
    */

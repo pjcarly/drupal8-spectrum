@@ -17,17 +17,16 @@ use Psr\Log\LoggerInterface;
  */
 class JobService extends DefaultPluginManager implements LoggerAwareInterface
 {
-  /** @var LoggerInterface */
-  protected $logger;
+  protected LoggerInterface $logger;
 
   /** @var string[] */
-  protected $existingFoundJobs = [];
+  protected array $existingFoundJobs = [];
 
   /** @var string[] */
-  protected $newRegisteredJobs = [];
+  protected array $newRegisteredJobs = [];
 
   /** @var string[] */
-  protected $removedJobs = [];
+  protected array $removedJobs = [];
 
   /**
    * {@inheritdoc}
