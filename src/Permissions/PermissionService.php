@@ -2,7 +2,10 @@
 
 namespace Drupal\spectrum\Permissions;
 
+use Drupal\Core\Database\Connection;
 use Drupal\spectrum\Model\Model;
+use Drupal\spectrum\Model\ModelInterface;
+use Drupal\spectrum\Model\ModelServiceInterface;
 use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
 use Drupal\spectrum\Models\User;
 use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyEntity;
@@ -15,20 +18,20 @@ use Psr\Log\LoggerInterface;
  *
  * @package Drupal\spectrum\Services
  */
-class PermissionService implements PermissionServiceInterface, LoggerAwareInterface
+abstract class PermissionService implements PermissionServiceInterface, LoggerAwareInterface
 {
-
-  /**
-   * @var \Psr\Log\LoggerInterface
-   */
-  protected $logger;
+  protected LoggerInterface $logger;
+  protected ModelServiceInterface $modelService;
+  protected Connection $database;
 
   /**
    * PermissionService constructor.
    */
-  public function __construct()
+  public function __construct(LoggerInterface $logger, ModelServiceInterface $modelService, Connection $database)
   {
-    $this->logger = \Drupal::logger('spectrum');
+    $this->logger = $logger;
+    $this->modelService = $modelService;
+    $this->database = $database;
   }
 
   /**
@@ -40,97 +43,13 @@ class PermissionService implements PermissionServiceInterface, LoggerAwareInterf
   }
 
   /**
-   * @param string $role
-   * @param string $scope
-   *
-   * @return bool
-   */
-  public function roleHasOAuthScopePermission(string $role, string $scope): bool
-  {
-    return true;
-  }
-
-  /**
-   * @param string $role
-   * @param string $permission
-   * @param string $access
-   *
-   * @return bool
-   */
-  public function roleHasModelPermission(string $role, string $permission, string $access): bool
-  {
-    return true;
-  }
-
-  /**
-   * @param string $role
-   * @param string $route
-   * @param string $api
-   * @param string $access
-   *
-   * @return bool
-   */
-  public function roleHasApiPermission(string $role, string $route, string $api, string $access): bool
-  {
-    return true;
-  }
-
-  /**
-   * @param string $role
-   * @param string $route
-   * @param string $api
-   * @param string $action
-   *
-   * @return bool
-   */
-  public function roleHasApiActionPermission(string $role, string $route, string $api, string $action): bool
-  {
-    return true;
-  }
-
-  /**
-   * @param string $route
-   * @param string $api
-   *
-   * @return bool
-   */
-  public function apiPermissionExists(string $route, string $api): bool
-  {
-    return true;
-  }
-
-  /**
-   * @param string $route
-   * @param string $api
-   *
-   * @return bool
-   */
-  public function apiActionPermissionExists(string $route, string $api): bool
-  {
-    return true;
-  }
-
-  /**
-   * @param string $role
-   * @param string $entity
-   * @param string $field
-   * @param string $access
-   *
-   * @return bool
-   */
-  public function roleHasFieldPermission(string $role, string $entity, string $field, string $access): bool
-  {
-    return true;
-  }
-
-  /**
    * Rebuilds the access policy table.
    * @todo move this upstream and use dependency injection to override this
    * class.
    */
   public function rebuildAccessPolicy(): void
   {
-    $classes = Model::getModelService()->getRegisteredModelClasses();
+    $classes = $this->modelService->getRegisteredModelClasses();
 
     foreach ($classes as $class) {
       $this->rebuildAccessPolicyForModelClass($class);
@@ -145,9 +64,9 @@ class PermissionService implements PermissionServiceInterface, LoggerAwareInterf
    */
   public function rebuildAccessPolicyForEntity(string $entity): void
   {
-    $classes = Model::getModelService()->getRegisteredModelClasses();
+    $classes = $this->modelService->getRegisteredModelClasses();
 
-    /** @var \Drupal\spectrum\Model\Model $class */
+    /** @var ModelInterface $class */
     foreach ($classes as $class) {
       if ($class::entityType() === $entity) {
         /** @var string $class */
@@ -165,9 +84,9 @@ class PermissionService implements PermissionServiceInterface, LoggerAwareInterf
    */
   public function rebuildAccessPolicyForEntityAndBundle(string $entity, string $bundle): void
   {
-    $classes = Model::getModelService()->getRegisteredModelClasses();
+    $classes = $this->modelService->getRegisteredModelClasses();
 
-    /** @var \Drupal\spectrum\Model\Model $class */
+    /** @var ModelInterface $class */
     foreach ($classes as $class) {
       if ($class::entityType() === $entity && $class::bundle() === $bundle) {
         /** @var string $class */
@@ -184,7 +103,7 @@ class PermissionService implements PermissionServiceInterface, LoggerAwareInterf
    */
   public function rebuildAccessPolicyForModelClass(string $class): void
   {
-    /** @var \Drupal\spectrum\Model\Model $class */
+    /** @var ModelInterface $class */
     $accessPolicy = $class::getAccessPolicy();
 
     /** @var string $class */
@@ -196,7 +115,7 @@ class PermissionService implements PermissionServiceInterface, LoggerAwareInterf
    */
   public function removeUserFromAccessPolicies(User $user): void
   {
-    \Drupal::database()
+    $this->database
       ->delete(AccessPolicyInterface::TABLE_ENTITY_ACCESS)
       ->condition('uid', $user->getId())
       ->execute();
@@ -214,7 +133,7 @@ class PermissionService implements PermissionServiceInterface, LoggerAwareInterf
     /** @var AccessPolicyEntity[] $values */
     $values = [];
 
-    $classes = Model::getModelService()->getRegisteredModelClasses();
+    $classes = $this->modelService->getRegisteredModelClasses();
     /** @var Model $class */
     foreach ($classes as $class) {
       $accessPolicy = $class::getAccessPolicy();
@@ -225,7 +144,7 @@ class PermissionService implements PermissionServiceInterface, LoggerAwareInterf
     }
 
     if (!empty($values)) {
-      $insertQuery = \Drupal::database()
+      $insertQuery = $this->database
         ->insert(AccessPolicyInterface::TABLE_ENTITY_ACCESS)
         ->fields(['entity_type', 'entity_id', 'uid']);
 

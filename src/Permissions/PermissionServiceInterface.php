@@ -99,6 +99,16 @@ interface PermissionServiceInterface
   public function roleHasApiPermission(string $role, string $route, string $api, string $access): bool;
 
   /**
+   * This function checks whether an API is publicly accessible 
+   * (does not require a login, and is thus accessible by the AnonymousUserSession)
+   *
+   * @param string $route
+   * @param string $api
+   * @return boolean
+   */
+  public function apiIsPubliclyAccessible(string $route, string $api): bool;
+
+  /**
    * Check whether a Drupal Role, has a certain OAuth scope
    *
    * @param string $role
