@@ -942,7 +942,7 @@ class ModelApiHandler extends BaseApiHandler
     if ($this->shouldUseAccessPolicy()) {
       $query->useModelAccessPolicy();
     }
-    $query->addCondition(new Condition($modelClassName::getIdField(), '=', $this->slug));
+    $query->addCondition(new Condition($modelClassName::getIdField(), '=', $this->slug ?? 'NOID'));
 
     // We musn't forget to add all the conditions that were potentially added to this ApiHandler
     $this->applyAllConditionsToQuery($query);
@@ -1531,15 +1531,16 @@ class ModelApiHandler extends BaseApiHandler
    */
   protected function handleError(\Throwable $throwable, Request $request): Response
   {
+    $actualThrowable = $throwable;
+
     if ($throwable->getPrevious() !== null) {
       $actualThrowable = $throwable->getPrevious();
       while ($actualThrowable->getPrevious() !== null) {
         $actualThrowable = $actualThrowable->getPrevious();
       }
-    } else {
-      $actualThrowable = $throwable;
     }
 
+    /** @var \Throwable $actualThrowable */
     $jsonapi = new JsonApiErrorRootNode();
 
     if ($actualThrowable instanceof CascadeNoDeleteException) {
