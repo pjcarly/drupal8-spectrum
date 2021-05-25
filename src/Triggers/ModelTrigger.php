@@ -2,9 +2,20 @@
 
 namespace Drupal\spectrum\Triggers;
 
+use Drupal;
+use Drupal\spectrum\Event\Model\ModelAfterDeleteEvent;
+use Drupal\spectrum\Event\Model\ModelAfterInsertEvent;
+use Drupal\spectrum\Event\Model\ModelAfterUpdateEvent;
+use Drupal\spectrum\Event\Model\ModelBeforeDeleteEvent;
+use Drupal\spectrum\Event\Model\ModelBeforeInsertEvent;
+use Drupal\spectrum\Event\Model\ModelBeforeUpdateEvent;
+use Drupal\spectrum\Exceptions\ModelClassNotDefinedException;
 use Drupal\spectrum\Model\Model;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\spectrum\Runnable\QueuedJob;
+use Exception;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Throwable;
 
 /**
  * This class provides functionality to translate drupal entity hooks, to model trigger methods
@@ -20,12 +31,12 @@ class ModelTrigger
    * @param string $trigger
    *
    * @return void
-   * @throws \Drupal\spectrum\Exceptions\ModelClassNotDefinedException
-   * @throws \Throwable
+   * @throws ModelClassNotDefinedException
+   * @throws Throwable
    */
   public static function handle(EntityInterface $entity, string $trigger): void
   {
-    if (!\Drupal::hasService('spectrum.model')) {
+    if (!Drupal::hasService('spectrum.model')) {
       // Model Service not yet initialized, we skip the triggers, no need to check for models
       return;
     }
@@ -55,8 +66,12 @@ class ModelTrigger
         $model = $modelClass::forgeByEntity($model->getEntity());
       }
 
-      $connection = \Drupal::database();
+      $connection = Drupal::database();
       $transaction = $connection->startTransaction();
+
+      /** @var EventDispatcherInterface $eventDispatcher */
+      $eventDispatcher = Drupal::service('event_dispatcher');
+
       try {
         /** @var Model $model */
         switch ($trigger) {
@@ -65,10 +80,12 @@ class ModelTrigger
               $model->__setIsNewlyInserted(TRUE);
               $model->__setIsBeingDeleted(FALSE);
               $model->beforeInsert();
+              $eventDispatcher->dispatch(new ModelBeforeInsertEvent($model));
             } else {
               $model->__setIsNewlyInserted(FALSE);
               $model->__setIsBeingDeleted(FALSE);
               $model->beforeUpdate();
+              $eventDispatcher->dispatch(new ModelBeforeUpdateEvent($model));
             }
             break;
           case 'insert':
@@ -76,12 +93,14 @@ class ModelTrigger
             $model->__setIsBeingDeleted(FALSE);
             $model->setAccessPolicy();
             $model->afterInsert();
+            $eventDispatcher->dispatch(new ModelAfterInsertEvent($model));
             break;
           case 'update':
             $model->__setIsNewlyInserted(FALSE);
             $model->__setIsBeingDeleted(FALSE);
             $model->setAccessPolicy();
             $model->afterUpdate();
+            $eventDispatcher->dispatch(new ModelAfterUpdateEvent($model));
             break;
           case 'predelete':
             $model->__setIsNewlyInserted(FALSE);
@@ -89,7 +108,8 @@ class ModelTrigger
 
             try {
               $model->beforeDelete();
-            } catch (\Exception $ex) {
+              $eventDispatcher->dispatch(new ModelBeforeDeleteEvent($model));
+            } catch (Exception $ex) {
               if (!getenv('IGNORE_DELETE_SAFETY')) {
                 throw $ex;
               }
@@ -103,7 +123,8 @@ class ModelTrigger
 
             try {
               $model->afterDelete();
-            } catch (\Exception $ex) {
+              $eventDispatcher->dispatch(new ModelAfterDeleteEvent($model));
+            } catch (Exception $ex) {
               if (!getenv('IGNORE_DELETE_SAFETY')) {
                 throw $ex;
               }
@@ -112,7 +133,7 @@ class ModelTrigger
             $model->doCascadingDeletes();
             break;
         }
-      } catch (\Throwable $t) {
+      } catch (Throwable $t) {
         $transaction->rollBack();
         throw $t;
       }
