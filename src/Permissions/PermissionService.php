@@ -3,6 +3,7 @@
 namespace Drupal\spectrum\Permissions;
 
 use Drupal\Core\Database\Connection;
+use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Model\ModelInterface;
 use Drupal\spectrum\Model\ModelServiceInterface;
@@ -23,15 +24,21 @@ abstract class PermissionService implements PermissionServiceInterface, LoggerAw
   protected LoggerInterface $logger;
   protected ModelServiceInterface $modelService;
   protected Connection $database;
+  protected AccountProxyInterface $currentUser;
 
   /**
    * PermissionService constructor.
    */
-  public function __construct(LoggerInterface $logger, ModelServiceInterface $modelService, Connection $database)
-  {
+  public function __construct(
+    LoggerInterface $logger,
+    ModelServiceInterface $modelService,
+    Connection $database,
+    AccountProxyInterface $currentUser
+  ) {
     $this->logger = $logger;
     $this->modelService = $modelService;
     $this->database = $database;
+    $this->currentUser = $currentUser;
   }
 
   /**
@@ -157,5 +164,77 @@ abstract class PermissionService implements PermissionServiceInterface, LoggerAw
 
       $insertQuery->execute();
     }
+  }
+
+  /**
+   * Returns the base permission key in the form of "entity_bundle" (for example node_article) this is used for the permission checker
+   *
+   * @param string $modelClass
+   * @return string
+   */
+  public function getPermissionKeyForModelClass(string $modelClass): string
+  {
+    return str_replace('.', '_', $this->modelService->getModelClassKey($modelClass));
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function userHasFieldPermission(User $user, string $modelClass, string $field, string $access): bool
+  {
+    $permissionKey = $this->getPermissionKeyForModelClass($modelClass);
+
+    $allowed = false;
+    foreach ($user->getRoles() as $role) {
+      if ($this->roleHasFieldPermission($role, $permissionKey, $field, $access)) {
+        $allowed = true;
+        break;
+      }
+    }
+
+    return $allowed;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function userHasFieldViewPermission(User $user, string $modelClass, string $field): bool
+  {
+    return $this->userHasFieldPermission($user, $modelClass, $field, 'view');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function userHasFieldEditPermission(User $user, string $modelClass, string $field): bool
+  {
+    return $this->userHasFieldPermission($user, $modelClass, $field, 'edit');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function currentUserHasFieldPermission(string $modelClass, string $field, string $access): bool
+  {
+    $currentUser = User::forgeById($this->currentUser->id());
+    return $this->userHasFieldPermission($currentUser, $modelClass, $field, $access);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function currentUserHasFieldViewPermission(string $modelClass, string $field): bool
+  {
+    $currentUser = User::forgeById($this->currentUser->id());
+    return $this->userHasFieldPermission($currentUser, $modelClass, $field, 'view');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function currentUserHasFieldEditPermission(string $modelClass, string $field): bool
+  {
+    $currentUser = User::forgeById($this->currentUser->id());
+    return $this->userHasFieldPermission($currentUser, $modelClass, $field, 'edit');
   }
 }

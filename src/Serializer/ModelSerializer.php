@@ -3,23 +3,30 @@
 namespace Drupal\spectrum\Serializer;
 
 use Drupal\Core\Entity\EntityFieldManagerInterface;
+use Drupal\spectrum\Model\ModelServiceInterface;
+use Drupal\spectrum\Utils\StringUtils;
 use Psr\Log\LoggerInterface;
 
-class ModelSerializer
+class ModelSerializer implements ModelSerializerInterface
 {
   protected LoggerInterface $logger;
   protected EntityFieldManagerInterface $fieldManager;
+  protected ModelServiceInterface $modelService;
+  protected array $prettyFieldsMapping = [];
+  protected array $fieldsMapping = [];
 
-  public function __construct(LoggerInterface $logger, EntityFieldManagerInterface $fieldManager)
-  {
+  public function __construct(
+    LoggerInterface $logger,
+    EntityFieldManagerInterface $fieldManager,
+    ModelServiceInterface $modelService
+  ) {
     $this->logger = $logger;
     $this->fieldManager = $fieldManager;
+    $this->modelService = $modelService;
   }
 
   /**
-   * Returns a array of defaults fields on a drupal entity that should be ignored in serialization
-   *
-   * @return string[]
+   * {@inheritdoc}
    */
   public function getDefaultIgnoreFields(): array
   {
@@ -58,5 +65,73 @@ class ModelSerializer
       'rh_redirect_response',
       'behavior_settings'
     ];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getPrettyFieldsToFieldsMapping(string $modelClass): array
+  {
+    if (!array_key_exists($modelClass, $this->prettyFieldsMapping)) {
+      $mapping = [];
+      $fieldList = $this->modelService->getFieldDefinitions($modelClass);
+
+      foreach ($fieldList as $key => $value) {
+        if ($key !== 'title') {
+          $fieldNamePretty = trim(trim(StringUtils::dasherize(str_replace('field_', '', $key)), '-'));
+        } else {
+          $fieldNamePretty = 'name';
+        }
+
+        $mapping[$fieldNamePretty] = $key;
+      }
+
+      $this->prettyFieldsMapping[$modelClass] = $mapping;
+    }
+
+    return $this->prettyFieldsMapping[$modelClass];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getFieldsToPrettyFieldsMapping(string $modelClass): array
+  {
+    if (!array_key_exists($modelClass, $this->fieldsMapping)) {
+      $prettyMapping = $this->getPrettyFieldsToFieldsMapping($modelClass);
+      $mapping = array_flip($prettyMapping);
+
+      $this->fieldsMapping[$modelClass] = $mapping;
+    }
+
+    return $this->fieldsMapping[$modelClass];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getFieldForPrettyField(string $modelClass, string $field): ?string
+  {
+    $mapping = $this->getPrettyFieldsToFieldsMapping($modelClass);
+
+    return array_key_exists($field, $mapping) ? $mapping[$field] : null;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getPrettyFieldForField(string $modelClass, string $field): ?string
+  {
+    $mapping = $this->getFieldsToPrettyFieldsMapping($modelClass);
+
+    return array_key_exists($field, $mapping) ? $mapping[$field] : null;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function prettyFieldExists(string $modelClass, string $field): bool
+  {
+    return !empty($this->getFieldForPrettyField($modelClass, $field));
   }
 }

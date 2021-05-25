@@ -15,6 +15,7 @@ services:
     arguments:
       - "@logger.channel.spectrum"
       - "@entity_field.manager"
+      - "@spectrum.model"
   spectrum.jobs:
     class: Drupal\spectrum\Services\JobService
     parent: default_plugin_manager
