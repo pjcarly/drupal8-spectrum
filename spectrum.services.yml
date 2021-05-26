@@ -25,6 +25,16 @@ services:
     class: Drupal\spectrum\Services\ModelApiService
     arguments:
       - "@spectrum.analytics_service"
+  spectrum.file:
+    class: Drupal\spectrum\Services\FileService
+    arguments:
+      - "@mist.logger"
+      - "@spectrum.model"
+      - "@spectrum.permissions"
+      - "@spectrum.model_serializer"
+      - "@token"
+      - "@file_system"
+      - "@stream_wrapper_manager"
   react.loop:
     class: React\EventLoop\LoopInterface
     factory: ["React\\EventLoop\\Factory", "create"]
