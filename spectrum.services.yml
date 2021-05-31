@@ -24,7 +24,7 @@ services:
     class: Drupal\spectrum\Services\ModelStore
     arguments: []
   spectrum.model_serializer:
-    class: Drupal\spectrum\Services\ModelSerializer
+    class: Drupal\spectrum\Serializer\ModelSerializer
     arguments:
       - "@logger.channel.spectrum"
       - "@entity_field.manager"
