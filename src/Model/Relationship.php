@@ -4,6 +4,7 @@ namespace Drupal\spectrum\Model;
 
 use Drupal\spectrum\Query\EntityQuery;
 use Drupal\spectrum\Query\Condition;
+use Drupal\spectrum\Services\ModelServiceInterface;
 
 /**
  * All relationships should extend this abstract class
