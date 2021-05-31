@@ -19,12 +19,13 @@ use Drupal\spectrum\Models\File;
 use Drupal\spectrum\Models\Image;
 use Drupal\spectrum\Models\User;
 use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
-use Drupal\spectrum\Permissions\PermissionServiceInterface;
+use Drupal\spectrum\Services\PermissionServiceInterface;
 use Drupal\spectrum\Query\BundleQuery;
 use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Query\EntityQuery;
 use Drupal\spectrum\Query\ModelQuery;
 use Drupal\spectrum\Query\Query;
+use Drupal\spectrum\Services\ModelServiceInterface;
 use Drupal\spectrum\Services\ModelStoreInterface;
 use Drupal\spectrum\Utils\StringUtils;
 use RuntimeException;
@@ -2112,7 +2113,7 @@ abstract class Model implements ModelInterface
   private static final function service(): ModelServiceInterface
   {
     if (!\Drupal::hasService('spectrum.model')) {
-      throw new NotImplementedException('No model service found in the Container, please create a custom module, register a service and implement \Drupal\spectrum\Model\ModelServiceInterface');
+      throw new NotImplementedException('No model service found in the Container, please create a custom module, register a service and implement \Drupal\spectrum\Services\ModelServiceInterface');
     }
 
     return \Drupal::service('spectrum.model');

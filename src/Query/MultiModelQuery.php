@@ -3,7 +3,7 @@
 namespace Drupal\spectrum\Query;
 
 use Drupal\spectrum\Model\Collection;
-use Drupal\spectrum\Model\ModelServiceInterface;
+use Drupal\spectrum\Services\ModelServiceInterface;
 use Drupal\spectrum\Model\PolymorphicCollection;
 
 /**

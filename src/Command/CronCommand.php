@@ -9,7 +9,7 @@ use Drupal\Console\Core\Command\ContainerAwareCommand;
 use Drupal\Core\Cache\MemoryCache\MemoryCacheInterface;
 use Drupal\Core\State\StateInterface;
 use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface;
-use Drupal\spectrum\Model\ModelServiceInterface;
+use Drupal\spectrum\Services\ModelServiceInterface;
 use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Query\Order;
 use Drupal\spectrum\Runnable\QueuedJob;

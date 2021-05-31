@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\spectrum\Permissions;
+namespace Drupal\spectrum\Services;
 
 use Drupal\spectrum\Models\User;
 

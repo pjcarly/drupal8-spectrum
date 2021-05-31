@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\spectrum\Model;
+namespace Drupal\spectrum\Services;
 
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
@@ -10,7 +10,11 @@ use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\spectrum\Exceptions\ModelClassNotDefinedException;
 use Psr\Log\LoggerInterface;
 
-abstract class ModelService implements ModelServiceInterface
+use Drupal\spectrum\Models\Image;
+use Drupal\spectrum\Runnable\QueuedJob;
+use Drupal\spectrum\Runnable\RegisteredJob;
+
+class ModelService implements ModelServiceInterface
 {
   protected LoggerInterface $logger;
   protected EntityTypeManagerInterface $entityTypeManager;
@@ -83,7 +87,16 @@ abstract class ModelService implements ModelServiceInterface
   /**
    * {@inheritdoc}
    */
-  public abstract function getRegisteredModelClasses(): array;
+  public function getRegisteredModelClasses(): array
+  {
+    $modelClasses = [];
+    //$modelClasses[] = '\Drupal\spectrum\Models\File';
+    $modelClasses[] = Image::class;
+    $modelClasses[] = QueuedJob::class;
+    $modelClasses[] = RegisteredJob::class;
+
+    return $modelClasses;
+  }
 
 
   /**

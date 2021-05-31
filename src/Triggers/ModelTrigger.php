@@ -4,7 +4,7 @@ namespace Drupal\spectrum\Triggers;
 
 use Drupal\spectrum\Model\Model;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\spectrum\Model\ModelServiceInterface;
+use Drupal\spectrum\Services\ModelServiceInterface;
 use Drupal\spectrum\Runnable\QueuedJob;
 
 /**

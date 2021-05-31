@@ -3,7 +3,7 @@
 namespace Drupal\spectrum\Serializer;
 
 use Drupal\Core\Entity\EntityFieldManagerInterface;
-use Drupal\spectrum\Model\ModelServiceInterface;
+use Drupal\spectrum\Services\ModelServiceInterface;
 use Drupal\spectrum\Utils\StringUtils;
 use Psr\Log\LoggerInterface;
 

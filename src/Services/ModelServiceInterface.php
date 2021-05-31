@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\spectrum\Model;
+namespace Drupal\spectrum\Services;
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;

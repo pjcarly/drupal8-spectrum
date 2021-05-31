@@ -1,16 +1,15 @@
 <?php
 
-namespace Drupal\spectrum\Permissions;
+namespace Drupal\spectrum\Services;
 
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\spectrum\Model\Model;
 use Drupal\spectrum\Model\ModelInterface;
-use Drupal\spectrum\Model\ModelServiceInterface;
+use Drupal\spectrum\Services\ModelServiceInterface;
 use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
 use Drupal\spectrum\Models\User;
 use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyEntity;
-use Drupal\spectrum\Permissions\PermissionServiceInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 
@@ -19,7 +18,7 @@ use Psr\Log\LoggerInterface;
  *
  * @package Drupal\spectrum\Services
  */
-abstract class PermissionService implements PermissionServiceInterface, LoggerAwareInterface
+class PermissionService implements PermissionServiceInterface, LoggerAwareInterface
 {
   protected LoggerInterface $logger;
   protected ModelServiceInterface $modelService;
@@ -40,6 +39,71 @@ abstract class PermissionService implements PermissionServiceInterface, LoggerAw
     $this->database = $database;
     $this->currentUser = $currentUser;
   }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function roleHasOAuthScopePermission(string $role, string $scope): bool
+  {
+    return false;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function roleHasModelPermission(string $role, string $permission, string $access): bool
+  {
+    return false;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function roleHasApiPermission(string $role, string $route, string $api, string $access): bool
+  {
+    return false;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function roleHasApiActionPermission(string $role, string $route, string $api, string $action): bool
+  {
+    return false;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function apiPermissionExists(string $route, string $api): bool
+  {
+    return false;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function apiIsPubliclyAccessible(string $route, string $api): bool
+  {
+    return false;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function apiActionPermissionExists(string $route, string $api): bool
+  {
+    return false;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function roleHasFieldPermission(string $role, string $entity, string $field, string $access): bool
+  {
+    return false;
+  }
+
 
   /**
    * @inheritDoc
