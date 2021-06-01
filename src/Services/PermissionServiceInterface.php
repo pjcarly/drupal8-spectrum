@@ -106,7 +106,7 @@ interface PermissionServiceInterface
    * @param string $api
    * @return boolean
    */
-  public function apiIsPubliclyAccessible(string $route, string $api): bool;
+  public function apiIsPubliclyAccessible(string $route, string $api, ?string $action): bool;
 
   /**
    * Check whether a Drupal Role, has a certain OAuth scope

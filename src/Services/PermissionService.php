@@ -83,7 +83,7 @@ class PermissionService implements PermissionServiceInterface, LoggerAwareInterf
   /**
    * {@inheritdoc}
    */
-  public function apiIsPubliclyAccessible(string $route, string $api): bool
+  public function apiIsPubliclyAccessible(string $route, string $api, ?string $action): bool
   {
     return false;
   }
