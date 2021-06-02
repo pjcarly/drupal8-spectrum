@@ -107,7 +107,7 @@ class FileService implements FileServiceInterface
   public function handleUploadForTarget(?string $target): Response
   {
     $root = new JsonApiErrorRootNode();
-    $responseCode = 400;
+    $responseCode = Response::HTTP_BAD_REQUEST;
 
     if (isset($_FILES['file'])) {
       if ($_FILES['file']['error'] === UPLOAD_ERR_OK && file_exists($_FILES['file']['tmp_name'])) {
@@ -143,118 +143,118 @@ class FileService implements FileServiceInterface
                     $node = $file->getJsonApiNode();
                     $root->addNode($node);
 
-                    $responseCode = 200;
+                    $responseCode = Response::HTTP_OK;
                   } catch (\Exception $e) {
                     $this->logger->error($e->getMessage() . ' ' . $e->getTraceAsString());
 
                     $root = new JsonApiErrorRootNode();
                     $node = new JsonApiErrorNode();
-                    $node->setStatus(500);
+                    $node->setStatus(Response::HTTP_INTERNAL_SERVER_ERROR);
                     $node->setCode('SERVER_ERROR');
                     $node->setDetail('Something went wrong, please try again later');
                     $root->addError($node);
-                    $responseCode = 500;
+                    $responseCode = Response::HTTP_INTERNAL_SERVER_ERROR;
                   }
                 } else {
                   $node = new JsonApiErrorNode();
-                  $node->setStatus(400);
+                  $node->setStatus(Response::HTTP_BAD_REQUEST);
                   $node->setCode('FILE_TOO_LARGE');
                   $node->setDetail('File is too large');
                   $root->addError($node);
-                  $responseCode = 400;
+                  $responseCode = Response::HTTP_BAD_REQUEST;
                 }
               } else {
                 $node = new JsonApiErrorNode();
-                $node->setStatus(400);
+                $node->setStatus(Response::HTTP_BAD_REQUEST);
                 $node->setCode('FILE_ERR_EXTENSION');
                 $node->setDetail('File extension not allowed');
                 $root->addError($node);
-                $responseCode = 400;
+                $responseCode = Response::HTTP_BAD_REQUEST;
               }
             } else {
               $node = new JsonApiErrorNode();
-              $node->setStatus(400);
+              $node->setStatus(Response::HTTP_BAD_REQUEST);
               $node->setCode('FIELD_NOT_ACCESSIBLE');
               $node->setDetail('No access to the field');
               $root->addError($node);
 
-              $responseCode = 400;
+              $responseCode = Response::HTTP_BAD_REQUEST;
             }
           }
         } else {
           $node = new JsonApiErrorNode();
-          $node->setStatus(400);
+          $node->setStatus(Response::HTTP_BAD_REQUEST);
           $node->setCode('FILE_NO_FILE');
           $node->setDetail('No file provided');
           $root->addError($node);
 
-          $responseCode = 400;
+          $responseCode = Response::HTTP_BAD_REQUEST;
         }
       } else if ($_FILES['file']['error'] === UPLOAD_ERR_INI_SIZE) {
         $node = new JsonApiErrorNode();
-        $node->setStatus(400);
+        $node->setStatus(Response::HTTP_BAD_REQUEST);
         $node->setCode('FILE_TOO_LARGE');
         $node->setDetail('File is too large');
         $root->addError($node);
 
-        $responseCode = 400;
+        $responseCode = Response::HTTP_BAD_REQUEST;
       } else if ($_FILES['file']['error'] === UPLOAD_ERR_FORM_SIZE) {
         $node = new JsonApiErrorNode();
-        $node->setStatus(400);
+        $node->setStatus(Response::HTTP_BAD_REQUEST);
         $node->setCode('FILE_TOO_LARGE');
         $node->setDetail('File is too large');
         $root->addError($node);
 
-        $responseCode = 400;
+        $responseCode = Response::HTTP_BAD_REQUEST;
       } else if ($_FILES['file']['error'] === UPLOAD_ERR_PARTIAL) {
         $node = new JsonApiErrorNode();
-        $node->setStatus(400);
+        $node->setStatus(Response::HTTP_BAD_REQUEST);
         $node->setCode('ERR_PARTIAL');
         $node->setDetail('File upload partial error');
         $root->addError($node);
 
-        $responseCode = 400;
+        $responseCode = Response::HTTP_BAD_REQUEST;
       } else if ($_FILES['file']['error'] === UPLOAD_ERR_NO_FILE) {
         $node = new JsonApiErrorNode();
-        $node->setStatus(400);
+        $node->setStatus(Response::HTTP_BAD_REQUEST);
         $node->setCode('FILE_NO_FILE');
         $node->setDetail('No file provided');
         $root->addError($node);
 
-        $responseCode = 400;
+        $responseCode = Response::HTTP_BAD_REQUEST;
       } else if ($_FILES['file']['error'] === UPLOAD_ERR_NO_TMP_DIR) {
 
         $node = new JsonApiErrorNode();
-        $node->setStatus(400);
+        $node->setStatus(Response::HTTP_BAD_REQUEST);
         $node->setCode('FILE_NO_TMP');
         $node->setDetail('File no temp');
         $root->addError($node);
-        $responseCode = 400;
+        $responseCode = Response::HTTP_BAD_REQUEST;
       } else if ($_FILES['file']['error'] === UPLOAD_ERR_EXTENSION) {
         $node = new JsonApiErrorNode();
-        $node->setStatus(400);
+        $node->setStatus(Response::HTTP_BAD_REQUEST);
         $node->setCode('FILE_ERR_EXTENSION');
         $node->setDetail('File extension not allowed');
         $root->addError($node);
 
-        $responseCode = 400;
+        $responseCode = Response::HTTP_BAD_REQUEST;
       } else if ($_FILES['file']['error'] === UPLOAD_ERR_CANT_WRITE) {
         $node = new JsonApiErrorNode();
-        $node->setStatus(400);
+        $node->setStatus(Response::HTTP_BAD_REQUEST);
         $node->setCode('FILE_CANT_WRITE');
         $node->setDetail('File cant write');
         $root->addError($node);
 
-        $responseCode = 400;
+        $responseCode = Response::HTTP_BAD_REQUEST;
       }
     } else {
       $node = new JsonApiErrorNode();
-      $node->setStatus(400);
+      $node->setStatus(Response::HTTP_BAD_REQUEST);
       $node->setCode('UPLOAD_FAILED');
       $node->setDetail('File upload failed');
       $root->addError($node);
 
-      $responseCode = 400;
+      $responseCode = Response::HTTP_BAD_REQUEST;
     }
 
     /** @var JsonApiRootNode|JsonApiErrorRootNode $root */
