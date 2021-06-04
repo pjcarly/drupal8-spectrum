@@ -98,6 +98,14 @@ class ModelService implements ModelServiceInterface
     return $modelClasses;
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function getBundleKey(string $modelClass): string
+  {
+    /** @var ModelInterface $modelClass */
+    return empty($modelClass::bundle()) ? $modelClass::entityType() : $modelClass::bundle();
+  }
 
   /**
    * {@inheritdoc}

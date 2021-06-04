@@ -1732,6 +1732,7 @@ abstract class Model implements ModelInterface
   }
 
   /**
+   * @deprecated Use ModelService -> getBundleKey() instead
    * Returns the BundleKey, this is either the entityType when no bundle is provided (for example with user) or bundle in all other cases
    *
    * @return string

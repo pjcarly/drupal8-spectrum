@@ -32,12 +32,20 @@ interface ModelServiceInterface
   public function clearDrupalEntityCachesForAllModels(): self;
 
   /**
-   * Undocumented function
+   * Returns a unique key for the model class, most of the times it is entity.bundle
    *
    * @param string $modelClass
    * @return string
    */
   public function getModelClassKey(string $modelClass): string;
+
+  /**
+   * Gets a underscored human readable name for the model class, this is mostly the name of the bundle
+   *
+   * @param string $modelClass
+   * @return string
+   */
+  public function getBundleKey(string $modelClass): string;
 
   /**
    * Get a unique key for this model class
