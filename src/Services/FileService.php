@@ -115,7 +115,7 @@ class FileService implements FileServiceInterface
 
         if (!empty($file)) {
           if (isset($target)) {
-            $fieldOptions = $this->fileService->getFieldConfigForFieldTarget($target);
+            $fieldOptions = $this->getFieldConfigForFieldTarget($target);
 
             if ($fieldOptions) {
               $fieldSettings = $fieldOptions->getSettings();
@@ -280,7 +280,7 @@ class FileService implements FileServiceInterface
       $dasherizedField = $explodedTarget[1];
 
       foreach ($modelClasses as $modelClass) {
-        $dasherizedBundleKey = StringUtils::dasherize($this->modelService->getModelClassKey($modelClass));
+        $dasherizedBundleKey = StringUtils::dasherize($this->modelService->getBundleKey($modelClass));
 
         if ($dasherizedBundleKey === $dasherizedModel) {
           $ignoreFields = $this->modelSerializer->getDefaultIgnoreFields();
