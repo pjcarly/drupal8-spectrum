@@ -170,9 +170,9 @@ class SimpleModelWrapper
   {
     $model = $this->model;
 
-    if (array_key_exists($property, $model->relatedViaFieldOnEntity)) // lets check for pseudo properties
+    if ($model->isRelatedViaFieldRelationshipInMemory($property)) // lets check for pseudo properties
     {
-      $object = $model->relatedViaFieldOnEntity[$property];
+      $object = $model->get($property);
 
       if ($object instanceof Model) {
         return new SimpleModelWrapper($object);
@@ -181,9 +181,9 @@ class SimpleModelWrapper
       } else {
         return null;
       }
-    } else if (array_key_exists($property, $model->relatedViaFieldOnExternalEntity)) // lets check for pseudo properties
+    } else if ($model->isRelatedViaReferencedRelationshipInMemory($property)) // lets check for pseudo properties
     {
-      $object = $model->relatedViaFieldOnExternalEntity[$property];
+      $object = $model->get($property);
 
       if ($object instanceof Model) {
         return new SimpleModelWrapper($object);
@@ -218,8 +218,8 @@ class SimpleModelWrapper
   public function __isset($property)
   {
     $model = $this->model;
-    $isSet = array_key_exists($property, $model->relatedViaFieldOnEntity)
-      || array_key_exists($property, $model->relatedViaFieldOnExternalEntity)
+    $isSet = $model->isRelatedViaFieldRelationshipInMemory($property)
+      || $model->isRelatedViaReferencedRelationshipInMemory($property)
       || $model::underScoredFieldExists($property)
       || property_exists($model, $property)
       || Model::getterExists($model, $property)

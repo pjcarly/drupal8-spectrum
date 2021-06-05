@@ -31,14 +31,15 @@ class ReferencedRelationship extends Relationship
 
   /**
    * @param string $relationshipName The name of your relationship
-   * @param string $modelType The fully qualified classname of the model you wish to relate. A lookup will be done in the modelservice to find the registered modelclass for then entity/bundle combination, as it might be overridden.
+   * @param string $modelClass The fully qualified classname of the model you wish to relate. A lookup will be done in the modelservice to find the registered modelclass for then entity/bundle combination, as it might be overridden.
    * @param string $fieldRelationshipName The relationshipName of the Field Relationship on the inverse Model
    * @param integer $cascade (Optional) an indicator whether this relationship should be casading delete or not (default false), statics available: NO_CASCADE, CASCADE_ON_DELETE
    */
-  public function __construct(string $relationshipName, string $modelType, string $fieldRelationshipName, int $cascade = 0)
+  public function __construct(string $relationshipName, string $modelClass, string $fieldRelationshipName, int $cascade = 0)
   {
+    /** @var ModelInterface $modelClass */
     parent::__construct($relationshipName, $cascade);
-    $this->modelType = Model::getRegisteredModelTypeForModelType($modelType);
+    $this->modelType = $this->modelService->getModelClassForEntityAndBundle($modelClass::entityType(), $modelClass::bundle());
     $this->fieldRelationshipName = $fieldRelationshipName;
     $this->fieldRelationship = $this->modelType::getRelationship($fieldRelationshipName);
   }

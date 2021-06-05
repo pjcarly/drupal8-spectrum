@@ -5,7 +5,6 @@ namespace Drupal\spectrum\Model;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Field\EntityReferenceFieldItemList;
-use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\Plugin\Field\FieldType\EntityReferenceItem;
 use Drupal\spectrum\Exceptions\CascadeNoDeleteException;
 use Drupal\spectrum\Exceptions\InvalidEntityException;
@@ -20,12 +19,13 @@ use Drupal\spectrum\Models\File;
 use Drupal\spectrum\Models\Image;
 use Drupal\spectrum\Models\User;
 use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
-use Drupal\spectrum\Permissions\PermissionServiceInterface;
+use Drupal\spectrum\Services\PermissionServiceInterface;
 use Drupal\spectrum\Query\BundleQuery;
 use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Query\EntityQuery;
 use Drupal\spectrum\Query\ModelQuery;
 use Drupal\spectrum\Query\Query;
+use Drupal\spectrum\Services\ModelServiceInterface;
 use Drupal\spectrum\Services\ModelStoreInterface;
 use Drupal\spectrum\Utils\StringUtils;
 use RuntimeException;
@@ -38,32 +38,23 @@ use RuntimeException;
  * Together with Collection and Relationship, this is the Core of the Spectrum framework
  * This functionality is loosly based on BookshelfJS (http://bookshelfjs.org/)
  */
-abstract class Model
+abstract class Model implements ModelInterface
 {
   use \Drupal\spectrum\Serializer\ModelSerializerMixin;
   use \Drupal\spectrum\Serializer\ModelDeserializerMixin;
-  use \Drupal\spectrum\Serializer\ModelSQLHelperMixin;
 
   /**
-   * The entity type of this model (for example "node"), this should be defined
-   * in every subclass
-   *
-   * @var string
-   * @return string
+   * {@inheritdoc}
    */
   public abstract static function entityType(): string;
 
   /**
-   * The bundle of this model (for example "article"), this should be defined
-   * in every subclass
-   *
-   * @var string
-   * @return string
+   * {@inheritdoc}
    */
   public abstract static function bundle(): string;
 
   /**
-   * @return \Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface
+   * {@inheritdoc}
    */
   public abstract static function getAccessPolicy(): AccessPolicyInterface;
 
@@ -147,7 +138,7 @@ abstract class Model
    *
    * @var array
    */
-  public $relatedViaFieldOnEntity = [];
+  protected $relatedViaFieldOnEntity = [];
 
   /**
    * An array containing all the ReferencedRelationships to this Entity, with as Key the relationship name
@@ -155,7 +146,7 @@ abstract class Model
    *
    * @var array
    */
-  public $relatedViaFieldOnExternalEntity = [];
+  protected $relatedViaFieldOnExternalEntity = [];
 
   /**
    * In the constructor for the Model, an drupal entity must be provided
@@ -180,17 +171,6 @@ abstract class Model
   }
 
   /**
-   * Returns a string that can be used in a BaseApiController to switch on and create a ModelApiHandler
-   * This should be overridden in every ModelClass you want to define a Generic ModelApiHandler for with the key you want the BaseApiController to discover the Model with
-   *
-   * @return string
-   */
-  public static function getGenericApiHandlerKey(): string
-  {
-    return '';
-  }
-
-  /**
    * Check whether the Model is new (not yet persisted to the DB)
    *
    * @return boolean
@@ -205,10 +185,9 @@ abstract class Model
    *
    * @param string|NULL $relationshipName
    *
-   * @return \Drupal\spectrum\Model\Model
-   * @throws \Drupal\Core\Entity\EntityStorageException
+   * @return self
    */
-  public function save(string $relationshipName = NULL): Model
+  public function save(string $relationshipName = NULL): self
   {
     if (empty($relationshipName)) {
       $isNew = $this->isNew();
@@ -229,9 +208,9 @@ abstract class Model
    * Delete the Model from the database. This should only be used when this model doesnt exists in a Collection (whether it is a relationship or not)
    * Else delete it via the Collection, so the UnitOfWork can do its job
    *
-   * @return Model
+   * @return self
    */
-  public function delete(): Model
+  public function delete(): self
   {
     if (!$this->isNew()) {
       $this->entity->delete();
@@ -266,9 +245,9 @@ abstract class Model
    * Update the Key of this Model with the ID, and update the key in every Relationship (and inverse) where this Model was already put
    * This is used when a temporary Key is generated, the Model is saved, and the Key is updated to the ID of the model
    *
-   * @return Model
+   * @return self
    */
-  private function updateKeys(): Model
+  private function updateKeys(): self
   {
     // we start of by reputting our keys
     $oldKey = $this->key;
@@ -286,7 +265,7 @@ abstract class Model
           foreach ($referencedModels as $referencedModel) {
             $referencedEntityType = $referencedModel->entity->getEntityTypeId();
             $referencedEntityBundle = empty($referencedModel->entity->type) ? null : $referencedModel->entity->{'type'}->target_id;
-            $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
+            $referencedModelType = static::service()->getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
 
             // we must also check for an inverse relationship and, if found, put the inverse as well
             $referencedRelationship = $referencedModelType::getReferencedRelationshipForFieldRelationship($relationship);
@@ -301,7 +280,7 @@ abstract class Model
           if (!empty($referencedModel)) {
             $referencedEntityType = $referencedModel->entity->getEntityTypeId();
             $referencedEntityBundle = empty($referencedModel->entity->type) ? null : $referencedModel->entity->{'type'}->target_id;
-            $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
+            $referencedModelType = static::service()->getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
 
             // we must also check for an inverse relationship and, if found, put the inverse as well
             $referencedRelationship = $referencedModelType::getReferencedRelationshipForFieldRelationship($relationship);
@@ -340,9 +319,9 @@ abstract class Model
    *
    * @param string $relationshipName
    * @param bool $unsetField (optional) when settings this true, the FieldRelationship will also unset the field on the entity (only works on field relationships)
-   * @return Model
+   * @return self
    */
-  public function clear(string $relationshipName, bool $unsetField = false): Model
+  public function clear(string $relationshipName, bool $unsetField = false): self
   {
     $relationship = static::getRelationship($relationshipName);
     if ($relationship instanceof FieldRelationship) {
@@ -395,9 +374,9 @@ abstract class Model
    * This is important for when you have multiple related models in memory who haven't been inserted
    * and are just related in memory, by setting the ID we know how to relate them in the DB
    *
-   * @return Model
+   * @return self
    */
-  private function setFieldForReferencedRelationships(): Model
+  private function setFieldForReferencedRelationships(): self
   {
     $relationships = static::getRelationships();
     foreach ($relationships as $relationship) {
@@ -477,7 +456,7 @@ abstract class Model
                   // or if the related modeltype isn't set yet, we must set it once
                   $referencedEntityType = $referencedEntity->getEntityTypeId();
                   $referencedEntityBundle = empty($referencedEntity->type) ? null : $referencedEntity->type->target_id;
-                  $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
+                  $referencedModelType = static::service()->getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
                 }
 
                 // now that we have a model, lets put them one by one
@@ -501,7 +480,7 @@ abstract class Model
               // if the relationship is polymorphic we can get multiple bundles, so we must define the modeltype based on the bundle and entity of the fetched entity
               $referencedEntityType = $referencedEntity->getEntityTypeId();
               $referencedEntityBundle = empty($referencedEntity->type) ? null : $referencedEntity->type->target_id;
-              $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
+              $referencedModelType = static::service()->getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
 
               // now that we have a model, lets put them one by one
               $referencedModel = $referencedModelType::forgeByEntity($referencedEntity);
@@ -525,7 +504,7 @@ abstract class Model
                 // if the referencing modeltype isn't set yet, we must set it once
                 $referencingEntityType = $referencingEntity->getEntityTypeId();
                 $referencingEntityBundle = empty($referencingEntity->type) ? null : $referencingEntity->type->target_id;
-                $referencingModelType = Model::getModelClassForEntityAndBundle($referencingEntityType, $referencingEntityBundle);
+                $referencingModelType = static::service()->getModelClassForEntityAndBundle($referencingEntityType, $referencingEntityBundle);
               }
 
               // now that we have a model, lets put them one by one
@@ -606,6 +585,7 @@ abstract class Model
       }
 
       if ($relationship instanceof FieldRelationship) {
+
         if ($relationship->isMultiple) {
           if (!array_key_exists($relationship->getName(), $this->relatedViaFieldOnEntity)) {
             $this->createNewCollection($relationship);
@@ -647,8 +627,10 @@ abstract class Model
    */
   public static function getIdField(): string
   {
-    $drupalEntityType = static::getDrupalEntityType();
-    return $drupalEntityType->getKeys()['id'];
+    /** @var ModelServiceInterface $modelService */
+    $modelService = \Drupal::service("spectrum.model");
+    $modelService->getEntityType(static::class)->getKeys()['id'];
+    return $modelService->getEntityType(static::class)->getKeys()['id'];
   }
 
   /**
@@ -731,15 +713,15 @@ abstract class Model
    *
    * @param FieldRelationship $relationship
    * @param Model $referencedModel
-   * @return Model
+   * @return self
    */
-  private function putInverse(FieldRelationship $fieldRelationship, Model $referencedModel): Model
+  private function putInverse(FieldRelationship $fieldRelationship, Model $referencedModel): self
   {
     // if the relationship is polymorphic we can get multiple bundles, so we must define the modeltype based on the bundle and entity of the current looping entity
     // or if the related modeltype isn't set yet, we must set it once
     $referencedEntityType = $referencedModel->entity->getEntityTypeId();
     $referencedEntityBundle = empty($referencedModel->entity->type) ? null : $referencedModel->entity->{'type'}->target_id;
-    $referencedModelType = Model::getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
+    $referencedModelType = static::service()->getModelClassForEntityAndBundle($referencedEntityType, $referencedEntityBundle);
 
     // we must also check for an inverse relationship and, if found, put the inverse as well
     $referencedRelationship = $referencedModelType::getReferencedRelationshipForFieldRelationship($fieldRelationship);
@@ -967,9 +949,9 @@ abstract class Model
    * @param string $fieldName
    * @param string $constraintName
    * @param array $options
-   * @return Model
+   * @return self
    */
-  public function addFieldConstraint(string $fieldName, string $constraintName, array $options = []): Model
+  public function addFieldConstraint(string $fieldName, string $constraintName, array $options = []): self
   {
     $this->entity->getFieldDefinition($fieldName)->addConstraint($constraintName, $options);
     return $this;
@@ -1032,9 +1014,9 @@ abstract class Model
    * Sets the isNewlyInserted flag
    *
    * @param boolean $value
-   * @return Model
+   * @return self
    */
-  public function __setIsNewlyInserted(bool $value): Model
+  public function __setIsNewlyInserted(bool $value): self
   {
     $this->__isNewlyInserted = $value;
     return $this;
@@ -1056,9 +1038,9 @@ abstract class Model
    * Sets the isBeingDeleted flag
    *
    * @param boolean $value
-   * @return Model
+   * @return self
    */
-  public function __setIsBeingDeleted(bool $value): Model
+  public function __setIsBeingDeleted(bool $value): self
   {
     $this->__isBeingDeleted = $value;
     return $this;
@@ -1094,7 +1076,7 @@ abstract class Model
     // Next we check if the field actually changed
     if ($this->fieldChanged($fieldName)) {
       // Now we know the field changed, lets compare it to the oldvalue
-      $fieldDefinition = static::getFieldDefinition($fieldName);
+      $fieldDefinition = static::service()->getFieldDefinition(static::class, $fieldName);
       $oldAttribute = $this->entity->original->$fieldName;
 
       switch ($fieldDefinition->getType()) {
@@ -1137,7 +1119,7 @@ abstract class Model
     // Next we check if the field actually changed
     if ($this->fieldChanged($fieldName)) {
       // Now we know the field changed, lets compare it to the oldvalue
-      $fieldDefinition = static::getFieldDefinition($fieldName);
+      $fieldDefinition = static::service()->getFieldDefinition(static::class, $fieldName);
       $newAttribute = $this->entity->$fieldName;
       $oldAttribute = isset($this->entity->original) ? $this->entity->original->$fieldName : null;
 
@@ -1183,7 +1165,7 @@ abstract class Model
     // Next we check if the field actually changed
     if ($this->fieldChanged($fieldName)) {
       // Now we know the field changed, lets compare it to the new value
-      $fieldDefinition = static::getFieldDefinition($fieldName);
+      $fieldDefinition = static::service()->getFieldDefinition(static::class, $fieldName);
       $newAttribute = $this->entity->$fieldName;
 
       switch ($fieldDefinition->getType()) {
@@ -1252,7 +1234,7 @@ abstract class Model
       return false;
     }
 
-    $fieldDefinition = static::getFieldDefinition($fieldName);
+    $fieldDefinition = static::service()->getFieldDefinition(static::class, $fieldName);
 
     if ($ignoreFieldDoesNotExist && empty($fieldDefinition)) {
       return false;
@@ -1302,9 +1284,9 @@ abstract class Model
    *
    * This does not work on the entities, and will throw an Exception if tried
    *
-   * @return Model
+   * @return self
    */
-  public function refresh(): Model
+  public function refresh(): self
   {
     if ($this->isNew()) {
       throw new ModelNotFoundException('You cant refresh a model which doesnt exist in the database');
@@ -1313,7 +1295,7 @@ abstract class Model
     // Drupal caches the entities in memory for the remainder of the transaction
     // we want to clear that cash, because we want the data as it is in the database
     $modelClass = get_called_class();
-    $modelClass::clearDrupalStaticEntityCache();
+    static::service()->clearDrupalEntityCacheForModelClass($modelClass);
 
     // We do a new entity query
     $entityQuery = static::getEntityQuery();
@@ -1433,17 +1415,6 @@ abstract class Model
   }
 
   /**
-   * @deprecated
-   * Use forgeNew() instead
-   *
-   * @return Model
-   */
-  public static function createNew(): Model
-  {
-    return static::forgeNew();
-  }
-
-  /**
    * Create a new entity and wrap it in this Model
    *
    * @return Model
@@ -1488,18 +1459,6 @@ abstract class Model
   }
 
   /**
-   * Forge a collection of this modeltype
-   *
-   * @return Collection
-   */
-  public static function forgeCollection(): Collection
-  {
-    $requestedModelType = get_called_class();
-    $registeredModelType = static::getRegisteredModelTypeForModelType($requestedModelType);
-    return Collection::forgeNew($registeredModelType);
-  }
-
-  /**
    * Forge a new Model with either an Drupal Entity or an ID. For ease of use and readability use the methods "forgeById" or "forgeByEntity"
    * This is only used internally
    *
@@ -1529,12 +1488,9 @@ abstract class Model
     }
 
     if (!empty($entity)) {
-      $registeredModelType = static::getModelClassForEntityAndBundle(
-        $entity->getEntityTypeId(),
-        $entity->bundle()
-      );
-
+      $registeredModelType = static::service()->getModelClassForEntity($entity);
       $requestedModelType = get_called_class();
+
       if (is_subclass_of($requestedModelType, $registeredModelType)) {
         // When the requestedmodeltype is a subclass of the registeredmodeltype, we use the requestedmodeltype
         // As it might just as well be a seperate implementation for another purpose.
@@ -1549,63 +1505,6 @@ abstract class Model
     }
 
     return null;
-  }
-
-  /**
-   * Returns the registered fully qualified classname for another fully qualified model classname.
-   * Per system another implementation of the Model might exist.
-   *
-   * @param string $requestedModelType
-   *
-   * @return string
-   * @throws \Drupal\spectrum\Exceptions\ModelClassNotDefinedException
-   */
-  public static final function getRegisteredModelTypeForModelType(string $requestedModelType): string
-  {
-    if (!array_key_exists($requestedModelType, static::$cachedModelTypes)) {
-      static::$cachedModelTypes[$requestedModelType] = Model::getModelClassForEntityAndBundle(
-        $requestedModelType::entityType(),
-        $requestedModelType::bundle()
-      );
-    }
-
-    return static::$cachedModelTypes[$requestedModelType];
-  }
-
-  /**
-   * This function will clear the static entity cache drupal stores in memory for the remainder of the transaction
-   * Any entities that are present in the cache will not be loaded from the database again, instead the php object in the cache will be returned
-   * After calling this function, the cache of the entire ENTITY (so all including bundles) will be cleared, and any queries for the entity will
-   * be fetched from the database again
-   *
-   * @return void
-   *
-   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
-   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
-   */
-  public static function clearDrupalStaticEntityCache(): void
-  {
-    $entityType = static::entityType();
-    \Drupal::entityTypeManager()
-      ->getStorage($entityType)
-      ->resetCache();
-  }
-
-  /**
-   * This function will clear all the entity caches for every model class in the application (see Model::clearDrupalStaticEntityCache() for more details)
-   *
-   * @return void
-   */
-  public static function clearAllDrupalStaticEntityCaches(): void
-  {
-    $clearedEntitytypes = [];
-
-    foreach (static::getModelClasses() as $modelClass) {
-      if (!in_array($modelClass::entityType(), $clearedEntitytypes)) {
-        $modelClass::clearDrupalStaticEntityCache();
-        $clearedEntitytypes[] = $modelClass::entityType();
-      }
-    }
   }
 
   /**
@@ -1791,9 +1690,7 @@ abstract class Model
   }
 
   /**
-   * Returns the drupal field definitions for the entity of this Model
-   *
-   * @return FieldDefinitionInterface[]
+   * @deprecated moved to modelservice
    */
   public static function getFieldDefinitions()
   {
@@ -1805,22 +1702,7 @@ abstract class Model
   }
 
   /**
-   * Gets the EntityType from Drupal for this Entity
-   *
-   * @return \Drupal\Core\Entity\EntityTypeInterface
-   */
-  public static function getDrupalEntityType(): \Drupal\Core\Entity\EntityTypeInterface
-  {
-    $entityType = static::entityType();
-    $entityTypeManager = \Drupal::entityTypeManager();
-    return $entityTypeManager->getDefinition($entityType);
-  }
-
-  /**
-   * Returns the drupal FieldDefinition for the provided fieldName
-   *
-   * @param string $fieldName
-   * @return \Drupal\Core\Field\FieldDefinitionInterface|null
+   * @deprecated moved to modelservice
    */
   public static function getFieldDefinition(string $fieldName): ?\Drupal\Core\Field\FieldDefinitionInterface
   {
@@ -1850,22 +1732,7 @@ abstract class Model
   }
 
   /**
-   * Returns the Label based on the Drupal BundleInfo
-   *
-   * @return string
-   */
-  public static function getLabel(): string
-  {
-    $label = '';
-    $bundleInfo = static::getBundleInfo();
-    if (array_key_exists('label', $bundleInfo)) {
-      $label = $bundleInfo['label'];
-    }
-
-    return $label;
-  }
-
-  /**
+   * @deprecated Use ModelService -> getBundleKey() instead
    * Returns the BundleKey, this is either the entityType when no bundle is provided (for example with user) or bundle in all other cases
    *
    * @return string
@@ -1873,16 +1740,6 @@ abstract class Model
   public static function getBundleKey(): string
   {
     return empty(static::bundle()) ? static::entityType() : static::bundle();
-  }
-
-  /**
-   * Returns the Drupal BundleInfo of the entityType
-   *
-   */
-  public static function getBundleInfo()
-  {
-    $bundleInfo = \Drupal::service("entity_type.bundle.info")->getBundleInfo(static::entityType());
-    return $bundleInfo[static::getBundleKey()];
   }
 
   /**
@@ -2078,9 +1935,9 @@ abstract class Model
    * This function loads the translations, the first found translation will be used on the entity. In case no translation is found, the default language will be loaded
    *
    * @param String[] $languageCodes an array containing the languagecodes you want to load on the entity
-   * @return Model
+   * @return self
    */
-  public function loadTranslation(array $languageCodes): Model
+  public function loadTranslation(array $languageCodes): self
   {
     $entity = $this->entity;
 
@@ -2118,7 +1975,7 @@ abstract class Model
    * @param \DateTime $value
    * @return self
    */
-  public function setCreatedDate(\DateTime $value): Model
+  public function setCreatedDate(\DateTime $value): self
   {
     $this->entity->{'created'}->value = $value->format('U');
     return $this;
@@ -2139,7 +1996,7 @@ abstract class Model
    * @param \DateTime $value
    * @return self
    */
-  public function setLastModifiedDate(\DateTime $value): Model
+  public function setLastModifiedDate(\DateTime $value): self
   {
     $this->entity->{'created'}->value = $value->format('U');
     return $this;
@@ -2212,11 +2069,7 @@ abstract class Model
   }
 
   /**
-   * Checks if there is a Model Class defined for the Entity / Bundle
-   *
-   * @param string $entity
-   * @param string|null $bundle
-   * @return boolean
+   * @deprecated moved to modelservice
    */
   public static function hasModelClassForEntityAndBundle(string $entity, ?string $bundle): bool
   {
@@ -2227,11 +2080,7 @@ abstract class Model
   }
 
   /**
-   * Returns the fully qualified classname for the provided entity/bundle
-   *
-   * @param string $entity
-   * @param string|null $bundle
-   * @return string
+   * @deprecated moved to modelservice
    */
   public static function getModelClassForEntityAndBundle(string $entity, ?string $bundle): string
   {
@@ -2244,20 +2093,8 @@ abstract class Model
   }
 
   /**
-   * Returns the corresponding modelclass for an entity instance.
-   *
-   * @param EntityInterface $entityInstance
-   * @return string
-   */
-  public static function getModelClassForEntity(EntityInterface $entityInstance): string
-  {
-    $bundle = $entityInstance->bundle();
-    $entity = $entityInstance->getEntityTypeId();
-
-    return static::getModelClassForEntityAndBundle($entity, $bundle);
-  }
-
-  /**
+   * @deprecated use dependency injection on @spectrum.model
+   * 
    * Returns the ModelService that is responsible for the registration of Model Classes in the system
    * This should be implemented by every drupal installation using Spectrum (see ModelServiceInterface for documentation)
    *
@@ -2265,19 +2102,26 @@ abstract class Model
    */
   public static function getModelService(): ModelServiceInterface
   {
-    if (!\Drupal::hasService('spectrum.model')) {
-      throw new NotImplementedException('No model service found in the Container, please create a custom module, register a service and implement \Drupal\spectrum\Model\ModelServiceInterface');
-    }
-
-    $modelService = \Drupal::service('spectrum.model');
-    if (!($modelService instanceof ModelServiceInterface)) {
-      throw new NotImplementedException('Model service must implement \Drupal\spectrum\Model\ModelServiceInterface');
-    }
-
-    return $modelService;
+    return static::service();
   }
 
   /**
+   * Returns the ModelService currently in the container,
+   * This should only be used from within a Model
+   *
+   * @return ModelServiceInterface
+   */
+  private static final function service(): ModelServiceInterface
+  {
+    if (!\Drupal::hasService('spectrum.model')) {
+      throw new NotImplementedException('No model service found in the Container, please create a custom module, register a service and implement \Drupal\spectrum\Services\ModelServiceInterface');
+    }
+
+    return \Drupal::service('spectrum.model');
+  }
+
+  /**
+   * @deprecated use dependency injection on @spectrum.model_store
    * Returns the registered ModelStore
    *
    * @return ModelStoreInterface
@@ -2315,9 +2159,7 @@ abstract class Model
   }
 
   /**
-   * Returns an Array of all registered Model Classes in the system. (see ModelServiceInterface for documentation)
-   *
-   * @return array
+   * @deprecated use ModelService->getRegisteredModelClasses
    */
   public static function getModelClasses(): array
   {
@@ -2344,6 +2186,7 @@ abstract class Model
   }
 
   /**
+   * @deprecated
    * This method will set an array on the abstract Model object, with all the registered models in.
    *
    * @return void
@@ -2369,11 +2212,7 @@ abstract class Model
   }
 
   /**
-   * Get a unique key for this model class
-   *
-   * @param string $entity
-   * @param string|null $bundle
-   * @return string
+   * @deprecated moved to modelservice
    */
   public static function getKeyForEntityAndBundle(string $entity, ?string $bundle): string
   {
@@ -2400,31 +2239,8 @@ abstract class Model
     return str_replace('.', '_', static::getModelClassKey());
   }
 
-  public static function getReadPermissionKey(): string
-  {
-    $permissionKey = static::getBasePermissionKey();
-    return 'spectrum api ' . $permissionKey . ' read';
-  }
-
-  public static function getCreatePermissionKey(): string
-  {
-    $permissionKey = static::getBasePermissionKey();
-    return 'spectrum api ' . $permissionKey . ' create';
-  }
-
-  public static function getDeletePermissionKey(): string
-  {
-    $permissionKey = static::getBasePermissionKey();
-    return 'spectrum api ' . $permissionKey . ' delete';
-  }
-
-  public static function getEditPermissionKey(): string
-  {
-    $permissionKey = static::getBasePermissionKey();
-    return 'spectrum api ' . $permissionKey . ' edit';
-  }
-
   /**
+   * @deprecated use dependency injection on @spectrum.permissions
    * Returns the Registered Permission Service in the Container
    *
    * @return PermissionServiceInterface
@@ -2500,7 +2316,7 @@ abstract class Model
    *
    * @return  EntityInterface
    */
-  public function getEntity(): EntityInterface
+  public final function getEntity(): EntityInterface
   {
     return $this->entity;
   }
@@ -2512,7 +2328,7 @@ abstract class Model
    *
    * @return  self
    */
-  public function setEntity(EntityInterface $entity): Model
+  public final function setEntity(EntityInterface $entity): self
   {
     $this->entity = $entity;
 
@@ -2525,7 +2341,7 @@ abstract class Model
    * @param string $relationshipName
    * @return self
    */
-  public function setRelationshipSelected(string $relationshipName): Model
+  public function setRelationshipSelected(string $relationshipName): self
   {
     $valuesToSet = $this->get($relationshipName);
 
@@ -2546,7 +2362,7 @@ abstract class Model
    * @param string $relationshipName
    * @return self
    */
-  public function setRelationshipDeselected(string $relationshipName): Model
+  public function setRelationshipDeselected(string $relationshipName): self
   {
     $valuesToSet = $this->get($relationshipName);
 
@@ -2559,5 +2375,37 @@ abstract class Model
     }
 
     return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function isRelatedViaFieldRelationshipInMemory(string $relationshipName): bool
+  {
+    return array_key_exists($relationshipName, $this->relatedViaFieldOnEntity);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function isRelatedViaReferencedRelationshipInMemory(string $relationshipName): bool
+  {
+    return array_key_exists($relationshipName, $this->relatedViaFieldOnExternalEntity);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getReferencedRelationshipsInMemory(): array
+  {
+    return $this->relatedViaFieldOnExternalEntity;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getFieldRelationshipsInMemory(): array
+  {
+    return $this->relatedViaFieldOnEntity;
   }
 }

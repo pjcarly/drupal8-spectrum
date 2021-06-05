@@ -3,17 +3,11 @@
 namespace Drupal\spectrum\Models;
 
 use Drupal\spectrum\Model\Model;
-use Drupal\spectrum\Model\FieldRelationship;
-use Drupal\spectrum\Model\ReferencedRelationship;
 use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
 use Drupal\spectrum\Permissions\AccessPolicy\PublicAccessPolicy;
 use Drupal\spectrum\Serializer\JsonApiNode;
 use Drupal\spectrum\Utils\UrlUtils;
-use Drupal\Component\Render\PlainTextOutput;
-use Drupal\Core\File\FileSystem;
-use Drupal\Core\File\FileSystemInterface;
-use Drupal\Core\StreamWrapper\StreamWrapperManagerInterface;
-use Drupal\spectrum\Exceptions\NotImplementedException;
+use Drupal\spectrum\Services\FileServiceInterface;
 
 /**
  * A File model for the file entity
@@ -203,6 +197,7 @@ class File extends Model
   }
 
   /**
+   * @deprecated use FileService->createNewFile instead
    * Create a new FileModel by saving a data blob, getting the entity from drupal and wrapping it in a model
    *
    * @param string $uriScheme
@@ -213,45 +208,8 @@ class File extends Model
    */
   public static function createNewFile(string $uriScheme, string $directory, string $filename, $data): File
   {
-    $directory = trim(trim($directory), '/');
-    // Replace tokens. As the tokens might contain HTML we convert it to plaintext.
-    $directory = PlainTextOutput::renderFromHtml(\Drupal::token()->replace($directory, []));
-    $filename = basename($filename);
-
-    // We build the URI
-    $target = $uriScheme . '://' . $directory;
-
-    // Prepare the destination directory.
-    /** @var FileSystemInterface $filesystem */
-    $filesystem = \Drupal::service('file_system');
-    if ($filesystem->prepareDirectory($target, FileSystemInterface::CREATE_DIRECTORY)) {
-      // The destination is already a directory, so append the source basename.
-      /** @var StreamWrapperManagerInterface $streamWrapperManager */
-      $streamWrapperManager = \Drupal::service('stream_wrapper_manager');
-      $target = $streamWrapperManager->normalizeUri($target . '/' . $filesystem->basename($filename));
-
-      // Create or rename the destination
-      $filesystem->getDestinationFilename($target, FileSystemInterface::EXISTS_RENAME);
-
-      // Save the blob in a File Entity
-      $fileEntity = file_save_data($data, $target, FileSystemInterface::EXISTS_RENAME);
-      $file = new File($fileEntity); // TODO File/Image model fix
-      // we want the file to dissapear when it is not attached to a record
-      // we put the status on 0, if it is attached somewhere, Drupal will make sure it is not deleted
-      // When the attached record is deleted, the corresponding file will follow suit aswell.
-      // 6 hours after last modified date for a file, and not attached to a record, cron will clean up the file
-      $file->entity->{'status'}->value = 0;
-      $file->save();
-
-      return $file;
-    } else {
-      // Perhaps $destination is a dir/file?
-      $dirname = $filesystem->dirname($target);
-      if (!$filesystem->prepareDirectory($dirname, FileSystemInterface::CREATE_DIRECTORY)) {
-        throw new \Exception('File could not be moved/copied because the destination directory ' . $target . ' is not configured correctly.');
-      } else {
-        throw new NotImplementedException('Functionality not implemented');
-      }
-    }
+    /** @var FileServiceInterface $service */
+    $service = \Drupal::service("spectrum.file");
+    return $service->createNewFile($uriScheme, $directory, $filename, $data);
   }
 }

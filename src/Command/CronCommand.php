@@ -6,15 +6,15 @@ use Drupal\spectrum\Runnable\RegisteredJob;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Drupal\Console\Core\Command\ContainerAwareCommand;
-use Drupal\Console\Annotations\DrupalCommand;
 use Drupal\Core\Cache\MemoryCache\MemoryCacheInterface;
 use Drupal\Core\State\StateInterface;
 use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface;
-use Drupal\spectrum\Model\Model;
+use Drupal\spectrum\Services\ModelServiceInterface;
 use Drupal\spectrum\Query\Condition;
 use Drupal\spectrum\Query\Order;
 use Drupal\spectrum\Runnable\QueuedJob;
 use Drupal\spectrum\Services\ModelStoreInterface;
+use Psr\Log\LoggerInterface;
 use React\EventLoop\LoopInterface;
 
 /**
@@ -27,33 +27,28 @@ use React\EventLoop\LoopInterface;
  */
 class CronCommand extends ContainerAwareCommand
 {
-  /**
-   * @var LoopInterface $loop
-   */
-  protected $loop;
+  protected LoggerInterface $logger;
+  protected LoopInterface $loop;
+  protected MemoryCacheInterface $memoryCache;
+  protected StateInterface $stateCache;
+  protected ModelStoreInterface $modelStore;
+  protected ModelServiceInterface $modelService;
 
-  /**
-   * @var MemoryCacheInterface $memoryCache
-   */
-  protected $memoryCache;
-
-  /**
-   * @var StateInterface $stateCache
-   */
-  protected $stateCache;
-
-  /**
-   * @var ModelStoreInterface $modelStore
-   */
-  protected $modelStore;
-
-  public function __construct(LoopInterface $loop, MemoryCacheInterface $memoryCache, StateInterface $stateCache, ModelStoreInterface $modelStore)
-  {
+  public function __construct(
+    LoggerInterface $logger,
+    LoopInterface $loop,
+    MemoryCacheInterface $memoryCache,
+    StateInterface $stateCache,
+    ModelStoreInterface $modelStore,
+    ModelServiceInterface $modelService
+  ) {
     parent::__construct();
+    $this->logger = $logger;
     $this->loop = $loop;
     $this->memoryCache = $memoryCache;
     $this->stateCache = $stateCache;
     $this->modelStore = $modelStore;
+    $this->modelService = $modelService;
   }
 
   /**
@@ -128,7 +123,7 @@ class CronCommand extends ContainerAwareCommand
   protected function clearAllCaches(): self
   {
     // This will clear all the entity caches, and free entities from memory
-    Model::clearAllDrupalStaticEntityCaches();
+    $this->modelService->clearDrupalEntityCachesForAllModels();
 
     // Reset some extra Drupal Caches
     $this->memoryCache->deleteAll();

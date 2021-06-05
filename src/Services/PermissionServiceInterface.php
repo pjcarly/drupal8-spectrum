@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\spectrum\Permissions;
+namespace Drupal\spectrum\Services;
 
 use Drupal\spectrum\Models\User;
 
@@ -99,6 +99,16 @@ interface PermissionServiceInterface
   public function roleHasApiPermission(string $role, string $route, string $api, string $access): bool;
 
   /**
+   * This function checks whether an API is publicly accessible 
+   * (does not require a login, and is thus accessible by the AnonymousUserSession)
+   *
+   * @param string $route
+   * @param string $api
+   * @return boolean
+   */
+  public function apiIsPubliclyAccessible(string $route, string $api, ?string $action): bool;
+
+  /**
    * Check whether a Drupal Role, has a certain OAuth scope
    *
    * @param string $role
@@ -128,4 +138,64 @@ interface PermissionServiceInterface
    * @return boolean
    */
   public function roleHasFieldPermission(string $role, string $entity, string $field, string $access): bool;
+
+
+  /**
+   * Checks whether a user has access to a certain field on a Model
+   * 
+   * @param User $user
+   * @param string $modelClass The Fully qualified classname of the model
+   * @param string $field The field on the model (for example "field_body")
+   * @param string $access What type of access ("view" or "edit")
+   * @return boolean
+   */
+  public function userHasFieldPermission(User $user, string $modelClass, string $field, string $access): bool;
+
+  /**
+   * Checks if a user has access to view a field
+   *
+   * @param User $user
+   * @param string $modelClass The Fully qualified classname of the model
+   * @param string $field The field on the model (for example "field_body")
+   * @return boolean
+   */
+  public function userHasFieldViewPermission(User $user, string $modelClass, string $field): bool;
+
+  /**
+   * Checks if a user has access to edit a field
+   *
+   * @param User $user
+   * @param string $modelClass The Fully qualified classname of the model
+   * @param string $field The field on the model (for example "field_body")
+   * @return boolean
+   */
+  public function userHasFieldEditPermission(User $user, string $modelClass, string $field): bool;
+
+  /**
+   * Checks whether the logged in user has access to a certain field on a Model
+   * 
+   * @param string $modelClass The Fully qualified classname of the model
+   * @param string $field The field on the model (for example "field_body")
+   * @param string $access What type of access ("view" or "edit")
+   * @return boolean
+   */
+  public function currentUserHasFieldPermission(string $modelClass, string $field, string $access): bool;
+
+  /**
+   * Checks whether the logged in user has view access to a certain field on a model
+   *
+   * @param string $modelClass The Fully qualified classname of the model
+   * @param string $field The field on the model (for example "field_body")
+   * @return boolean
+   */
+  public function currentUserHasFieldViewPermission(string $modelClass, string $field): bool;
+
+  /**
+   * Checks whether the logged in user has edit access to a certain field on a model
+   *
+   * @param string $modelClass The Fully qualified classname of the model
+   * @param string $field The field on the model (for example "field_body")
+   * @return boolean
+   */
+  public function currentUserHasFieldEditPermission(string $modelClass, string $field): bool;
 }

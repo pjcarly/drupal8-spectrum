@@ -2,6 +2,19 @@ services:
   logger.channel.spectrum:
     parent: logger.channel_base
     arguments: ["spectrum"]
+  spectrum.model:
+    class: Drupal\spectrum\Services\ModelService
+    arguments:
+      - "@logger.channel.spectrum"
+      - "@entity_type.manager"
+      - "@entity_field.manager"
+  spectrum.permissions:
+    class: Drupal\spectrum\Services\PermissionService
+    arguments:
+      - "@logger.channel.spectrum"
+      - "@spectrum.model"
+      - "@database"
+      - "@current_user"
   spectrum.twig_extension:
     arguments: ["@renderer"]
     class: Drupal\spectrum\Template\TwigFilters
@@ -10,6 +23,12 @@ services:
   spectrum.model_store:
     class: Drupal\spectrum\Services\ModelStore
     arguments: []
+  spectrum.model_serializer:
+    class: Drupal\spectrum\Serializer\ModelSerializer
+    arguments:
+      - "@logger.channel.spectrum"
+      - "@entity_field.manager"
+      - "@spectrum.model"
   spectrum.jobs:
     class: Drupal\spectrum\Services\JobService
     parent: default_plugin_manager
@@ -19,6 +38,16 @@ services:
     class: Drupal\spectrum\Services\ModelApiService
     arguments:
       - "@spectrum.analytics_service"
+  spectrum.file:
+    class: Drupal\spectrum\Services\FileService
+    arguments:
+      - "@mist.logger"
+      - "@spectrum.model"
+      - "@spectrum.permissions"
+      - "@spectrum.model_serializer"
+      - "@token"
+      - "@file_system"
+      - "@stream_wrapper_manager"
   react.loop:
     class: React\EventLoop\LoopInterface
     factory: ["React\\EventLoop\\Factory", "create"]

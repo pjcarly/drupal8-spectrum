@@ -2,10 +2,12 @@ services:
   spectrum.cron:
     class: Drupal\spectrum\Command\CronCommand
     arguments:
+      - "@logger.channel.spectrum"
       - "@react.loop"
       - "@entity.memory_cache"
       - "@state"
       - "@spectrum.model_store"
+      - "@spectrum.model"
     tags:
       - { name: drupal.command }
   spectrum.registered_jobs_rebuild:

@@ -1,12 +1,15 @@
 <?php
 
-namespace Drupal\spectrum\Permissions;
+namespace Drupal\spectrum\Services;
 
+use Drupal\Core\Database\Connection;
+use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\spectrum\Model\Model;
+use Drupal\spectrum\Model\ModelInterface;
+use Drupal\spectrum\Services\ModelServiceInterface;
 use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyInterface;
 use Drupal\spectrum\Models\User;
 use Drupal\spectrum\Permissions\AccessPolicy\AccessPolicyEntity;
-use Drupal\spectrum\Permissions\PermissionServiceInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 
@@ -17,19 +20,90 @@ use Psr\Log\LoggerInterface;
  */
 class PermissionService implements PermissionServiceInterface, LoggerAwareInterface
 {
-
-  /**
-   * @var \Psr\Log\LoggerInterface
-   */
-  protected $logger;
+  protected LoggerInterface $logger;
+  protected ModelServiceInterface $modelService;
+  protected Connection $database;
+  protected AccountProxyInterface $currentUser;
 
   /**
    * PermissionService constructor.
    */
-  public function __construct()
-  {
-    $this->logger = \Drupal::logger('spectrum');
+  public function __construct(
+    LoggerInterface $logger,
+    ModelServiceInterface $modelService,
+    Connection $database,
+    AccountProxyInterface $currentUser
+  ) {
+    $this->logger = $logger;
+    $this->modelService = $modelService;
+    $this->database = $database;
+    $this->currentUser = $currentUser;
   }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function roleHasOAuthScopePermission(string $role, string $scope): bool
+  {
+    return false;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function roleHasModelPermission(string $role, string $permission, string $access): bool
+  {
+    return false;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function roleHasApiPermission(string $role, string $route, string $api, string $access): bool
+  {
+    return false;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function roleHasApiActionPermission(string $role, string $route, string $api, string $action): bool
+  {
+    return false;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function apiPermissionExists(string $route, string $api): bool
+  {
+    return false;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function apiIsPubliclyAccessible(string $route, string $api, ?string $action): bool
+  {
+    return false;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function apiActionPermissionExists(string $route, string $api): bool
+  {
+    return false;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function roleHasFieldPermission(string $role, string $entity, string $field, string $access): bool
+  {
+    return false;
+  }
+
 
   /**
    * @inheritDoc
@@ -40,97 +114,13 @@ class PermissionService implements PermissionServiceInterface, LoggerAwareInterf
   }
 
   /**
-   * @param string $role
-   * @param string $scope
-   *
-   * @return bool
-   */
-  public function roleHasOAuthScopePermission(string $role, string $scope): bool
-  {
-    return true;
-  }
-
-  /**
-   * @param string $role
-   * @param string $permission
-   * @param string $access
-   *
-   * @return bool
-   */
-  public function roleHasModelPermission(string $role, string $permission, string $access): bool
-  {
-    return true;
-  }
-
-  /**
-   * @param string $role
-   * @param string $route
-   * @param string $api
-   * @param string $access
-   *
-   * @return bool
-   */
-  public function roleHasApiPermission(string $role, string $route, string $api, string $access): bool
-  {
-    return true;
-  }
-
-  /**
-   * @param string $role
-   * @param string $route
-   * @param string $api
-   * @param string $action
-   *
-   * @return bool
-   */
-  public function roleHasApiActionPermission(string $role, string $route, string $api, string $action): bool
-  {
-    return true;
-  }
-
-  /**
-   * @param string $route
-   * @param string $api
-   *
-   * @return bool
-   */
-  public function apiPermissionExists(string $route, string $api): bool
-  {
-    return true;
-  }
-
-  /**
-   * @param string $route
-   * @param string $api
-   *
-   * @return bool
-   */
-  public function apiActionPermissionExists(string $route, string $api): bool
-  {
-    return true;
-  }
-
-  /**
-   * @param string $role
-   * @param string $entity
-   * @param string $field
-   * @param string $access
-   *
-   * @return bool
-   */
-  public function roleHasFieldPermission(string $role, string $entity, string $field, string $access): bool
-  {
-    return true;
-  }
-
-  /**
    * Rebuilds the access policy table.
    * @todo move this upstream and use dependency injection to override this
    * class.
    */
   public function rebuildAccessPolicy(): void
   {
-    $classes = Model::getModelService()->getRegisteredModelClasses();
+    $classes = $this->modelService->getRegisteredModelClasses();
 
     foreach ($classes as $class) {
       $this->rebuildAccessPolicyForModelClass($class);
@@ -145,9 +135,9 @@ class PermissionService implements PermissionServiceInterface, LoggerAwareInterf
    */
   public function rebuildAccessPolicyForEntity(string $entity): void
   {
-    $classes = Model::getModelService()->getRegisteredModelClasses();
+    $classes = $this->modelService->getRegisteredModelClasses();
 
-    /** @var \Drupal\spectrum\Model\Model $class */
+    /** @var ModelInterface $class */
     foreach ($classes as $class) {
       if ($class::entityType() === $entity) {
         /** @var string $class */
@@ -165,9 +155,9 @@ class PermissionService implements PermissionServiceInterface, LoggerAwareInterf
    */
   public function rebuildAccessPolicyForEntityAndBundle(string $entity, string $bundle): void
   {
-    $classes = Model::getModelService()->getRegisteredModelClasses();
+    $classes = $this->modelService->getRegisteredModelClasses();
 
-    /** @var \Drupal\spectrum\Model\Model $class */
+    /** @var ModelInterface $class */
     foreach ($classes as $class) {
       if ($class::entityType() === $entity && $class::bundle() === $bundle) {
         /** @var string $class */
@@ -184,7 +174,7 @@ class PermissionService implements PermissionServiceInterface, LoggerAwareInterf
    */
   public function rebuildAccessPolicyForModelClass(string $class): void
   {
-    /** @var \Drupal\spectrum\Model\Model $class */
+    /** @var ModelInterface $class */
     $accessPolicy = $class::getAccessPolicy();
 
     /** @var string $class */
@@ -196,7 +186,7 @@ class PermissionService implements PermissionServiceInterface, LoggerAwareInterf
    */
   public function removeUserFromAccessPolicies(User $user): void
   {
-    \Drupal::database()
+    $this->database
       ->delete(AccessPolicyInterface::TABLE_ENTITY_ACCESS)
       ->condition('uid', $user->getId())
       ->execute();
@@ -214,7 +204,7 @@ class PermissionService implements PermissionServiceInterface, LoggerAwareInterf
     /** @var AccessPolicyEntity[] $values */
     $values = [];
 
-    $classes = Model::getModelService()->getRegisteredModelClasses();
+    $classes = $this->modelService->getRegisteredModelClasses();
     /** @var Model $class */
     foreach ($classes as $class) {
       $accessPolicy = $class::getAccessPolicy();
@@ -225,7 +215,7 @@ class PermissionService implements PermissionServiceInterface, LoggerAwareInterf
     }
 
     if (!empty($values)) {
-      $insertQuery = \Drupal::database()
+      $insertQuery = $this->database
         ->insert(AccessPolicyInterface::TABLE_ENTITY_ACCESS)
         ->fields(['entity_type', 'entity_id', 'uid']);
 
@@ -238,5 +228,77 @@ class PermissionService implements PermissionServiceInterface, LoggerAwareInterf
 
       $insertQuery->execute();
     }
+  }
+
+  /**
+   * Returns the base permission key in the form of "entity_bundle" (for example node_article) this is used for the permission checker
+   *
+   * @param string $modelClass
+   * @return string
+   */
+  public function getPermissionKeyForModelClass(string $modelClass): string
+  {
+    return str_replace('.', '_', $this->modelService->getModelClassKey($modelClass));
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function userHasFieldPermission(User $user, string $modelClass, string $field, string $access): bool
+  {
+    $permissionKey = $this->getPermissionKeyForModelClass($modelClass);
+
+    $allowed = false;
+    foreach ($user->getRoles() as $role) {
+      if ($this->roleHasFieldPermission($role, $permissionKey, $field, $access)) {
+        $allowed = true;
+        break;
+      }
+    }
+
+    return $allowed;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function userHasFieldViewPermission(User $user, string $modelClass, string $field): bool
+  {
+    return $this->userHasFieldPermission($user, $modelClass, $field, 'view');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function userHasFieldEditPermission(User $user, string $modelClass, string $field): bool
+  {
+    return $this->userHasFieldPermission($user, $modelClass, $field, 'edit');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function currentUserHasFieldPermission(string $modelClass, string $field, string $access): bool
+  {
+    $currentUser = User::forgeById($this->currentUser->id());
+    return $this->userHasFieldPermission($currentUser, $modelClass, $field, $access);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function currentUserHasFieldViewPermission(string $modelClass, string $field): bool
+  {
+    $currentUser = User::forgeById($this->currentUser->id());
+    return $this->userHasFieldPermission($currentUser, $modelClass, $field, 'view');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function currentUserHasFieldEditPermission(string $modelClass, string $field): bool
+  {
+    $currentUser = User::forgeById($this->currentUser->id());
+    return $this->userHasFieldPermission($currentUser, $modelClass, $field, 'edit');
   }
 }

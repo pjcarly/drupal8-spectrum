@@ -431,27 +431,6 @@ trait ModelSerializerMixin
     return $mapping;
   }
 
-  /**
-   * Returns an array per field type, containing the drupal-field to pretty field
-   * For example [integer => [field_amount_of_passengers => 'amount-of-passengers]]
-   *
-   * @return array
-   */
-  public static function getTypeFieldToPrettyFielsMapping(): array
-  {
-    $prettyMapping = static::getTypePrettyFieldToFieldsMapping();
-    $mapping = [];
-
-    foreach ($prettyMapping as $type => $prettyFieldsMapping) {
-      $mapping[$type] = [];
-      foreach ($prettyFieldsMapping as $prettyField => $localField) {
-        $mapping[$type][$localField] = $prettyField;
-      }
-    }
-
-    return $mapping;
-  }
-
 
   /**
    * This function returns a mapping of the different fields, with "field_" stripped, and a dasherized representation of the field name
@@ -494,11 +473,7 @@ trait ModelSerializerMixin
 
     if (!array_key_exists($modelClassKey, static::$fieldsMappingIndex)) {
       $prettyMapping = static::getPrettyFieldsToFieldsMapping();
-
-      $mapping = [];
-      foreach ($prettyMapping as $pretty => $field) {
-        $mapping[$field] = $pretty;
-      }
+      $mapping = array_flip($prettyMapping);
 
       static::$fieldsMappingIndex[$modelClassKey] = $mapping;
     }

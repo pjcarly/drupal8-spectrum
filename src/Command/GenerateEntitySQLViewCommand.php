@@ -5,8 +5,7 @@ namespace Drupal\spectrum\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Drupal\Console\Core\Command\ContainerAwareCommand;
-use Drupal\Console\Annotations\DrupalCommand;
-use Drupal\spectrum\Model\ModelServiceInterface;
+use Drupal\spectrum\Services\ModelServiceInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Drupal\Core\Database\Connection;
 

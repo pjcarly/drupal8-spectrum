@@ -4,12 +4,15 @@ namespace Drupal\spectrum\Model;
 
 use Drupal\spectrum\Query\EntityQuery;
 use Drupal\spectrum\Query\Condition;
+use Drupal\spectrum\Services\ModelServiceInterface;
 
 /**
  * All relationships should extend this abstract class
  */
 abstract class Relationship
 {
+  protected ModelServiceInterface $modelService;
+
   /**
    * Mark a relationship as NO CASCADE (default)
    *
@@ -65,6 +68,7 @@ abstract class Relationship
   {
     $this->name = $name;
     $this->setCascadeType($cascade);
+    $this->modelService = \Drupal::service("spectrum.model");
   }
 
   public function setCascadeType(int $value): Relationship
